@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useTransition, useCallback, useRef, useEffect } from "react";
-import Link from "next/link";
-import { ArrowLeft, Save, Trash2, Loader2 } from "lucide-react";
+import { useState, useTransition, useCallback, useRef, useEffect, useSyncExternalStore } from "react";
+import { Save, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,12 +14,15 @@ import {
   DialogTrigger,
   DialogClose,
 } from "@/components/ui/dialog";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { FileUpload } from "@/components/FileUpload";
 import { AttachmentList } from "@/components/AttachmentList";
 import { updateNoteAction, deleteNoteAction } from "../actions";
 import type { Note, Attachment } from "@/lib/fsNotes";
+
+// eslint-disable-next-line @typescript-eslint/no-empty-function
+const noop = () => {};
+const emptySubscribe = () => noop;
 
 interface NoteEditorProps {
   note: Note;
@@ -34,6 +36,7 @@ export function NoteEditor({ note }: NoteEditorProps) {
   const [deleting, startDeleting] = useTransition();
   const [saved, setSaved] = useState(false);
   const savedTimer = useRef<ReturnType<typeof setTimeout>>(null);
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
   const isDirty = title !== note.title || content !== note.content;
 
@@ -67,25 +70,18 @@ export function NoteEditor({ note }: NoteEditorProps) {
   }, []);
 
   return (
-    <div className="mx-auto min-h-screen max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/notes">
-            <ArrowLeft /> Back
-          </Link>
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="flex flex-wrap items-center justify-end gap-2 mb-6">
+        <Button
+          onClick={handleSave}
+          disabled={saving || (!isDirty && !saved)}
+          size="sm"
+        >
+          {saving ? <Loader2 className="animate-spin" /> : <Save />}
+          {saved ? "Saved!" : "Save"}
         </Button>
 
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <Button
-            onClick={handleSave}
-            disabled={saving || (!isDirty && !saved)}
-            size="sm"
-          >
-            {saving ? <Loader2 className="animate-spin" /> : <Save />}
-            {saved ? "Saved!" : "Save"}
-          </Button>
-
+        {mounted ? (
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="destructive" size="sm" disabled={deleting}>
@@ -124,7 +120,12 @@ export function NoteEditor({ note }: NoteEditorProps) {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        </div>
+        ) : (
+          <Button variant="destructive" size="sm" disabled>
+            <Trash2 />
+            Delete
+          </Button>
+        )}
       </div>
 
       <Input
