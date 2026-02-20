@@ -1,10 +1,12 @@
 @import 'tailwindcss';
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import './custom-components.css';
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-sidebar-ring: var(--sidebar-ring);

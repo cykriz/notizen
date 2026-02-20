@@ -1,0 +1,61 @@
+[data-color-mode] {
+  --color-fg-default: var(--foreground);
+  --color-canvas-default: var(--background);
+  --color-canvas-subtle: var(--muted);
+  --color-border-default: var(--border);
+  --color-neutral-muted: var(--muted);
+  --color-accent-fg: var(--primary);
+  --color-danger-fg: var(--destructive);
+}
+
+[data-color-mode] .w-md-editor {
+  --md-editor-font-family: var(--font-sans);
+  font-family: var(--font-sans) !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+}
+
+[data-color-mode] .w-md-editor-content,
+[data-color-mode] .w-md-editor-preview {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+[data-color-mode] .w-md-editor-text {
+  padding: 24px !important;
+  font-size: 18px !important;
+  line-height: 32px !important;
+  min-height: 100% !important;
+}
+
+[data-color-mode] .w-md-editor-text-input {
+  min-height: 100% !important;
+}
+
+[data-color-mode] .w-md-editor-area {
+  min-height: 100% !important;
+}
+
+[data-color-mode] .w-md-editor-text-pre > code {
+  font-size: 18px !important;
+  line-height: 32px !important;
+}
+
+[data-color-mode] .w-md-editor-preview {
+  padding: 24px !important;
+}
+
+[data-color-mode] .w-md-editor-text-pre .token.title {
+  font-weight: bold !important;
+}
+
+[data-color-mode] .wmde-markdown {
+  font-size: 18px !important;
+  line-height: 1.75 !important;
+  color: var(--foreground) !important;
+  background-color: var(--background) !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

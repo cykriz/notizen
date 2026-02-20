@@ -84,6 +84,8 @@ export function FileUpload({ noteId, onUploaded }: FileUploadProps) {
         </Button>
         <input
           ref={inputRef}
+          id="file-upload"
+          name="file-upload"
           type="file"
           multiple
           className="hidden"

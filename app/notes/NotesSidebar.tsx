@@ -72,6 +72,8 @@ export function NotesSidebar({ notes }: NotesSidebarProps) {
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <SidebarInput
+              id="sidebar-search"
+              name="sidebar-search"
               placeholder="Search notes…"
               value={search}
               onChange={(e) => { setSearch(e.target.value); }}

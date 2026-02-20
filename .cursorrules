@@ -1,39 +1,41 @@
-# Notes App - SINGLE SOURCE OF TRUTH (Updated)
+# Notes App — Project Rules
 
-# Delete any other spec files. Everything here!
+## Architecture
 
-## MASTERPLAN (6 Phases - Execute Sequentially)
-
-### Phase 1: lib/fsNotes.ts (Core FS Layer)
-
-**Interfaces:**
+### Data Model
 
 ```
 interface NoteSummary {
-id: string;
-slug: string;
-title: string;
-createdAt: string;
-updatedAt: string;
-attachmentCount: number
+  id: string;
+  slug: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  attachmentCount: number;
 }
 
 interface Note extends NoteSummary {
-content: string;
-attachments: Attachment[]
+  content: string;
+  attachments: Attachment[];
 }
 
 interface Attachment {
-id: string;
-originalName: string;
-mimeType: string;
-size: number;
-relativePath: string
+  id: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  relativePath: string;
 }
-
 ```
 
-**Functions EXACTLY:**
+### Filesystem Layout
+
+- Notes stored at `NOTES_ROOT/notes/YYYY-MM-DD-slug-uuid/`
+- Each note folder contains `note.md` + `attachments/`
+- Slug format: `${date}-${slugifiedTitle}-${uuid}`
+- `NOTES_ROOT` configured via env var
+
+### Core Functions (`lib/fsNotes.ts`)
 
 ```
 listNotes(): Promise<NoteSummary[]>
@@ -46,165 +48,110 @@ saveAttachment(noteId: string, file: File): Promise<Attachment>
 deleteAttachment(noteId: string, attId: string): Promise<void>
 ```
 
-**FS Rules:**
-
-- `NOTES_ROOT/notes/YYYY-MM-DD-slug-uuid/` (e.g. `2026-02-20-projekt-abc123/`)
-- Slug: `${date}-${title.toLower().replace(/[^a-z0-9]/g,'-')}-${uuid()}`
-- `note.md` + `attachments/` folder
-
-### Phase 2: API Routes (app/api/notes/\*\*)
+### API Routes
 
 ```
-app/api/notes/route.ts → GET listNotes(), POST createNote()
-app/api/notes/[id]/route.ts → GET/PUT/DELETE
-app/api/notes/[id]/attachments/route.ts → GET/POST
+app/api/notes/route.ts              → GET, POST
+app/api/notes/[id]/route.ts         → GET, PUT, DELETE
+app/api/notes/[id]/attachments/route.ts        → GET, POST
 app/api/notes/[id]/attachments/[attId]/route.ts → DELETE
+app/api/notes/[id]/attachments/[attId]/download/route.ts → GET
 ```
 
 - NextRequest/NextResponse
-- Zod schemas EVERY endpoint
-- `{error: string}` responses
+- Zod validation on every endpoint
+- Error shape: `{ error: string }`
 
-### Phase 3: Components
+### Components
 
-**shadcn/ui components already installed:** button, card, input, dialog, textarea, badge
-**Compose custom components using shadcn primitives:**
+| Component | Location | Notes |
+|---|---|---|
+| MarkdownEditor | `components/MarkdownEditor.tsx` | `"use client"`, shadcn Textarea fallback |
+| AttachmentList | `components/AttachmentList.tsx` | Card, Badge, Button |
+| FileUpload | `components/FileUpload.tsx` | Drag & drop, Button, Card |
+| ThemeToggle | `components/ThemeToggle.tsx` | `"use client"`, Button + lucide icons |
+| NotesSidebar | `app/notes/NotesSidebar.tsx` | `"use client"`, sidebar with search + note list |
 
-```
-components/MarkdownEditor.tsx ("use client") — uses shadcn Textarea as fallback
-components/AttachmentList.tsx — uses shadcn Card, Badge, Button
-components/FileUpload.tsx (drag & drop) — uses shadcn Button, Card
-components/ThemeToggle.tsx ("use client") — already created, uses shadcn Button + lucide icons
-```
+### Layout
 
-- Use shadcn/ui components for all standard UI (Button, Card, Input, Dialog, etc.)
-- Compose with Tailwind utilities for layout
-- Responsive
+- `app/notes/layout.tsx` — Server component: fetches notes, wraps pages in `SidebarProvider` + `SidebarInset`
+- Mobile header with `SidebarTrigger` shown via `md:hidden`
 
-### Phase 4: Pages
-
-```
-app/notes/page.tsx (list + search) — uses Card for note items, Input for search
-app/notes/[id]/page.tsx (edit + upload) — uses Dialog for delete confirm, Button for actions
-```
-
-- revalidatePath() after mutations
-- Include ThemeToggle in page header/nav
-
-### Phase 5: Docker
+### Pages
 
 ```
-Dockerfile (multi-stage)
-docker-compose.yml (volume ./dev-notes:/app/data)
-// use bun instead of npm
+app/notes/page.tsx       → Empty state (no note selected)
+app/notes/[id]/page.tsx  → Edit + upload
 ```
 
-### Phase 6: Production
+### Installed shadcn/ui Components
 
-```
-README Synology deploy
-/api/notes/[id]/attachments/[attId]/download endpoint
-```
+button, card, input, dialog, textarea, badge, sidebar, separator, sheet, tooltip, skeleton
 
-## GLOBAL RULES
+## Rules
 
-- ✅ TypeScript strict
-- ✅ No database EVER
-- ✅ Tailwind responsive
-- ✅ NOTES_ROOT env var
-- ✅ ONE FILE PER CMD+K
-- ✅ Inline tests EVERY file
-- ✅ Commit nach Phase: "Phase X: description"
-- ✅ EVERY UI element MUST use the established style system (see STYLE SYSTEM section below)
-- ✅ EVERY interactive element (button, input, dialog, etc.) MUST use shadcn/ui from `components/ui/`
-- ✅ EVERY color MUST come from CSS variable tokens in `globals.css` — NEVER hardcode hex/rgb/oklch in components
-- ✅ Before writing ANY UI code, check `components/ui/` for an existing shadcn component first
-- ✅ File naming: PascalCase for components/pages (`NoteEditor.tsx`, `NotesList.tsx`), camelCase for lib/utils (`fsNotes.ts`), lowercase for config (`actions.ts`, `providers.tsx`)
-- ✅ **MANDATORY: Run `bun run lint` AND `bunx tsc --noEmit` after EVERY code change AND at the start of every conversation. Fix ALL lint AND type errors before moving on. Zero tolerance — no exceptions, no skipping, no "pre-existing" excuses.**
+### General
 
-## BUN RULES
+- Max 200 lines per file — split into smaller modules if exceeded
+- TypeScript strict mode
+- No database — filesystem only
+- Tailwind responsive design
+- `NOTES_ROOT` env var for data directory
+- `revalidatePath()` after mutations
+- Inline tests in every file
+- File naming: PascalCase for components/pages, camelCase for lib/utils, lowercase for config
+- Before writing any UI code, check `components/ui/` for an existing shadcn component first
+- Never implement custom UI components from scratch. First check if a matching shadcn/ui component exists (`npx shadcn@latest add <name>`). Only build custom components when no shadcn equivalent is available.
+- Run `bun run lint` and `bunx tsc --noEmit` after every code change. Fix all errors before moving on.
+
+### Bun
 
 - Use `bun install` instead of `npm i`
 - Scripts: `bun --bun next dev`
-- Faster installs, native TypeScript
 
-## TESTING PROTOCOL
+### Style System (shadcn/ui + Tailwind v4)
 
-1. npm run dev
-2. curl -X POST http://localhost:3000/api/notes -H "Content-Type: application/json" -d '{"title":"Test","content":"Hi"}'
-3. curl http://localhost:3000/api/notes
-4. ls -la dev-notes/notes/
-5. Screenshot folder structure
-
-## APPROVED PACKAGES ONLY
-
-```
-@uiw/react-md-editor uuid zod gray-matter
-shadcn/ui (via CLI: npx shadcn@latest add <component>)
-next-themes radix-ui lucide-react
-class-variance-authority clsx tailwind-merge tw-animate-css
-```
-
-## ABSOLUTE NEVER
-
-- ❌ Database (Prisma, SQLite, etc.)
-- ❌ Wrong folder structure
-- ❌ UI before complete API
-- ❌ Skip phases
-- ❌ Experimental Next.js features
-- ❌ External CSS frameworks (shadcn/ui is allowed — it's not an external framework, it's copy-paste components)
-- ❌ Raw HTML elements when a shadcn/ui component exists (no `<button>`, use `<Button>`)
-- ❌ Hardcoded colors (`bg-blue-500`, `text-gray-300`, `#fff`, etc.) — use semantic tokens only
-- ❌ `dark:` prefix for themed colors — CSS variables handle light/dark automatically
-- ❌ Installing new UI/component libraries without updating this file
-- ❌ Custom styling that bypasses the design token system in `globals.css`
-
-## WORKFLOW
-
-Cmd+K: "Phase 1 EXACTLY per .cursorrules"
-→ Generate → **Lint & fix ALL errors** → Test → Commit → "Phase 2 ready?"
-
-## STYLE SYSTEM (shadcn/ui + Tailwind v4)
-
-### Architecture
 - All colors defined as CSS variables in `app/globals.css` (`:root` for light, `.dark` for dark)
 - Registered via `@theme inline` so Tailwind generates utility classes
 - Dark/light mode via `next-themes` (class-based, `.dark` on `<html>`)
 - ThemeProvider in `app/providers.tsx`, wraps app in `app/layout.tsx`
-- Components from shadcn/ui live in `components/ui/`
-- `cn()` helper in `lib/utils.ts` for merging Tailwind classes conditionally
+- `cn()` helper in `lib/utils.ts` for conditional class merging
 
-### Color Tokens (defined in globals.css)
-- `background` / `foreground` — page-level
-- `card` / `card-foreground` — cards, panels
-- `popover` / `popover-foreground` — dropdowns, tooltips
-- `primary` / `primary-foreground` — main actions (buttons, links)
-- `secondary` / `secondary-foreground` — secondary actions
-- `muted` / `muted-foreground` — subtle backgrounds, placeholder text
-- `accent` / `accent-foreground` — hover highlights
-- `destructive` / `destructive-foreground` — danger/delete actions
-- `border`, `input`, `ring` — borders and focus rings
-- `--radius` — global border radius
+**Color tokens:** `background`, `foreground`, `card`, `card-foreground`, `popover`, `popover-foreground`, `primary`, `primary-foreground`, `secondary`, `secondary-foreground`, `muted`, `muted-foreground`, `accent`, `accent-foreground`, `destructive`, `destructive-foreground`, `border`, `input`, `ring`, `--radius`
 
-### Component Rules
-- ALWAYS use shadcn/ui components from `components/ui/` for: Button, Card, Input, Dialog, Textarea, Badge
-- ALWAYS import with `@/components/ui/...` alias
-- ALWAYS use `cn()` from `@/lib/utils` to merge conditional classes
-- NEVER use raw `<button>`, `<input>`, `<dialog>` — use shadcn equivalents
-- NEVER hardcode colors (e.g. `bg-blue-500`). ALWAYS use semantic tokens (`bg-primary`, `text-muted-foreground`)
-- NEVER use `dark:` prefix for themed colors — the CSS variables auto-switch
-- To add a new color: add variable in `:root` + `.dark` in `globals.css`, register in `@theme inline`
+**Component rules:**
+- Use shadcn/ui from `components/ui/` for all interactive elements (Button, Card, Input, Dialog, Textarea, Badge)
+- Import with `@/components/ui/...`
+- Use `cn()` from `@/lib/utils` for conditional classes
+- Prefer CVA variants over inline Tailwind overrides when a component needs multiple visual styles
+- Never use raw HTML elements when a shadcn equivalent exists
+- Never hardcode colors — use semantic tokens (`bg-primary`, `text-muted-foreground`)
+- Never use `dark:` prefix — CSS variables handle light/dark automatically
+- To add a color: define in `:root` + `.dark` in `globals.css`, register in `@theme inline`
+- To add a shadcn component: `npx shadcn@latest add <component-name>`
 
-### Adding New shadcn Components
+### Approved Packages
+
 ```
-npx shadcn@latest add <component-name>
+@uiw/react-md-editor uuid zod gray-matter
+shadcn/ui (via CLI)
+next-themes radix-ui lucide-react
+class-variance-authority clsx tailwind-merge tw-animate-css
 ```
 
-### Installed shadcn Components
-button, card, input, dialog, textarea, badge
+### Never
 
-## STATUS TRACKER
+- No database (Prisma, SQLite, etc.)
+- No experimental Next.js features
+- No wrong folder structure (see Architecture section)
+- No external CSS frameworks (shadcn/ui is fine)
+- No hardcoded colors (`bg-blue-500`, `#fff`, etc.)
+- No `dark:` prefix for themed colors
+- No new UI libraries without updating this file
+- No custom styling that bypasses the design token system
 
-Current Phase: 5 ✅
-Next Phase: 6 (Production)
-Progress: 5/6
+## Docker
+
+- Multi-stage `Dockerfile` using Bun
+- `docker-compose.yml` with volume `./dev-notes:/app/data`
+- See `README.md` for Synology deployment instructions
