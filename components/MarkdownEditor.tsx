@@ -31,6 +31,7 @@ function buildMarkdownLink(att: Attachment, noteId: string): string {
   if (att.mimeType.startsWith("image/")) {
     return `![${att.originalName}](${url})`;
   }
+
   return `[${att.originalName}](${url})`;
 }
 
@@ -42,8 +43,12 @@ export function MarkdownEditor({ value, onChange, noteId, onFileUploaded, previe
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const id = requestAnimationFrame(() => { setMounted(true); });
-    return () => { cancelAnimationFrame(id); };
+    const id = requestAnimationFrame(() => {
+      setMounted(true); 
+    });
+    return () => {
+      cancelAnimationFrame(id); 
+    };
   }, []);
 
   const handleDrop = useCallback(
@@ -51,7 +56,9 @@ export function MarkdownEditor({ value, onChange, noteId, onFileUploaded, previe
       e.preventDefault();
       e.stopPropagation();
       setDragging(false);
-      if (noteId === undefined || noteId === "" || e.dataTransfer.files.length === 0) {return;}
+      if (noteId === undefined || noteId === "" || e.dataTransfer.files.length === 0) {
+        return;
+      }
 
       setUploading(true);
       try {
@@ -76,7 +83,7 @@ export function MarkdownEditor({ value, onChange, noteId, onFileUploaded, previe
           const before = value.slice(0, pos);
           const after = value.slice(pos);
           const sep = before.length > 0 && !before.endsWith("\n") ? "\n" : "";
-          onChange(`${before + sep + insertion  }\n${  after}`);
+          onChange(`${before + sep + insertion}\n${after}`);
         }
       } finally {
         setUploading(false);
@@ -88,7 +95,9 @@ export function MarkdownEditor({ value, onChange, noteId, onFileUploaded, previe
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (noteId !== undefined && noteId !== "") {setDragging(true);}
+    if (noteId !== undefined && noteId !== "") {
+      setDragging(true);
+    }
   }, [noteId]);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
@@ -110,7 +119,9 @@ export function MarkdownEditor({ value, onChange, noteId, onFileUploaded, previe
     >
       <MDEditor
         value={value}
-        onChange={(v) => { onChange(v ?? ""); }}
+        onChange={(v) => {
+          onChange(v ?? ""); 
+        }}
         height="100%"
         preview={preview}
         hideToolbar

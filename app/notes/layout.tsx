@@ -17,7 +17,7 @@ export default async function NotesLayout({
   return (
     <SidebarProvider>
       <NotesSidebar notes={notes} />
-      <SidebarInset>
+      <SidebarInset className="max-h-svh">
         <header className="flex h-12 items-center gap-2 border-b px-4 md:hidden">
           <SidebarTrigger />
           <Separator orientation="vertical" className="h-4" />
