@@ -303,6 +303,33 @@ export async function saveAttachment(
   };
 }
 
+export async function getAttachmentFilePath(
+  noteId: string,
+  attId: string
+): Promise<{ filePath: string; fileName: string; mimeType: string }> {
+  const existing = await getNote(noteId);
+  if (!existing) {throw new Error(`Note not found: ${noteId}`);}
+
+  const attDir = attachmentsDir(existing.slug);
+  let files: string[];
+  try {
+    files = await fs.readdir(attDir);
+  } catch {
+    throw new Error(`Attachment not found: ${attId}`);
+  }
+  const target = files.find((f) => f.startsWith(`${attId}_`));
+  if (target === undefined) {throw new Error(`Attachment not found: ${attId}`);}
+
+  const parts = target.split("_", 2);
+  const originalName = parts.length > 1 ? parts[1] : target;
+
+  return {
+    filePath: path.join(attDir, target),
+    fileName: originalName,
+    mimeType: guessMimeType(originalName),
+  };
+}
+
 export async function deleteAttachment(
   noteId: string,
   attId: string

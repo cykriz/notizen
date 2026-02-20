@@ -1,36 +1,303 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Notizen
 
-## Getting Started
+A self-hosted, file-based notes app with Markdown editing and file attachments. No database — notes are stored as `.md` files on disk.
 
-First, run the development server:
+Built with Next.js, shadcn/ui, and Bun. Designed for deployment on Synology NAS via Docker.
+
+## Features
+
+- Markdown editing with live preview
+- File attachments (drag & drop upload)
+- Full-text search
+- Light/dark theme
+- Responsive design
+- Zero database — plain Markdown files with frontmatter
+
+## Quick Start (Development)
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+bun install
+bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+App runs at `http://localhost:3000`. Notes are stored in `./dev-notes/notes/`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Docker
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Build & Run Locally
 
-## Learn More
+```bash
+docker compose up --build
+```
 
-To learn more about Next.js, take a look at the following resources:
+Notes persist in `./dev-notes/` on the host.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Environment Variables
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Variable     | Default            | Description                    |
+| ------------ | ------------------ | ------------------------------ |
+| `NOTES_ROOT` | `./dev-notes`      | Root directory for note storage |
+| `PORT`       | `3000`             | Server port                    |
 
-## Deploy on Vercel
+## Deploy on Synology NAS
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Prerequisites
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Synology DSM 7.x with **Container Manager** (Docker) installed
+- SSH access or Container Manager UI
+
+### Step 1: Create Data Directory
+
+Via SSH:
+
+```bash
+mkdir -p /volume1/notes
+```
+
+Or via **File Station**: create a shared folder called `notes` on Volume 1.
+
+### Step 2: Build the Image
+
+Option A — Build on the NAS (if resources allow):
+
+```bash
+cd /volume1/docker/app
+docker build -t notizen .
+```
+
+Option B — Build locally, transfer to NAS:
+
+```bash
+# On your machine
+docker build -t notizen .
+docker save notizen | gzip > notizen.tar.gz
+
+# Copy to NAS
+scp notizen.tar.gz user@synology:/volume1/docker/
+
+# On NAS via SSH
+docker load -i /volume1/docker/app.tar.gz
+```
+
+### Step 3: Run the Container
+
+Via SSH:
+
+```bash
+docker run -d \
+  --name notizen \
+  --restart always \
+  -p 3000:3000 \
+  -v /volume1/notes:/app/data \
+  -e NOTES_ROOT=/app/data \
+  notizen
+```
+
+Or via **Container Manager UI**:
+
+1. Go to **Image** → select `notizen`
+2. Click **Run** → name it `notizen`
+3. **Port Settings**: Local `3000` → Container `3000`
+4. **Volume**: `/volume1/notes` → `/app/data` (read/write)
+5. **Environment**: `NOTES_ROOT` = `/app/data`
+6. Enable **auto-restart**
+7. Click **Done**
+
+### Step 4: Access the App
+
+Open `http://<synology-ip>:3000` in your browser.
+
+### Docker Compose on Synology
+
+Create `/volume1/docker/app/docker-compose.yml`:
+
+```yaml
+services:
+  web:
+    image: notizen
+    ports:
+      - "3000:3000"
+    volumes:
+      - "/volume1/notes:/app/data"
+    environment:
+      NOTES_ROOT: /app/data
+    restart: always
+```
+
+```bash
+cd /volume1/docker/app
+docker compose up -d
+```
+
+### Reverse Proxy (Optional)
+
+In DSM → **Control Panel** → **Login Portal** → **Advanced** → **Reverse Proxy**:
+
+| Field       | Value                          |
+| ----------- | ------------------------------ |
+| Source       | `https://notes.yourdomain.com` |
+| Destination | `http://localhost:3000`        |
+
+### Backup
+
+Notes are plain files in `/volume1/notes/`. Back up with Hyper Backup or any file sync tool.
+
+## File Structure
+
+```
+/app/data/                          # NOTES_ROOT
+└── notes/
+    └── 2026-02-20-my-note-a1b2c3/  # {date}-{slug}-{uuid}
+        ├── note.md                  # Frontmatter + Markdown content
+        └── attachments/
+            ├── f4e5d6_photo.png     # {attId}_{originalName}
+            └── a7b8c9_doc.pdf
+```
+
+### note.md Format
+
+```markdown
+---
+id: 550e8400-e29b-41d4-a716-446655440000
+title: My Note
+createdAt: 2026-02-20T10:30:00.000Z
+updatedAt: 2026-02-20T11:15:00.000Z
+---
+
+# My Note
+
+Markdown content here...
+```
+
+## API Reference
+
+Base URL: `/api/notes`
+
+### List Notes
+
+```
+GET /api/notes
+```
+
+Response: `NoteSummary[]`
+
+```json
+[
+  {
+    "id": "uuid",
+    "slug": "2026-02-20-my-note-a1b2c3",
+    "title": "My Note",
+    "createdAt": "2026-02-20T10:30:00.000Z",
+    "updatedAt": "2026-02-20T11:15:00.000Z",
+    "attachmentCount": 2
+  }
+]
+```
+
+### Create Note
+
+```
+POST /api/notes
+Content-Type: application/json
+
+{ "title": "New Note", "content": "# Hello" }
+```
+
+Response: `Note` (201)
+
+### Get Note
+
+```
+GET /api/notes/:id
+```
+
+Response: `Note` (includes `content` and `attachments[]`)
+
+### Update Note
+
+```
+PUT /api/notes/:id
+Content-Type: application/json
+
+{ "title": "Updated Title", "content": "# Updated" }
+```
+
+Both fields optional. Response: `Note`
+
+### Delete Note
+
+```
+DELETE /api/notes/:id
+```
+
+Response: `{ "success": true }`
+
+### List Attachments
+
+```
+GET /api/notes/:id/attachments
+```
+
+Response: `Attachment[]`
+
+```json
+[
+  {
+    "id": "f4e5d6",
+    "originalName": "photo.png",
+    "mimeType": "image/png",
+    "size": 204800,
+    "relativePath": "attachments/f4e5d6_photo.png"
+  }
+]
+```
+
+### Upload Attachment
+
+```
+POST /api/notes/:id/attachments
+Content-Type: multipart/form-data
+
+file: <binary>
+```
+
+Response: `Attachment` (201)
+
+### Download Attachment
+
+```
+GET /api/notes/:id/attachments/:attId/download
+```
+
+Response: Binary file stream with appropriate `Content-Type` and `Content-Disposition` headers.
+
+### Delete Attachment
+
+```
+DELETE /api/notes/:id/attachments/:attId
+```
+
+Response: `{ "success": true }`
+
+### Error Responses
+
+All errors return:
+
+```json
+{ "error": "Description of what went wrong" }
+```
+
+| Status | Meaning           |
+| ------ | ----------------- |
+| 400    | Validation error  |
+| 404    | Not found         |
+| 500    | Internal error    |
+
+## Tech Stack
+
+- **Runtime**: [Bun](https://bun.sh)
+- **Framework**: [Next.js](https://nextjs.org) 16 (App Router, standalone output)
+- **UI**: [shadcn/ui](https://ui.shadcn.com) + [Tailwind CSS](https://tailwindcss.com) v4
+- **Editor**: [@uiw/react-md-editor](https://github.com/uiwc/react-md-editor)
+- **Validation**: [Zod](https://zod.dev)
+- **Storage**: Filesystem (Markdown + frontmatter via [gray-matter](https://github.com/jonschlinkert/gray-matter))
