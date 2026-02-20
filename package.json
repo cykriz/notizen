@@ -6,7 +6,7 @@
     "dev": "bun --bun next dev",
     "build": "bun --bun next build",
     "start": "bun --bun next start",
-    "lint": "next lint"
+    "lint": "eslint --fix --fix-type suggestion,problem,layout ."
   },
   "packageManager": "bun@1.3.9",
   "dependencies": {

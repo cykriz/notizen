@@ -119,6 +119,7 @@ README Synology deploy
 - ✅ EVERY interactive element (button, input, dialog, etc.) MUST use shadcn/ui from `components/ui/`
 - ✅ EVERY color MUST come from CSS variable tokens in `globals.css` — NEVER hardcode hex/rgb/oklch in components
 - ✅ Before writing ANY UI code, check `components/ui/` for an existing shadcn component first
+- ✅ **MANDATORY: After ANY code change, run the linter and fix ALL lint errors before moving on. No exceptions.**
 
 ## BUN RULES
 
@@ -160,7 +161,7 @@ class-variance-authority clsx tailwind-merge tw-animate-css
 ## WORKFLOW
 
 Cmd+K: "Phase 1 EXACTLY per .cursorrules"
-→ Generate → Test → Commit → "Phase 2 ready?"
+→ Generate → **Lint & fix ALL errors** → Test → Commit → "Phase 2 ready?"
 
 ## STYLE SYSTEM (shadcn/ui + Tailwind v4)
 
