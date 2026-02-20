@@ -1,0 +1,9 @@
+services:
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - "./dev-notes:/app/data"
+    environment:
+      NOTES_ROOT: /app/data
