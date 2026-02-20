@@ -311,9 +311,14 @@ export async function deleteAttachment(
   if (!existing) {throw new Error(`Note not found: ${noteId}`);}
 
   const attDir = attachmentsDir(existing.slug);
-  const files = await fs.readdir(attDir);
+  let files: string[];
+  try {
+    files = await fs.readdir(attDir);
+  } catch {
+    throw new Error(`Attachment not found: ${attId}`);
+  }
   const target = files.find((f) => f.startsWith(`${attId}_`));
-  if (target === undefined || target === "") {throw new Error(`Attachment not found: ${attId}`);}
+  if (target === undefined) {throw new Error(`Attachment not found: ${attId}`);}
 
   await fs.rm(path.join(attDir, target));
 }
