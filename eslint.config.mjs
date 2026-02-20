@@ -2,6 +2,7 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import tseslint from "typescript-eslint";
+import stylistic from "@stylistic/eslint-plugin";
 
 const eslintConfig = defineConfig([
   ...nextVitals,
@@ -20,6 +21,7 @@ const eslintConfig = defineConfig([
 
   {
     files: ["**/*.ts", "**/*.tsx", "**/*.mts"],
+    plugins: { "@stylistic": stylistic },
     languageOptions: {
       parserOptions: {
         projectService: true,
@@ -89,6 +91,12 @@ const eslintConfig = defineConfig([
       "prefer-template": "error",
       "object-shorthand": "error",
       curly: ["error", "all"],
+      "@stylistic/brace-style": ["error", "1tbs"],
+      "@stylistic/indent": ["error", 2],
+      "@stylistic/padding-line-between-statements": [
+        "error",
+        { blankLine: "always", prev: "if", next: "*" },
+      ],
       "no-nested-ternary": "error",
       "no-unneeded-ternary": "error",
       "no-duplicate-imports": "error",

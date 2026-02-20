@@ -11,7 +11,9 @@ import {
 
 export async function listAttachments(noteId: string): Promise<Attachment[]> {
   const slug = await findSlugByNoteId(noteId);
-  if (slug === null) {return [];}
+  if (slug === null) {
+    return [];
+  }
 
   const attDir = attachmentsDir(slug);
   try {
@@ -45,7 +47,9 @@ export async function saveAttachment(
   file: File
 ): Promise<Attachment> {
   const slug = await findSlugByNoteId(noteId);
-  if (slug === null) {throw new Error(`Note not found: ${noteId}`);}
+  if (slug === null) {
+    throw new Error(`Note not found: ${noteId}`);
+  }
 
   const attId = uuidv4().split("-")[0];
   const storedName = `${attId}_${file.name}`;
@@ -69,7 +73,9 @@ export async function getAttachmentFilePath(
   attId: string
 ): Promise<{ filePath: string; fileName: string; mimeType: string }> {
   const slug = await findSlugByNoteId(noteId);
-  if (slug === null) {throw new Error(`Note not found: ${noteId}`);}
+  if (slug === null) {
+    throw new Error(`Note not found: ${noteId}`);
+  }
 
   const attDir = attachmentsDir(slug);
   let files: string[];
@@ -79,7 +85,9 @@ export async function getAttachmentFilePath(
     throw new Error(`Attachment not found: ${attId}`);
   }
   const target = files.find((f) => f.startsWith(`${attId}_`));
-  if (target === undefined) {throw new Error(`Attachment not found: ${attId}`);}
+  if (target === undefined) {
+    throw new Error(`Attachment not found: ${attId}`);
+  }
 
   const parts = target.split("_", 2);
   const originalName = parts.length > 1 ? parts[1] : target;
@@ -96,7 +104,9 @@ export async function deleteAttachment(
   attId: string
 ): Promise<void> {
   const slug = await findSlugByNoteId(noteId);
-  if (slug === null) {throw new Error(`Note not found: ${noteId}`);}
+  if (slug === null) {
+    throw new Error(`Note not found: ${noteId}`);
+  }
 
   const attDir = attachmentsDir(slug);
   let files: string[];
@@ -106,7 +116,9 @@ export async function deleteAttachment(
     throw new Error(`Attachment not found: ${attId}`);
   }
   const target = files.find((f) => f.startsWith(`${attId}_`));
-  if (target === undefined) {throw new Error(`Attachment not found: ${attId}`);}
+  if (target === undefined) {
+    throw new Error(`Attachment not found: ${attId}`);
+  }
 
   await fs.rm(path.join(attDir, target));
 }

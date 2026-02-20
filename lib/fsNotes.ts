@@ -28,7 +28,9 @@ export async function listNotes(): Promise<NoteSummary[]> {
   for (const dir of dirs) {
     const slug = dir.name;
     const parsed = await readNoteFrontmatter(slug);
-    if (!parsed) {continue;}
+    if (!parsed) {
+      continue;
+    }
 
     const attCount = await countAttachments(slug);
     summaries.push({
@@ -49,10 +51,14 @@ export async function listNotes(): Promise<NoteSummary[]> {
 
 export async function getNote(id: string): Promise<Note | null> {
   const slug = await findSlugByNoteId(id);
-  if (slug === null) {return null;}
+  if (slug === null) {
+    return null;
+  }
 
   const parsed = await readNoteFrontmatter(slug);
-  if (parsed === null) {return null;}
+  if (parsed === null) {
+    return null;
+  }
 
   const attachments = await listAttachments(id);
   return {
@@ -104,7 +110,9 @@ export async function updateNote(
   input: { title?: string; content?: string }
 ): Promise<Note> {
   const existing = await getNote(id);
-  if (!existing) {throw new Error(`Note not found: ${id}`);}
+  if (!existing) {
+    throw new Error(`Note not found: ${id}`);
+  }
 
   const newTitle = input.title ?? existing.title;
   const newContent = input.content ?? existing.content;
@@ -134,7 +142,10 @@ export async function updateNote(
 
 export async function deleteNote(id: string): Promise<void> {
   const existing = await getNote(id);
-  if (!existing) {throw new Error(`Note not found: ${id}`);}
+  if (!existing) {
+    throw new Error(`Note not found: ${id}`);
+  }
+
   await fs.rm(noteDir(existing.slug), { recursive: true, force: true });
 }
 
@@ -150,36 +161,57 @@ async function runTests() {
   try {
     const note = await createNote({ title: "Test Note", content: "# Hello World" });
     const slugOk = /^\d{4}-\d{2}-\d{2}-test-note-[a-f0-9]+$/.test(note.slug);
-    if (!slugOk) {throw new Error(`Bad slug: ${note.slug}`);}
+    if (!slugOk) {
+      throw new Error(`Bad slug: ${note.slug}`);
+    }
+
     console.log("✓ createNote — slug, id, title correct");
 
     const notes = await listNotes();
-    if (notes.length !== 1) {throw new Error(`Expected 1 note, got ${String(notes.length)}`);}
+    if (notes.length !== 1) {
+      throw new Error(`Expected 1 note, got ${String(notes.length)}`);
+    }
+
     console.log("✓ listNotes — found 1 note");
 
     const fetched = await getNote(note.id);
-    if (fetched?.content !== "# Hello World") {throw new Error("getNote content mismatch");}
+    if (fetched?.content !== "# Hello World") {
+      throw new Error("getNote content mismatch");
+    }
+
     console.log("✓ getNote — content matches");
 
     const updated = await updateNote(note.id, { title: "Updated", content: "# Updated" });
-    if (updated.title !== "Updated") {throw new Error("Title not updated");}
+    if (updated.title !== "Updated") {
+      throw new Error("Title not updated");
+    }
+
     console.log("✓ updateNote — title and content updated");
 
     const att = await saveAttachment(note.id, new File(["data"], "test.txt", { type: "text/plain" }));
     console.log(`✓ saveAttachment — id: ${att.id}`);
 
     const atts = await listAttachments(note.id);
-    if (atts.length !== 1) {throw new Error(`Expected 1 attachment, got ${String(atts.length)}`);}
+    if (atts.length !== 1) {
+      throw new Error(`Expected 1 attachment, got ${String(atts.length)}`);
+    }
+
     console.log("✓ listAttachments — found 1 attachment");
 
     await deleteAttachment(note.id, att.id);
     const attsAfter = await listAttachments(note.id);
-    if (attsAfter.length !== 0) {throw new Error("Attachment not deleted");}
+    if (attsAfter.length !== 0) {
+      throw new Error("Attachment not deleted");
+    }
+
     console.log("✓ deleteAttachment — attachment removed");
 
     await deleteNote(note.id);
     const afterDelete = await listNotes();
-    if (afterDelete.length !== 0) {throw new Error("Note not deleted");}
+    if (afterDelete.length !== 0) {
+      throw new Error("Note not deleted");
+    }
+
     console.log("✓ deleteNote — note removed");
 
     console.log(`\n${sep}\n  ALL TESTS PASSED ✓\n${sep}\n`);

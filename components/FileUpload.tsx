@@ -69,10 +69,16 @@ export function FileUpload({ noteId, onUploaded }: FileUploadProps) {
         dragging ? "border-primary bg-accent" : "border-muted",
         uploading && "opacity-50 pointer-events-none",
       )}
-      onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-      onDragLeave={() => { setDragging(false); }}
+      onDragOver={(e) => {
+        e.preventDefault(); setDragging(true); 
+      }}
+      onDragLeave={() => {
+        setDragging(false); 
+      }}
       onDrop={handleDrop}
-      onClick={() => { inputRef.current?.click(); }}
+      onClick={() => {
+        inputRef.current?.click(); 
+      }}
     >
       <CardContent className="flex flex-col items-center justify-center gap-2 py-8">
         <Upload className="h-8 w-8 text-muted-foreground" />

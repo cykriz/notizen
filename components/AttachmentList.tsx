@@ -14,8 +14,14 @@ interface AttachmentListProps {
 }
 
 function formatSize(bytes: number): string {
-  if (bytes < 1024) {return `${String(bytes)} B`;}
-  if (bytes < 1024 * 1024) {return `${(bytes / 1024).toFixed(1)} KB`;}
+  if (bytes < 1024) {
+    return `${String(bytes)} B`;
+  }
+
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
+
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
@@ -71,7 +77,9 @@ export function AttachmentList({ noteId, attachments, onDeleted }: AttachmentLis
               <Button
                 variant="ghost"
                 size="icon-xs"
-                onClick={() => { void handleDelete(att.id); }}
+                onClick={() => {
+                  void handleDelete(att.id); 
+                }}
                 disabled={deleting === att.id}
               >
                 <Trash2 className="text-destructive" />

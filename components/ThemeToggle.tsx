@@ -18,8 +18,12 @@ export function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const id = requestAnimationFrame(() => { setMounted(true); });
-    return () => { cancelAnimationFrame(id); };
+    const id = requestAnimationFrame(() => {
+      setMounted(true); 
+    });
+    return () => {
+      cancelAnimationFrame(id); 
+    };
   }, []);
 
   if (!mounted) {
@@ -34,7 +38,9 @@ export function ThemeToggle() {
     <Button
       variant="ghost"
       size="icon"
-      onClick={() => { setTheme(next); }}
+      onClick={() => {
+        setTheme(next); 
+      }}
       aria-label={`Switch to ${next} theme`}
     >
       <Icon className="h-4 w-4" />

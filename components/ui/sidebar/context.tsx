@@ -84,7 +84,9 @@ export function SidebarProvider({
     }
 
     window.addEventListener("keydown", handleKeyDown)
-    return () => { window.removeEventListener("keydown", handleKeyDown); }
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown); 
+    }
   }, [toggleSidebar])
 
   const state = open ? "expanded" : "collapsed"

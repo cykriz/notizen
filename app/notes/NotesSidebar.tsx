@@ -76,7 +76,9 @@ export function NotesSidebar({ notes }: NotesSidebarProps) {
               name="sidebar-search"
               placeholder="Search notes…"
               value={search}
-              onChange={(e) => { setSearch(e.target.value); }}
+              onChange={(e) => {
+                setSearch(e.target.value); 
+              }}
               className="pl-8"
             />
           </div>
@@ -116,7 +118,9 @@ export function NotesSidebar({ notes }: NotesSidebarProps) {
                       >
                         <Link
                           href={`/notes/${note.id}`}
-                          onClick={() => { setOpenMobile(false); }}
+                          onClick={() => {
+                            setOpenMobile(false); 
+                          }}
                         >
                           <div className="flex flex-col gap-0.5 leading-tight">
                             <span className="truncate font-medium">
