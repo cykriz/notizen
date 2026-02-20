@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,9 +19,17 @@ interface MarkdownEditorProps {
 
 export function MarkdownEditor({ value, onChange }: MarkdownEditorProps) {
   const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => { setMounted(true); });
+    return () => { cancelAnimationFrame(id); };
+  }, []);
+
+  const colorMode = mounted && resolvedTheme === "dark" ? "dark" : "light";
 
   return (
-    <div data-color-mode={resolvedTheme === "dark" ? "dark" : "light"} className="w-full">
+    <div data-color-mode={colorMode} className="w-full">
       <MDEditor
         value={value}
         onChange={(v) => { onChange(v ?? ""); }}

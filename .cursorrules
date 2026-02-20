@@ -119,7 +119,8 @@ README Synology deploy
 - ✅ EVERY interactive element (button, input, dialog, etc.) MUST use shadcn/ui from `components/ui/`
 - ✅ EVERY color MUST come from CSS variable tokens in `globals.css` — NEVER hardcode hex/rgb/oklch in components
 - ✅ Before writing ANY UI code, check `components/ui/` for an existing shadcn component first
-- ✅ **MANDATORY: After ANY code change, run the linter and fix ALL lint errors before moving on. No exceptions.**
+- ✅ File naming: PascalCase for components/pages (`NoteEditor.tsx`, `NotesList.tsx`), camelCase for lib/utils (`fsNotes.ts`), lowercase for config (`actions.ts`, `providers.tsx`)
+- ✅ **MANDATORY: Run `bun run lint` AND `bunx tsc --noEmit` after EVERY code change AND at the start of every conversation. Fix ALL lint AND type errors before moving on. Zero tolerance — no exceptions, no skipping, no "pre-existing" excuses.**
 
 ## BUN RULES
 
@@ -204,6 +205,6 @@ button, card, input, dialog, textarea, badge
 
 ## STATUS TRACKER
 
-Current Phase: 1
-Next File: lib/fsNotes.ts
-Progress: {{progress | default("0/6")}}
+Current Phase: 4 ✅
+Next Phase: 5 (Docker)
+Progress: 4/6
