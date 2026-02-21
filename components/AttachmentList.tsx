@@ -5,12 +5,14 @@ import { Download, Trash2, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import type { Attachment } from "@/lib/fsNotes";
 
 interface AttachmentListProps {
   noteId: string;
   attachments: Attachment[];
   onDeleted?: (attId: string) => void;
+  className?: string;
 }
 
 function formatSize(bytes: number): string {
@@ -25,7 +27,7 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function AttachmentList({ noteId, attachments, onDeleted }: AttachmentListProps) {
+export function AttachmentList({ noteId, attachments, onDeleted, className }: AttachmentListProps) {
   const [deleting, setDeleting] = useState<string | null>(null);
 
   const handleDelete = async (attId: string) => {
@@ -49,7 +51,7 @@ export function AttachmentList({ noteId, attachments, onDeleted }: AttachmentLis
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className={cn("flex flex-col gap-2", className)}>
       {attachments.map((att) => (
         <Card key={att.id} className="py-3">
           <CardContent className="flex items-center gap-3 px-4 py-0">

@@ -4,6 +4,7 @@ import { useTransition, useSyncExternalStore } from 'react';
 import { Save, Trash2, Loader2, Eye, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -55,65 +56,63 @@ export function NoteHeader({
   );
 
   return (
-    <div className="flex items-center gap-2 bg-background shadow-[0_-28px_50px_40px_var(--header-shadow)] z-10">
-      <Input
-        id="note-title"
-        name="note-title"
-        value={title}
-        onChange={(e) => {
-          onTitleChange(e.target.value);
-          onSavedReset();
-        }}
-        placeholder="Notiz-Titel…"
-        rounded={false}
-        className="flex-1 text-2xl font-semibold h-14 border-none shadow-none focus-visible:ring-0 placeholder:text-2xl"
-      />
-      <Button
-        onClick={onTogglePreview}
-        size="sm"
-        variant="ghost"
-      >
-        {preview === 'edit' ? <Eye /> : <Pencil />}
-      </Button>
-      <Button onClick={onSave} disabled={saving || (!isDirty && !saved)} size="sm" variant="ghost">
-        {saving ? <Loader2 className="animate-spin" /> : <Save />}
-        {saved ? 'Gespeichert!' : 'Speichern'}
-      </Button>
-
-      {mounted ? (
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="ghost" size="sm" disabled={deleting}>
-              {deleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
+    <Card className="shrink-0 py-3 shadow-[0_-28px_50px_40px_var(--header-shadow)] z-10 mx-4 mt-4">
+      <CardContent className="flex items-center gap-3 px-4 py-0">
+        <Input
+          id="note-title"
+          name="note-title"
+          value={title}
+          onChange={(e) => {
+            onTitleChange(e.target.value);
+            onSavedReset();
+          }}
+          placeholder="Notiz-Titel…"
+          rounded={false}
+          className="flex-1 text-2xl font-semibold h-auto border-none shadow-none focus-visible:ring-0 placeholder:text-2xl px-0 bg-transparent"
+        />
+        <div className="flex shrink-0 items-center gap-1">
+          <Button onClick={onTogglePreview} size="icon-xs" variant="ghost">
+            {preview === 'edit' ? <Eye /> : <Pencil />}
+          </Button>
+          <Button onClick={onSave} disabled={saving || (!isDirty && !saved)} size="icon-xs" variant="ghost">
+            {saving ? <Loader2 className="animate-spin" /> : <Save />}
+          </Button>
+          {mounted ? (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon-xs" disabled={deleting}>
+                  {deleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Notiz löschen?</DialogTitle>
+                  <DialogDescription>
+                    &quot;{noteTitle}&quot; und alle Anhänge werden unwiderruflich gelöscht.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant="outline">Abbrechen</Button>
+                  </DialogClose>
+                  <Button variant="destructive" onClick={() => {
+                    startDeleting(async () => {
+                      await deleteNoteAction(noteId); 
+                    }); 
+                  }} disabled={deleting}>
+                    {deleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
+                    Endgültig löschen
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          ) : (
+            <Button variant="ghost" size="icon-xs" disabled>
+              <Trash2 />
             </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Notiz löschen?</DialogTitle>
-              <DialogDescription>
-                &quot;{noteTitle}&quot; und alle Anhänge werden unwiderruflich gelöscht.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">Abbrechen</Button>
-              </DialogClose>
-              <Button variant="destructive" onClick={() => {
-                startDeleting(async () => {
-                  await deleteNoteAction(noteId); 
-                }); 
-              }} disabled={deleting}>
-                {deleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
-                Endgültig löschen
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      ) : (
-        <Button variant="ghost" size="sm" disabled>
-          <Trash2 />
-        </Button>
-      )}
-    </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

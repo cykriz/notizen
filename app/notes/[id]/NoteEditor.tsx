@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useCallback, useRef, useEffect } from 'react';
 import { MarkdownEditor, type MarkdownEditorHandle } from '@/components/MarkdownEditor';
+import { AttachmentList } from '@/components/AttachmentList';
 import { updateNoteAction } from '../actions';
 import type { Note, Attachment } from '@/lib/fsNotes';
 import { NoteHeader } from './NoteHeader';
@@ -14,9 +15,10 @@ interface NoteEditorProps {
 export function NoteEditor({ note }: NoteEditorProps) {
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content);
+  const [attachments, setAttachments] = useState<Attachment[]>(note.attachments);
   const [saving, startSaving] = useTransition();
   const [saved, setSaved] = useState(false);
-  const [preview, setPreview] = useState<'edit' | 'preview'>('edit');
+  const [preview, setPreview] = useState<'edit' | 'preview'>('preview');
   const savedTimer = useRef<ReturnType<typeof setTimeout>>(null);
 
   const isDirty = title !== note.title || content !== note.content;
@@ -85,8 +87,13 @@ export function NoteEditor({ note }: NoteEditorProps) {
     };
   }, [title, content, note.id, note.title, note.content, showSavedFeedback]);
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const handleUploaded = useCallback((_att: Attachment) => {}, []);
+  const handleUploaded = useCallback((att: Attachment) => {
+    setAttachments((prev) => [...prev, att]);
+  }, []);
+
+  const handleAttachmentDeleted = useCallback((attId: string) => {
+    setAttachments((prev) => prev.filter((a) => a.id !== attId));
+  }, []);
 
   const editorRef = useRef<MarkdownEditorHandle>(null);
 
@@ -95,28 +102,28 @@ export function NoteEditor({ note }: NoteEditorProps) {
   }, []);
 
   return (
-    <div className="flex flex-1 min-h-0 overflow-hidden">
-      <aside className="hidden lg:block w-56 shrink-0 overflow-hidden">
-        <NoteOutline content={content} onHeadingClick={handleHeadingClick} />
-      </aside>
-      <div className="flex flex-col w-full min-h-0">
-        <NoteHeader
-          noteId={note.id}
-          title={title}
-          onTitleChange={setTitle}
-          noteTitle={note.title}
-          preview={preview}
-          onTogglePreview={() => {
-            setPreview((p) => (p === 'edit' ? 'preview' : 'edit'));
-          }}
-          onSave={handleSave}
-          saving={saving}
-          saved={saved}
-          isDirty={isDirty}
-          onSavedReset={() => {
-            setSaved(false);
-          }}
-        />
+    <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+      <NoteHeader
+        noteId={note.id}
+        title={title}
+        onTitleChange={setTitle}
+        noteTitle={note.title}
+        preview={preview}
+        onTogglePreview={() => {
+          setPreview((p) => (p === 'edit' ? 'preview' : 'edit'));
+        }}
+        onSave={handleSave}
+        saving={saving}
+        saved={saved}
+        isDirty={isDirty}
+        onSavedReset={() => {
+          setSaved(false);
+        }}
+      />
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        <aside className="hidden lg:block w-56 shrink-0 overflow-hidden">
+          <NoteOutline content={content} onHeadingClick={handleHeadingClick} />
+        </aside>
         <MarkdownEditor
           ref={editorRef}
           value={content}
@@ -129,6 +136,14 @@ export function NoteEditor({ note }: NoteEditorProps) {
           preview={preview}
         />
       </div>
+      {attachments.length > 0 && (
+        <AttachmentList
+          noteId={note.id}
+          attachments={attachments}
+          onDeleted={handleAttachmentDeleted}
+          className="shrink-0 max-h-48 overflow-y-auto mx-4 mb-4 z-10 shadow-[0_28px_50px_40px_var(--header-shadow)]"
+        />
+      )}
     </div>
   );
 }
