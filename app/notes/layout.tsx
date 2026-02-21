@@ -23,7 +23,7 @@ export default async function NotesLayout({
           <Separator orientation="vertical" className="h-4" />
           <span className="text-sm font-medium">Notizen</span>
         </header>
-        <div className="flex flex-1 flex-col overflow-auto">{children}</div>
+        <div className="flex flex-1 flex-col min-h-0 overflow-auto">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

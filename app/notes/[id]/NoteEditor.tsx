@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useTransition, useCallback, useRef, useEffect } from 'react';
-import { MarkdownEditor } from '@/components/MarkdownEditor';
+import { MarkdownEditor, type MarkdownEditorHandle } from '@/components/MarkdownEditor';
 import { updateNoteAction } from '../actions';
 import type { Note, Attachment } from '@/lib/fsNotes';
 import { NoteHeader } from './NoteHeader';
+import { NoteOutline } from './NoteOutline';
 
 interface NoteEditorProps {
   note: Note;
@@ -87,28 +88,37 @@ export function NoteEditor({ note }: NoteEditorProps) {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   const handleUploaded = useCallback((_att: Attachment) => {}, []);
 
-  return (
-    <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-      <NoteHeader
-        noteId={note.id}
-        title={title}
-        onTitleChange={setTitle}
-        noteTitle={note.title}
-        preview={preview}
-        onTogglePreview={() => {
-          setPreview((p) => (p === 'edit' ? 'preview' : 'edit')); 
-        }}
-        onSave={handleSave}
-        saving={saving}
-        saved={saved}
-        isDirty={isDirty}
-        onSavedReset={() => {
-          setSaved(false); 
-        }}
-      />
+  const editorRef = useRef<MarkdownEditorHandle>(null);
 
-      <div className="flex-1 min-h-0">
+  const handleHeadingClick = useCallback((line: number) => {
+    editorRef.current?.scrollToLine(line);
+  }, []);
+
+  return (
+    <div className="flex flex-1 min-h-0 overflow-hidden">
+      <aside className="hidden lg:block w-56 shrink-0 overflow-hidden">
+        <NoteOutline content={content} onHeadingClick={handleHeadingClick} />
+      </aside>
+      <div className="flex flex-col w-full min-h-0">
+        <NoteHeader
+          noteId={note.id}
+          title={title}
+          onTitleChange={setTitle}
+          noteTitle={note.title}
+          preview={preview}
+          onTogglePreview={() => {
+            setPreview((p) => (p === 'edit' ? 'preview' : 'edit'));
+          }}
+          onSave={handleSave}
+          saving={saving}
+          saved={saved}
+          isDirty={isDirty}
+          onSavedReset={() => {
+            setSaved(false);
+          }}
+        />
         <MarkdownEditor
+          ref={editorRef}
           value={content}
           onChange={(v) => {
             setContent(v);

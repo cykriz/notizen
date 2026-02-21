@@ -27,12 +27,18 @@ export function ThemeToggle() {
   }, []);
 
   if (!mounted) {
-    return <Button variant="ghost" size="icon" aria-label="Toggle theme" disabled />;
+    return <Button variant="ghost" size="icon" aria-label="Design wechseln" disabled />;
   }
 
   const current = (theme ?? "system") as keyof typeof icons;
   const Icon = icons[current];
   const next = cycle[(cycle.indexOf(current) + 1) % cycle.length];
+
+  const themeLabels: Record<string, string> = {
+    light: 'Hell',
+    dark: 'Dunkel',
+    system: 'System',
+  };
 
   return (
     <Button
@@ -41,7 +47,7 @@ export function ThemeToggle() {
       onClick={() => {
         setTheme(next); 
       }}
-      aria-label={`Switch to ${next} theme`}
+      aria-label={`Zu ${themeLabels[next] ?? next} wechseln`}
     >
       <Icon className="h-4 w-4" />
     </Button>

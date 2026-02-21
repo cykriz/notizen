@@ -64,7 +64,7 @@ export function NoteHeader({
           onTitleChange(e.target.value);
           onSavedReset();
         }}
-        placeholder="Note title…"
+        placeholder="Notiz-Titel…"
         rounded={false}
         className="flex-1 text-2xl font-semibold h-14 border-none shadow-none focus-visible:ring-0 placeholder:text-2xl"
       />
@@ -77,7 +77,7 @@ export function NoteHeader({
       </Button>
       <Button onClick={onSave} disabled={saving || (!isDirty && !saved)} size="sm" variant="ghost">
         {saving ? <Loader2 className="animate-spin" /> : <Save />}
-        {saved ? 'Saved!' : 'Save'}
+        {saved ? 'Gespeichert!' : 'Speichern'}
       </Button>
 
       {mounted ? (
@@ -89,14 +89,14 @@ export function NoteHeader({
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Delete note?</DialogTitle>
+              <DialogTitle>Notiz löschen?</DialogTitle>
               <DialogDescription>
-                This will permanently delete &quot;{noteTitle}&quot; and all its attachments.
+                &quot;{noteTitle}&quot; und alle Anhänge werden unwiderruflich gelöscht.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline">Abbrechen</Button>
               </DialogClose>
               <Button variant="destructive" onClick={() => {
                 startDeleting(async () => {
@@ -104,7 +104,7 @@ export function NoteHeader({
                 }); 
               }} disabled={deleting}>
                 {deleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
-                Delete forever
+                Endgültig löschen
               </Button>
             </DialogFooter>
           </DialogContent>

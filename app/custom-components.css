@@ -24,7 +24,8 @@
 }
 
 [data-color-mode] .w-md-editor-text {
-  padding: 24px !important;
+  /* Center content in a 42rem column; falls back to 24px on narrow screens */
+  padding: 24px max(24px, calc((100% - 42rem) / 2)) !important;
   font-size: 18px !important;
   line-height: 32px !important;
   min-height: 100% !important;
@@ -44,7 +45,8 @@
 }
 
 [data-color-mode] .w-md-editor-preview {
-  padding: 24px !important;
+  /* Center content in a 42rem column; falls back to 24px on narrow screens */
+  padding: 24px max(24px, calc((100% - 42rem) / 2)) !important;
 }
 
 [data-color-mode] .w-md-editor-text-pre .token.title {

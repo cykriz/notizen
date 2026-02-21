@@ -90,6 +90,10 @@ button, card, input, dialog, textarea, badge, sidebar, separator, sheet, tooltip
 
 ## Rules
 
+### Language
+
+- All user-facing text (labels, buttons, placeholders, messages, tooltips, empty states) must be in German
+
 ### General
 
 - Max 200 lines per file — split into smaller modules if exceeded

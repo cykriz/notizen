@@ -44,7 +44,7 @@ export function AttachmentList({ noteId, attachments, onDeleted }: AttachmentLis
 
   if (attachments.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-2">No attachments</p>
+      <p className="text-sm text-muted-foreground py-2">Keine Anhänge</p>
     );
   }
 

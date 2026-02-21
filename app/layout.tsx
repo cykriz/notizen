@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Notizen",
-  description: "Markdown notes app",
+  description: "Markdown-Notizen-App",
 };
 
 export default function RootLayout({

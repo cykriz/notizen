@@ -64,7 +64,7 @@ export function NotesSidebar({ notes }: NotesSidebarProps) {
               disabled={pending}
             >
               <Plus />
-              <span className="sr-only">New Note</span>
+              <span className="sr-only">Neue Notiz</span>
             </Button>
           </div>
         </div>
@@ -74,7 +74,7 @@ export function NotesSidebar({ notes }: NotesSidebarProps) {
             <SidebarInput
               id="sidebar-search"
               name="sidebar-search"
-              placeholder="Search notes…"
+              placeholder="Notizen durchsuchen…"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value); 
@@ -92,7 +92,7 @@ export function NotesSidebar({ notes }: NotesSidebarProps) {
               <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
                 <FileText className="h-8 w-8" />
                 <p className="text-sm">
-                  {notes.length === 0 ? "No notes yet" : "No matching notes"}
+                  {notes.length === 0 ? "Noch keine Notizen" : "Keine passenden Notizen"}
                 </p>
                 {notes.length === 0 && (
                   <Button
@@ -101,7 +101,7 @@ export function NotesSidebar({ notes }: NotesSidebarProps) {
                     variant="secondary"
                     size="sm"
                   >
-                    <Plus /> Create first note
+                    <Plus /> Erste Notiz erstellen
                   </Button>
                 )}
               </div>

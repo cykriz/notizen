@@ -83,10 +83,10 @@ export function FileUpload({ noteId, onUploaded }: FileUploadProps) {
       <CardContent className="flex flex-col items-center justify-center gap-2 py-8">
         <Upload className="h-8 w-8 text-muted-foreground" />
         <p className="text-sm text-muted-foreground">
-          {uploading ? "Uploading…" : "Drag & drop files or click to browse"}
+          {uploading ? "Wird hochgeladen…" : "Dateien hierher ziehen oder klicken"}
         </p>
         <Button variant="secondary" size="sm" type="button" disabled={uploading}>
-          Choose Files
+          Dateien auswählen
         </Button>
         <input
           ref={inputRef}
