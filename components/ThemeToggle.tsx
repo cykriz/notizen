@@ -13,7 +13,11 @@ const icons = {
 
 const cycle = ["light", "dark", "system"] as const;
 
-export function ThemeToggle() {
+interface ThemeToggleProps {
+  size?: "icon" | "icon-xs" | "icon-sm" | "icon-lg";
+}
+
+export function ThemeToggle({ size = "icon" }: ThemeToggleProps) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -27,7 +31,7 @@ export function ThemeToggle() {
   }, []);
 
   if (!mounted) {
-    return <Button variant="ghost" size="icon" aria-label="Design wechseln" disabled />;
+    return <Button variant="ghost" size={size} aria-label="Design wechseln" disabled />;
   }
 
   const current = (theme ?? "system") as keyof typeof icons;
@@ -43,13 +47,13 @@ export function ThemeToggle() {
   return (
     <Button
       variant="ghost"
-      size="icon"
+      size={size}
       onClick={() => {
         setTheme(next); 
       }}
       aria-label={`Zu ${themeLabels[next] ?? next} wechseln`}
     >
-      <Icon className="h-4 w-4" />
+      <Icon />
     </Button>
   );
 }
