@@ -1,7 +1,8 @@
 'use client';
 
 import { useTransition, useSyncExternalStore } from 'react';
-import { Save, Trash2, Loader2, Eye, Pencil } from 'lucide-react';
+import { Save, Trash2, Loader2, Eye, Pencil, List } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -33,6 +34,8 @@ interface NoteHeaderProps {
   saved: boolean;
   isDirty: boolean;
   onSavedReset: () => void;
+  outlineVisible: boolean;
+  onToggleOutline: () => void;
 }
 
 export function NoteHeader({
@@ -47,6 +50,8 @@ export function NoteHeader({
   saved,
   isDirty,
   onSavedReset,
+  outlineVisible,
+  onToggleOutline,
 }: NoteHeaderProps) {
   const [deleting, startDeleting] = useTransition();
   const mounted = useSyncExternalStore(
@@ -71,6 +76,14 @@ export function NoteHeader({
           className="flex-1 text-2xl font-semibold h-auto border-none shadow-none focus-visible:ring-0 placeholder:text-2xl px-0 bg-transparent"
         />
         <div className="flex shrink-0 items-center gap-1">
+          <Button
+            onClick={onToggleOutline}
+            size="icon-xs"
+            variant="ghost"
+            className={cn('hidden lg:inline-flex', outlineVisible && 'bg-accent')}
+          >
+            <List />
+          </Button>
           <Button onClick={onTogglePreview} size="icon-xs" variant="ghost">
             {preview === 'edit' ? <Eye /> : <Pencil />}
           </Button>

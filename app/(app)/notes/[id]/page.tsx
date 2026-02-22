@@ -14,5 +14,5 @@ export default async function NoteDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  return <NoteEditor note={note} />;
+  return <NoteEditor key={note.id} note={note} />;
 }

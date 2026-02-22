@@ -38,6 +38,14 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-quadrant-do: var(--quadrant-do);
+  --color-quadrant-do-foreground: var(--quadrant-do-foreground);
+  --color-quadrant-schedule: var(--quadrant-schedule);
+  --color-quadrant-schedule-foreground: var(--quadrant-schedule-foreground);
+  --color-quadrant-delegate: var(--quadrant-delegate);
+  --color-quadrant-delegate-foreground: var(--quadrant-delegate-foreground);
+  --color-quadrant-eliminate: var(--quadrant-eliminate);
+  --color-quadrant-eliminate-foreground: var(--quadrant-eliminate-foreground);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -82,6 +90,14 @@
   --sidebar-ring: oklch(0.708 0 0);
   --header-shadow: oklch(0.92 0 0 / 90%);
   --input-dark-bg: transparent;
+  --quadrant-do: oklch(0.95 0.04 25);
+  --quadrant-do-foreground: oklch(0.45 0.18 25);
+  --quadrant-schedule: oklch(0.95 0.03 250);
+  --quadrant-schedule-foreground: oklch(0.45 0.15 250);
+  --quadrant-delegate: oklch(0.95 0.04 85);
+  --quadrant-delegate-foreground: oklch(0.45 0.14 85);
+  --quadrant-eliminate: oklch(0.96 0 0);
+  --quadrant-eliminate-foreground: oklch(0.5 0 0);
 }
 
 .dark {
@@ -118,6 +134,14 @@
   --sidebar-ring: oklch(0.556 0 0);
   --header-shadow: oklch(0 0 0 / 100%);
   --input-dark-bg: oklch(1 0 0 / 4.5%);
+  --quadrant-do: oklch(0.23 0.04 20);
+  --quadrant-do-foreground: oklch(0.78 0.12 20);
+  --quadrant-schedule: oklch(0.23 0.035 255);
+  --quadrant-schedule-foreground: oklch(0.78 0.1 255);
+  --quadrant-delegate: oklch(0.24 0.04 80);
+  --quadrant-delegate-foreground: oklch(0.8 0.1 80);
+  --quadrant-eliminate: oklch(0.21 0 0);
+  --quadrant-eliminate-foreground: oklch(0.6 0 0);
 }
 
 @layer base {

@@ -18,7 +18,8 @@ export function NoteEditor({ note }: NoteEditorProps) {
   const [attachments, setAttachments] = useState<Attachment[]>(note.attachments);
   const [saving, startSaving] = useTransition();
   const [saved, setSaved] = useState(false);
-  const [preview, setPreview] = useState<'edit' | 'preview'>('preview');
+  const [preview, setPreview] = useState<'edit' | 'preview'>(note.content.trim() === '' ? 'edit' : 'preview');
+  const [outlineVisible, setOutlineVisible] = useState(() => /^#{1,6}\s+.+$/m.test(note.content));
   const savedTimer = useRef<ReturnType<typeof setTimeout>>(null);
 
   const isDirty = title !== note.title || content !== note.content;
@@ -87,6 +88,20 @@ export function NoteEditor({ note }: NoteEditorProps) {
     };
   }, [title, content, note.id, note.title, note.content, showSavedFeedback]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "o" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setPreview((p) => (p === "edit" ? "preview" : "edit"));
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
   const handleUploaded = useCallback((att: Attachment) => {
     setAttachments((prev) => [...prev, att]);
   }, []);
@@ -119,11 +134,17 @@ export function NoteEditor({ note }: NoteEditorProps) {
         onSavedReset={() => {
           setSaved(false);
         }}
+        outlineVisible={outlineVisible}
+        onToggleOutline={() => {
+          setOutlineVisible((v) => !v);
+        }}
       />
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        <aside className="hidden lg:block w-56 shrink-0 overflow-hidden">
-          <NoteOutline content={content} onHeadingClick={handleHeadingClick} />
-        </aside>
+        {outlineVisible && (
+          <aside className="hidden lg:block w-56 shrink-0 overflow-hidden">
+            <NoteOutline content={content} onHeadingClick={handleHeadingClick} />
+          </aside>
+        )}
         <MarkdownEditor
           ref={editorRef}
           value={content}

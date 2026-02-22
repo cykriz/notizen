@@ -54,13 +54,13 @@ export function NoteOutline({ content, onHeadingClick }: NoteOutlineProps) {
   return (
     <nav className="py-4 overflow-y-auto h-full">
       <p className="px-4 mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">Gliederung</p>
-      <ul>
+      <ul className="px-1">
         {headings.map((heading, idx) => (
           <li key={`${String(heading.line)}-${String(idx)}`}>
             <Button
               variant="ghost"
               className={cn(
-                'w-full min-w-0 justify-start rounded-none h-auto px-0 pr-4 py-0.5 text-sm leading-10 text-muted-foreground hover:text-foreground',
+                'w-full min-w-0 justify-start rounded-md h-auto px-0 pr-4 py-0.5 text-sm leading-10 text-muted-foreground hover:text-foreground cursor-pointer',
                 LEVEL_INDENT[heading.level] ?? 'pl-4',
                 { 'font-medium text-foreground': heading.level === 1 },
               )}
