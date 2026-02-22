@@ -26,6 +26,23 @@ interface Attachment {
   size: number;
   relativePath: string;
 }
+
+const QUADRANT_KEYS = ["do", "schedule", "delegate", "eliminate"] as const;
+type TodoQuadrant = (typeof QUADRANT_KEYS)[number];
+
+interface QuadrantMeta { key: TodoQuadrant; label: string; description: string; }
+const QUADRANT_META: readonly QuadrantMeta[];  // single source of truth for labels/descriptions
+
+interface Todo {
+  id: string;
+  title: string;
+  description?: string;
+  dueDate?: string;
+  quadrant: TodoQuadrant;
+  completed: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 ```
 
 ### Filesystem Layout
@@ -33,6 +50,7 @@ interface Attachment {
 - Notes stored at `NOTES_ROOT/notes/YYYY-MM-DD-slug-uuid/`
 - Each note folder contains `note.md` + `attachments/`
 - Slug format: `${date}-${slugifiedTitle}-${uuid}`
+- Todos stored at `NOTES_ROOT/todos.json` (single JSON array)
 - `NOTES_ROOT` configured via env var
 
 ### Core Functions (`lib/fsNotes.ts`)
@@ -48,6 +66,16 @@ saveAttachment(noteId: string, file: File): Promise<Attachment>
 deleteAttachment(noteId: string, attId: string): Promise<void>
 ```
 
+### Core Functions (`lib/fsTodos.ts`)
+
+```
+listTodos(): Promise<Todo[]>
+getTodo(id: string): Promise<Todo | null>
+createTodo(input: {title, quadrant, description?, dueDate?}): Promise<Todo>
+updateTodo(id: string, input: Partial<...>): Promise<Todo>
+deleteTodo(id: string): Promise<void>
+```
+
 ### API Routes
 
 ```
@@ -56,6 +84,8 @@ app/api/notes/[id]/route.ts         → GET, PUT, DELETE
 app/api/notes/[id]/attachments/route.ts        → GET, POST
 app/api/notes/[id]/attachments/[attId]/route.ts → DELETE
 app/api/notes/[id]/attachments/[attId]/download/route.ts → GET
+app/api/todos/route.ts              → GET, POST
+app/api/todos/[id]/route.ts         → GET, PUT, DELETE
 ```
 
 - NextRequest/NextResponse
@@ -70,23 +100,32 @@ app/api/notes/[id]/attachments/[attId]/download/route.ts → GET
 | AttachmentList | `components/AttachmentList.tsx` | Card, Badge, Button |
 | FileUpload | `components/FileUpload.tsx` | Drag & drop, Button, Card |
 | ThemeToggle | `components/ThemeToggle.tsx` | `"use client"`, Button + lucide icons |
-| NotesSidebar | `app/notes/NotesSidebar.tsx` | `"use client"`, sidebar with search + note list |
+| AppSidebar | `app/(app)/AppSidebar.tsx` | `"use client"`, tabs for Notizen/Aufgaben |
+| NotesSidebarContent | `app/(app)/NotesSidebarContent.tsx` | `"use client"`, search + note list |
+| TodosSidebarContent | `app/(app)/TodosSidebarContent.tsx` | `"use client"`, quadrant summary |
+| EisenhowerMatrix | `app/(app)/todos/EisenhowerMatrix.tsx` | `"use client"`, 2x2 grid |
+| QuadrantCard | `app/(app)/todos/QuadrantCard.tsx` | `"use client"`, single quadrant |
+| TodoCard | `app/(app)/todos/TodoCard.tsx` | `"use client"`, Checkbox + title |
+| TodoDialog | `app/(app)/todos/TodoDialog.tsx` | `"use client"`, create/edit Dialog |
+| CommandPalette | `app/(app)/CommandPalette.tsx` | `"use client"`, Cmd+P search overlay |
 
 ### Layout
 
-- `app/notes/layout.tsx` — Server component: fetches notes, wraps pages in `SidebarProvider` + `SidebarInset`
+- `app/(app)/layout.tsx` — Server component: fetches notes + todos, wraps pages in `SidebarProvider` + `AppSidebar` + `SidebarInset`
 - Mobile header with `SidebarTrigger` shown via `md:hidden`
+- Route group `(app)` contains both `notes/` and `todos/`
 
 ### Pages
 
 ```
-app/notes/page.tsx       → Empty state (no note selected)
-app/notes/[id]/page.tsx  → Edit + upload
+app/(app)/notes/page.tsx       → Empty state (no note selected)
+app/(app)/notes/[id]/page.tsx  → Edit + upload
+app/(app)/todos/page.tsx       → Eisenhower Matrix (2x2 grid)
 ```
 
 ### Installed shadcn/ui Components
 
-button, card, input, dialog, textarea, badge, sidebar, separator, sheet, tooltip, skeleton
+button, card, input, dialog, textarea, badge, sidebar, separator, sheet, tooltip, skeleton, checkbox, select, command
 
 ## Rules
 
@@ -121,10 +160,10 @@ button, card, input, dialog, textarea, badge, sidebar, separator, sheet, tooltip
 - ThemeProvider in `app/providers.tsx`, wraps app in `app/layout.tsx`
 - `cn()` helper in `lib/utils.ts` for conditional class merging
 
-**Color tokens:** `background`, `foreground`, `card`, `card-foreground`, `popover`, `popover-foreground`, `primary`, `primary-foreground`, `secondary`, `secondary-foreground`, `muted`, `muted-foreground`, `accent`, `accent-foreground`, `destructive`, `destructive-foreground`, `border`, `input`, `ring`, `--radius`
+**Color tokens:** `background`, `foreground`, `card`, `card-foreground`, `popover`, `popover-foreground`, `primary`, `primary-foreground`, `secondary`, `secondary-foreground`, `muted`, `muted-foreground`, `accent`, `accent-foreground`, `destructive`, `destructive-foreground`, `border`, `input`, `ring`, `--radius`, `quadrant-do`, `quadrant-do-foreground`, `quadrant-schedule`, `quadrant-schedule-foreground`, `quadrant-delegate`, `quadrant-delegate-foreground`, `quadrant-eliminate`, `quadrant-eliminate-foreground`
 
 **Component rules:**
-- Use shadcn/ui from `components/ui/` for all interactive elements (Button, Card, Input, Dialog, Textarea, Badge)
+- Use shadcn/ui from `components/ui/` for all interactive elements (Button, Card, Input, Dialog, Textarea, Badge, Checkbox, Select)
 - Import with `@/components/ui/...`
 - Use `cn()` from `@/lib/utils` for conditional classes
 - Prefer CVA variants over inline Tailwind overrides when a component needs multiple visual styles
@@ -137,7 +176,7 @@ button, card, input, dialog, textarea, badge, sidebar, separator, sheet, tooltip
 ### Approved Packages
 
 ```
-@uiw/react-md-editor uuid zod gray-matter
+@uiw/react-md-editor uuid zod gray-matter cmdk
 shadcn/ui (via CLI)
 next-themes radix-ui lucide-react
 class-variance-authority clsx tailwind-merge tw-animate-css
