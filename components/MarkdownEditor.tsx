@@ -160,6 +160,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         height="100%"
         preview={preview}
         hideToolbar
+        textareaProps={{ placeholder: 'Schreibe hier deine Notiz …' }}
       />
       {dragging && (
         <div className="absolute inset-0 flex items-center justify-center bg-accent/80 pointer-events-none z-10">

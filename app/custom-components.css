@@ -26,12 +26,18 @@
 [data-color-mode] .w-md-editor-text {
   /* Center content in a 42rem column; falls back to 24px on narrow screens */
   padding: 24px max(24px, calc((100% - 42rem) / 2)) !important;
+  font-family: var(--font-sans) !important;
   font-size: 18px !important;
   line-height: 32px !important;
+  letter-spacing: normal !important;
   min-height: 100% !important;
 }
 
 [data-color-mode] .w-md-editor-text-input {
+  font-family: var(--font-sans) !important;
+  font-size: 18px !important;
+  line-height: 32px !important;
+  letter-spacing: normal !important;
   min-height: 100% !important;
 }
 
@@ -39,9 +45,12 @@
   min-height: 100% !important;
 }
 
+[data-color-mode] .w-md-editor-text-pre,
 [data-color-mode] .w-md-editor-text-pre > code {
+  font-family: var(--font-sans) !important;
   font-size: 18px !important;
   line-height: 32px !important;
+  letter-spacing: normal !important;
 }
 
 [data-color-mode] .w-md-editor-preview {
@@ -49,8 +58,14 @@
   padding: 24px max(24px, calc((100% - 42rem) / 2)) !important;
 }
 
+[data-color-mode] .w-md-editor-text-pre .token {
+  font-weight: inherit !important;
+  font-style: inherit !important;
+  font-size: inherit !important;
+}
+
 [data-color-mode] .w-md-editor-text-pre .token.title {
-  font-weight: bold !important;
+  color: var(--primary) !important;
 }
 
 [data-color-mode] .wmde-markdown {
