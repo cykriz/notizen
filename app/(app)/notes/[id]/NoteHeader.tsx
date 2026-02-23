@@ -91,7 +91,7 @@ export function NoteHeader({
             onClick={onToggleOutline}
             size="icon-xs"
             variant="ghost"
-            className={cn('hidden lg:inline-flex', { 'bg-accent': outlineVisible })}
+            className={cn('hidden md:inline-flex', { 'bg-accent': outlineVisible })}
           >
             <List />
           </Button>

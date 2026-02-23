@@ -159,12 +159,12 @@ export function NoteEditor({ note, allTags }: NoteEditorProps) {
         pinned={pinned}
         onTogglePin={handleTogglePin}
       >
-        <div className="lg:hidden border-t border-border">
+        <div className="md:hidden border-t border-border">
           <TagInput tags={tags} allTags={allTags} onChange={handleTagsChange} />
         </div>
       </NoteHeader>
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        <aside className="hidden lg:flex flex-col w-56 shrink-0 overflow-hidden">
+        <aside className="hidden md:flex flex-col w-56 shrink-0 overflow-hidden">
           {outlineVisible && <NoteOutline content={content} onHeadingClick={handleHeadingClick} />}
           <div className="mt-auto">
             <TagInput tags={tags} allTags={allTags} onChange={handleTagsChange} />
