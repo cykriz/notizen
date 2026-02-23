@@ -1,18 +1,11 @@
-"use client";
+'use client';
 
-import { useState, useRef, useMemo } from "react";
-import { X, Tag } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Command,
-  CommandList,
-  CommandGroup,
-  CommandItem,
-  CommandEmpty,
-} from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
+import { Tag } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
+import { TagBadge } from './TagBadge';
 
 interface TagInputProps {
   tags: string[];
@@ -22,29 +15,31 @@ interface TagInputProps {
 }
 
 export function TagInput({ tags, allTags, onChange, className }: TagInputProps) {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const tagsLower = useMemo(() => tags.map((t) => t.toLowerCase()), [tags]);
+
   const suggestions = useMemo(() => {
-    if (query === "") {
-      return allTags.filter((t) => !tags.includes(t));
+    const isKnown = (t: string) => tagsLower.includes(t.toLowerCase());
+
+    if (query === '') {
+      return allTags.filter((t) => !isKnown(t));
     }
 
     const lower = query.toLowerCase();
-    return allTags.filter(
-      (t) => t.toLowerCase().includes(lower) && !tags.includes(t),
-    );
-  }, [query, allTags, tags]);
+    return allTags.filter((t) => t.toLowerCase().includes(lower) && !isKnown(t));
+  }, [query, allTags, tagsLower]);
 
   const addTag = (tag: string) => {
-    const trimmed = tag.trim().toLowerCase().replace(/\/+$/, "");
-    if (trimmed === "" || tags.includes(trimmed)) {
+    const trimmed = tag.trim().toLowerCase().replace(/\/+$/, '');
+    if (trimmed === '' || tags.some((t) => t.toLowerCase() === trimmed)) {
       return;
     }
 
     onChange([...tags, trimmed]);
-    setQuery("");
+    setQuery('');
     setOpen(false);
     inputRef.current?.focus();
   };
@@ -53,38 +48,49 @@ export function TagInput({ tags, allTags, onChange, className }: TagInputProps) 
     onChange(tags.filter((t) => t !== tag));
   };
 
+  const replaceTag = (index: number, value: string) => {
+    const trimmed = value.trim().toLowerCase().replace(/\/+$/, '');
+    const original = tags[index];
+    if (trimmed === '' || (trimmed !== original.toLowerCase() && tags.some((t) => t.toLowerCase() === trimmed))) {
+      return;
+    }
+
+    if (trimmed !== original) {
+      const next = [...tags];
+      next[index] = trimmed;
+      onChange(next);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && query.trim() !== "") {
+    if (e.key === 'Enter' && query.trim() !== '') {
       e.preventDefault();
       addTag(query);
     }
 
-    if (e.key === "Backspace" && query === "" && tags.length > 0) {
+    if (e.key === 'Backspace' && query === '' && tags.length > 0) {
       removeTag(tags[tags.length - 1]);
     }
 
-    if (e.key === "Escape") {
+    if (e.key === 'Escape') {
       setOpen(false);
     }
   };
 
   return (
-    <div className={cn("relative flex flex-wrap items-center gap-1.5 px-4 py-2", className)}>
+    <div className={cn('relative flex flex-wrap items-center gap-1.5 px-4 py-2', className)}>
       <Tag className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-      {tags.map((tag) => (
-        <Badge key={tag} variant="secondary" className="gap-1 text-xs">
-          {tag}
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            onClick={() => {
-              removeTag(tag); 
-            }}
-            className="ml-0.5 h-4 w-4 rounded-full"
-          >
-            <X className="h-3 w-3" />
-          </Button>
-        </Badge>
+      {tags.map((tag, i) => (
+        <TagBadge
+          key={`${i}-${tag}`}
+          tag={tag}
+          onReplace={(v) => {
+            replaceTag(i, v);
+          }}
+          onRemove={() => {
+            removeTag(tag);
+          }}
+        />
       ))}
       <div className="relative flex-1 min-w-[120px]">
         <Input
@@ -95,11 +101,11 @@ export function TagInput({ tags, allTags, onChange, className }: TagInputProps) 
             setOpen(true);
           }}
           onFocus={() => {
-            setOpen(true); 
+            setOpen(true);
           }}
           onBlur={() => {
             setTimeout(() => {
-              setOpen(false); 
+              setOpen(false);
             }, 150);
           }}
           onKeyDown={handleKeyDown}
@@ -117,7 +123,7 @@ export function TagInput({ tags, allTags, onChange, className }: TagInputProps) 
                       key={tag}
                       value={tag}
                       onSelect={() => {
-                        addTag(tag); 
+                        addTag(tag);
                       }}
                     >
                       <Tag className="h-3 w-3" />
