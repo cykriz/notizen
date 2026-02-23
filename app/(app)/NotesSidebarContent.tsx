@@ -1,25 +1,19 @@
-"use client";
+'use client';
 
-import { useTransition, useState, useMemo } from "react";
-import { usePathname } from "next/navigation";
-import { Plus, FileText, Pin, Tags, List } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import {
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarGroupContent,
-  SidebarMenu,
-  useSidebar,
-} from "@/components/ui/sidebar";
-import { createNoteAction } from "./notes/actions";
-import { TagBrowser } from "./TagBrowser";
-import { NoteListItem } from "./NoteListItem";
-import type { NoteSummary } from "@/lib/types";
+import { useTransition, useState, useMemo } from 'react';
+import { usePathname } from 'next/navigation';
+import { Plus, FileText, Pin, Tags, List } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenu, useSidebar } from '@/components/ui/sidebar';
+import { createNoteAction } from './notes/actions';
+import { TagBrowser } from './TagBrowser';
+import { NoteListItem } from './NoteListItem';
+import type { NoteSummary } from '@/lib/types';
 
-type SidebarView = "tags" | "all";
-const STORAGE_KEY = "notes-sidebar-view";
+type SidebarView = 'tags' | 'all';
+const STORAGE_KEY = 'notes-sidebar-view';
 
 interface NotesSidebarContentProps {
   notes: NoteSummary[];
@@ -30,12 +24,12 @@ export function NotesSidebarContent({ notes }: NotesSidebarContentProps) {
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
   const [view, setView] = useState<SidebarView>(() => {
-    if (typeof window === "undefined") {
-      return "tags";
+    if (typeof window === 'undefined') {
+      return 'tags';
     }
 
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved === "tags" || saved === "all" ? saved : "tags";
+    return saved === 'tags' || saved === 'all' ? saved : 'tags';
   });
 
   const toggleView = (v: SidebarView) => {
@@ -45,26 +39,20 @@ export function NotesSidebarContent({ notes }: NotesSidebarContentProps) {
 
   const handleCreate = () => {
     startTransition(async () => {
-      await createNoteAction(); 
+      await createNoteAction();
     });
   };
 
   const onNavigate = () => {
-    setOpenMobile(false); 
+    setOpenMobile(false);
   };
 
   const pinnedNotes = useMemo(() => notes.filter((n) => n.pinned), [notes]);
 
   return (
     <>
-      <div className="flex items-center gap-1 px-4 pb-2">
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={handleCreate}
-          disabled={pending}
-          className="flex-1 justify-start"
-        >
+      <div className="flex items-center gap-1 px-4 pt-2">
+        <Button size="sm" variant="ghost" onClick={handleCreate} disabled={pending} className="flex-1 justify-start">
           <Plus />
           Neue Notiz
         </Button>
@@ -72,9 +60,9 @@ export function NotesSidebarContent({ notes }: NotesSidebarContentProps) {
           size="icon-xs"
           variant="ghost"
           onClick={() => {
-            toggleView("tags"); 
+            toggleView('tags');
           }}
-          className={cn({ "bg-accent": view === "tags" })}
+          className={cn({ 'bg-accent': view === 'tags' })}
         >
           <Tags />
         </Button>
@@ -82,9 +70,9 @@ export function NotesSidebarContent({ notes }: NotesSidebarContentProps) {
           size="icon-xs"
           variant="ghost"
           onClick={() => {
-            toggleView("all"); 
+            toggleView('all');
           }}
-          className={cn({ "bg-accent": view === "all" })}
+          className={cn({ 'bg-accent': view === 'all' })}
         >
           <List />
         </Button>
@@ -125,8 +113,8 @@ export function NotesSidebarContent({ notes }: NotesSidebarContentProps) {
       {notes.length > 0 && (
         <SidebarGroup>
           <SidebarGroupContent>
-            {view === "tags" && <TagBrowser notes={notes} />}
-            {view === "all" && (
+            {view === 'tags' && <TagBrowser notes={notes} />}
+            {view === 'all' && (
               <SidebarMenu>
                 {notes.map((note) => (
                   <NoteListItem

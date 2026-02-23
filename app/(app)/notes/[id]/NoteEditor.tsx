@@ -37,15 +37,18 @@ export function NoteEditor({ note, allTags }: NoteEditorProps) {
     latestContent.current = content;
   }, [title, content]);
 
-  useEffect(() => () => {
-    if (savedTimer.current) {
-      clearTimeout(savedTimer.current);
-    }
+  useEffect(
+    () => () => {
+      if (savedTimer.current) {
+        clearTimeout(savedTimer.current);
+      }
 
-    if (autoSaveTimer.current) {
-      clearTimeout(autoSaveTimer.current);
-    }
-  }, []);
+      if (autoSaveTimer.current) {
+        clearTimeout(autoSaveTimer.current);
+      }
+    },
+    [],
+  );
 
   const showSavedFeedback = useCallback(() => {
     setSaved(true);
@@ -54,7 +57,7 @@ export function NoteEditor({ note, allTags }: NoteEditorProps) {
     }
 
     savedTimer.current = setTimeout(() => {
-      setSaved(false); 
+      setSaved(false);
     }, 2000);
   }, []);
   const handleSave = () => {
@@ -119,12 +122,15 @@ export function NoteEditor({ note, allTags }: NoteEditorProps) {
   const handleHeadingClick = useCallback((line: number) => {
     editorRef.current?.scrollToLine(line);
   }, []);
-  const handleTagsChange = useCallback((newTags: string[]) => {
-    setTags(newTags);
-    startSaving(async () => {
-      await updateNoteAction(note.id, { tags: newTags });
-    });
-  }, [note.id]);
+  const handleTagsChange = useCallback(
+    (newTags: string[]) => {
+      setTags(newTags);
+      startSaving(async () => {
+        await updateNoteAction(note.id, { tags: newTags });
+      });
+    },
+    [note.id],
+  );
 
   const handleTogglePin = useCallback(() => {
     const newPinned = !pinned;
@@ -187,7 +193,7 @@ export function NoteEditor({ note, allTags }: NoteEditorProps) {
           noteId={note.id}
           attachments={attachments}
           onDeleted={handleAttachmentDeleted}
-          className="shrink-0 max-h-48 overflow-y-auto mx-4 mb-4 z-10 shadow-panel"
+          className="shrink-0 max-h-48 overflow-y-auto mx-2 mb-2 z-10 shadow-panel"
         />
       )}
     </div>

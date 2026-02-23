@@ -69,7 +69,7 @@ export function NoteHeader({
   );
 
   return (
-    <Card className="shrink-0 gap-0 py-0 shadow-panel z-10 mx-4 mt-4">
+    <Card className="shrink-0 gap-0 py-0 shadow-panel z-10 mx-2 mt-2">
       <CardContent className="flex items-center gap-3 px-4 py-3">
         <Input
           id="note-title"
