@@ -27,11 +27,11 @@ interface Attachment {
   relativePath: string;
 }
 
-const QUADRANT_KEYS = ["do", "schedule", "delegate", "eliminate"] as const;
-type TodoQuadrant = (typeof QUADRANT_KEYS)[number];
+type PreviewMode = 'edit' | 'preview';
+
+type TodoQuadrant = 'do' | 'schedule' | 'delegate' | 'eliminate';
 
 interface QuadrantMeta { key: TodoQuadrant; label: string; description: string; }
-const QUADRANT_META: readonly QuadrantMeta[];  // single source of truth for labels/descriptions
 
 interface Todo {
   id: string;
@@ -52,6 +52,17 @@ interface Todo {
 - Slug format: `${date}-${slugifiedTitle}-${uuid}`
 - Todos stored at `NOTES_ROOT/todos.json` (single JSON array)
 - `NOTES_ROOT` configured via env var
+
+### Constants (`lib/constants.ts`)
+
+```
+const PREVIEW_MODES: readonly PreviewMode[];
+const PREVIEW_EDIT: PreviewMode;
+const PREVIEW_PREVIEW: PreviewMode;
+
+const QUADRANT_KEYS: readonly TodoQuadrant[];
+const QUADRANT_META: readonly QuadrantMeta[];  // single source of truth for labels/descriptions
+```
 
 ### Core Functions (`lib/fsNotes.ts`)
 

@@ -6,6 +6,7 @@ import { useTheme } from 'next-themes';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Attachment } from '@/lib/fsNotes';
+import type { PreviewMode } from '@/lib/types';
 
 const MDEditor = dynamic(() => import('@uiw/react-md-editor'), {
   ssr: false,
@@ -15,8 +16,6 @@ const MDEditor = dynamic(() => import('@uiw/react-md-editor'), {
     </div>
   ),
 });
-
-type PreviewMode = 'edit' | 'preview';
 
 interface MarkdownEditorProps {
   value: string;
@@ -28,6 +27,7 @@ interface MarkdownEditorProps {
 
 export interface MarkdownEditorHandle {
   scrollToLine: (line: number) => void;
+  focus: () => void;
 }
 
 function buildMarkdownLink(att: Attachment, noteId: string): string {
@@ -68,6 +68,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         if (headingCount < headings.length) {
           headings[headingCount].scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
+      },
+      focus() {
+        wrapperRef.current?.querySelector('textarea')?.focus();
       },
     }),
     [value],

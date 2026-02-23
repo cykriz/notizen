@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { TodoCard } from "./TodoCard";
-import { QUADRANT_META, type QuadrantMeta } from "@/lib/types";
+import { QUADRANT_META } from "@/lib/constants";
+import type { QuadrantMeta } from "@/lib/types";
 import type { Todo, TodoQuadrant } from "@/lib/fsTodos";
 
 interface QuadrantCardMeta extends QuadrantMeta {

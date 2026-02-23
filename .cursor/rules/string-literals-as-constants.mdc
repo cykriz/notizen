@@ -1,0 +1,40 @@
+---
+description: Extract repeated or domain-meaningful string literals into named constants or const arrays
+globs: "**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# String literals: extract into typed constants
+
+Never scatter raw string literals that represent a fixed set of values (modes, statuses, roles, categories, etc.) across multiple files. Define the type in `lib/types.ts` and the named constants in `lib/constants.ts`.
+
+```ts
+// ❌ BAD — duplicated string literals, no single source of truth
+const [mode, setMode] = useState<'edit' | 'preview'>('edit');
+if (mode === 'edit') { /* … */ }
+
+// ✅ GOOD — type in types.ts, constants in constants.ts
+// lib/types.ts
+export type PreviewMode = 'edit' | 'preview';
+
+// lib/constants.ts
+import type { PreviewMode } from './types';
+export const PREVIEW_MODES: readonly PreviewMode[] = ['edit', 'preview'];
+export const PREVIEW_EDIT: PreviewMode = 'edit';
+export const PREVIEW_PREVIEW: PreviewMode = 'preview';
+
+// consumer.tsx
+import { PREVIEW_EDIT } from '@/lib/constants';
+import type { PreviewMode } from '@/lib/types';
+const [mode, setMode] = useState<PreviewMode>(PREVIEW_EDIT);
+```
+
+**When to apply:**
+- Two or more files reference the same string values
+- A value belongs to a closed set (enum-like) rather than free-form user input
+- The string appears in type annotations, comparisons, or switch cases
+
+**Where to place:**
+- Types always go in `lib/types.ts`
+- Runtime constants go in `lib/constants.ts`, importing their type from `lib/types.ts`
+- Co-locate in the component file only if the set is used exclusively there

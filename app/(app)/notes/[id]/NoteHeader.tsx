@@ -17,6 +17,8 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { deleteNoteAction } from '../actions';
+import { PREVIEW_EDIT } from '@/lib/constants';
+import type { PreviewMode } from '@/lib/types';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 const noop = () => {};
@@ -27,7 +29,7 @@ interface NoteHeaderProps {
   title: string;
   onTitleChange: (title: string) => void;
   noteTitle: string;
-  preview: 'edit' | 'preview';
+  preview: PreviewMode;
   onTogglePreview: () => void;
   onSave: () => void;
   saving: boolean;
@@ -85,7 +87,7 @@ export function NoteHeader({
             <List />
           </Button>
           <Button onClick={onTogglePreview} size="icon-xs" variant="ghost">
-            {preview === 'edit' ? <Eye /> : <Pencil />}
+            {preview === PREVIEW_EDIT ? <Eye /> : <Pencil />}
           </Button>
           <Button onClick={onSave} disabled={saving || (!isDirty && !saved)} size="icon-xs" variant="ghost">
             {saving ? <Loader2 className="animate-spin" /> : <Save />}

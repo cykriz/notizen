@@ -5,6 +5,8 @@ import { MarkdownEditor, type MarkdownEditorHandle } from '@/components/Markdown
 import { AttachmentList } from '@/components/AttachmentList';
 import { updateNoteAction } from '../actions';
 import type { Note, Attachment } from '@/lib/fsNotes';
+import { PREVIEW_EDIT, PREVIEW_PREVIEW } from '@/lib/constants';
+import type { PreviewMode } from '@/lib/types';
 import { NoteHeader } from './NoteHeader';
 import { NoteOutline } from './NoteOutline';
 
@@ -18,7 +20,7 @@ export function NoteEditor({ note }: NoteEditorProps) {
   const [attachments, setAttachments] = useState<Attachment[]>(note.attachments);
   const [saving, startSaving] = useTransition();
   const [saved, setSaved] = useState(false);
-  const [preview, setPreview] = useState<'edit' | 'preview'>(note.content.trim() === '' ? 'edit' : 'preview');
+  const [preview, setPreview] = useState<PreviewMode>(note.content.trim() === '' ? PREVIEW_EDIT : PREVIEW_PREVIEW);
   const [outlineVisible, setOutlineVisible] = useState(() => /^#{1,6}\s+.+$/m.test(note.content));
   const savedTimer = useRef<ReturnType<typeof setTimeout>>(null);
 
@@ -92,7 +94,7 @@ export function NoteEditor({ note }: NoteEditorProps) {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "o" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setPreview((p) => (p === "edit" ? "preview" : "edit"));
+        setPreview((p) => (p === PREVIEW_EDIT ? PREVIEW_PREVIEW : PREVIEW_EDIT));
       }
     };
 
@@ -112,6 +114,14 @@ export function NoteEditor({ note }: NoteEditorProps) {
 
   const editorRef = useRef<MarkdownEditorHandle>(null);
 
+  useEffect(() => {
+    if (preview === PREVIEW_EDIT) {
+      requestAnimationFrame(() => {
+        editorRef.current?.focus();
+      });
+    }
+  }, [preview]);
+
   const handleHeadingClick = useCallback((line: number) => {
     editorRef.current?.scrollToLine(line);
   }, []);
@@ -125,7 +135,7 @@ export function NoteEditor({ note }: NoteEditorProps) {
         noteTitle={note.title}
         preview={preview}
         onTogglePreview={() => {
-          setPreview((p) => (p === 'edit' ? 'preview' : 'edit'));
+          setPreview((p) => (p === PREVIEW_EDIT ? PREVIEW_PREVIEW : PREVIEW_EDIT));
         }}
         onSave={handleSave}
         saving={saving}

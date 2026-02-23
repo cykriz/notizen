@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createTodoAction, updateTodoAction, deleteTodoAction } from "./actions";
-import { QUADRANT_META } from "@/lib/types";
+import { QUADRANT_META } from "@/lib/constants";
 import type { Todo, TodoQuadrant } from "@/lib/fsTodos";
 
 interface TodoDialogProps {

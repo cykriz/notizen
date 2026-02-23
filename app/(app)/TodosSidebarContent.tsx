@@ -9,7 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuBadge,
 } from "@/components/ui/sidebar";
-import { QUADRANT_META } from "@/lib/types";
+import { QUADRANT_META } from "@/lib/constants";
 import type { Todo } from "@/lib/fsTodos";
 
 interface TodosSidebarContentProps {

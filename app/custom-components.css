@@ -76,3 +76,21 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+[data-color-mode] .wmde-markdown ul {
+  list-style-type: disc !important;
+  padding-left: 1.5em !important;
+}
+
+[data-color-mode] .wmde-markdown ol {
+  list-style-type: decimal !important;
+  padding-left: 1.5em !important;
+}
+
+[data-color-mode] .wmde-markdown ul ul {
+  list-style-type: circle !important;
+}
+
+[data-color-mode] .wmde-markdown ul ul ul {
+  list-style-type: square !important;
+}

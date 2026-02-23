@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { listTodos, createTodo } from "@/lib/fsTodos";
-import { QUADRANT_KEYS } from "@/lib/types";
+import { QUADRANT_KEYS } from "@/lib/constants";
 
 const QuadrantEnum = z.enum(QUADRANT_KEYS);
 
