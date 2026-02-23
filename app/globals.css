@@ -88,7 +88,7 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-  --header-shadow: oklch(0.92 0 0 / 90%);
+  --panel-shadow: oklch(0.92 0 0 / 90%);
   --input-dark-bg: transparent;
   --quadrant-do: oklch(0.95 0.04 25);
   --quadrant-do-foreground: oklch(0.45 0.18 25);
@@ -132,7 +132,7 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
-  --header-shadow: oklch(0 0 0 / 100%);
+  --panel-shadow: oklch(0 0 0 / 100%);
   --input-dark-bg: oklch(1 0 0 / 4.5%);
   --quadrant-do: oklch(0.23 0.04 20);
   --quadrant-do-foreground: oklch(0.78 0.12 20);
@@ -145,7 +145,7 @@
 }
 
 @utility shadow-panel {
-  box-shadow: 0 2px 40px 10px var(--tw-shadow-color, var(--header-shadow));
+  box-shadow: 0 2px 40px 10px var(--panel-shadow);
 }
 
 @layer base {

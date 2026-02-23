@@ -170,12 +170,16 @@ export function NoteEditor({ note, allTags }: NoteEditorProps) {
         </div>
       </NoteHeader>
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        <aside className="hidden md:flex flex-col w-56 shrink-0 overflow-hidden">
-          {outlineVisible && <NoteOutline content={content} onHeadingClick={handleHeadingClick} />}
-          <div className="mt-auto">
-            <TagInput tags={tags} allTags={allTags} onChange={handleTagsChange} />
-          </div>
-        </aside>
+        {outlineVisible && (
+          <aside className="hidden md:flex flex-col w-56 shrink-0">
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <NoteOutline content={content} onHeadingClick={handleHeadingClick} />
+            </div>
+            <div className="mt-auto">
+              <TagInput tags={tags} allTags={allTags} onChange={handleTagsChange} />
+            </div>
+          </aside>
+        )}
         <MarkdownEditor
           ref={editorRef}
           value={content}

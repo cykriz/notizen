@@ -78,11 +78,11 @@ export function TagInput({ tags, allTags, onChange, className }: TagInputProps) 
   };
 
   return (
-    <div className={cn('relative flex flex-wrap items-center gap-1.5 px-4 py-2', className)}>
+    <div className={cn('relative flex flex-wrap items-center gap-1.5 p-4 inset-shadow-sm', className)}>
       <Tag className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
       {tags.map((tag, i) => (
         <TagBadge
-          key={`${i}-${tag}`}
+          key={`${i.toString()}-${tag}`}
           tag={tag}
           onReplace={(v) => {
             replaceTag(i, v);
@@ -114,7 +114,7 @@ export function TagInput({ tags, allTags, onChange, className }: TagInputProps) 
           className="h-6 border-none bg-transparent px-1 text-xs shadow-none focus-visible:ring-0"
         />
         {open && suggestions.length > 0 && (
-          <div className="absolute left-0 top-7 z-50 w-56 rounded-md border bg-popover shadow-md">
+          <div className="absolute left-0 bottom-full mb-1 z-50 w-56 rounded-md border bg-popover shadow-md">
             <Command>
               <CommandList>
                 <CommandGroup>
