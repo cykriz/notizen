@@ -5,6 +5,8 @@ import { getNote, updateNote, deleteNote } from "@/lib/fsNotes";
 const UpdateNoteSchema = z.object({
   title: z.string().min(1).optional(),
   content: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  pinned: z.boolean().optional(),
 });
 
 interface RouteParams { params: Promise<{ id: string }> }

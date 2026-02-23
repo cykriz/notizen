@@ -5,6 +5,8 @@ export interface NoteSummary {
   createdAt: string;
   updatedAt: string;
   attachmentCount: number;
+  tags: string[];
+  pinned: boolean;
 }
 
 export interface Attachment {

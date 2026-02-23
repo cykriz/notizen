@@ -54,7 +54,7 @@ export function AttachmentList({ noteId, attachments, onDeleted, className }: At
         {attachments.map((att, i) => (
           <div
             key={att.id}
-            className={cn('flex items-center gap-3 px-4 py-3', i > 0 && 'border-t border-border')}
+            className={cn('flex items-center gap-3 px-4 py-3', { 'border-t border-border': i > 0 })}
           >
             <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
 

@@ -5,6 +5,7 @@ import { listNotes, createNote } from "@/lib/fsNotes";
 const CreateNoteSchema = z.object({
   title: z.string().min(1),
   content: z.string(),
+  tags: z.array(z.string()).optional(),
 });
 
 export async function GET() {

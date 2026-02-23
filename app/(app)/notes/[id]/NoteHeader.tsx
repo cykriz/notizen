@@ -1,7 +1,7 @@
 'use client';
 
 import { useTransition, useSyncExternalStore } from 'react';
-import { Save, Trash2, Loader2, Eye, Pencil, List } from 'lucide-react';
+import { Save, Trash2, Loader2, Eye, Pencil, List, Pin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +38,9 @@ interface NoteHeaderProps {
   onSavedReset: () => void;
   outlineVisible: boolean;
   onToggleOutline: () => void;
+  pinned: boolean;
+  onTogglePin: () => void;
+  children?: React.ReactNode;
 }
 
 export function NoteHeader({
@@ -54,6 +57,9 @@ export function NoteHeader({
   onSavedReset,
   outlineVisible,
   onToggleOutline,
+  pinned,
+  onTogglePin,
+  children,
 }: NoteHeaderProps) {
   const [deleting, startDeleting] = useTransition();
   const mounted = useSyncExternalStore(
@@ -63,8 +69,8 @@ export function NoteHeader({
   );
 
   return (
-    <Card className="shrink-0 py-3 shadow-panel z-10 mx-4 mt-4">
-      <CardContent className="flex items-center gap-3 px-4 py-0">
+    <Card className="shrink-0 gap-0 py-0 shadow-panel z-10 mx-4 mt-4">
+      <CardContent className="flex items-center gap-3 px-4 py-3">
         <Input
           id="note-title"
           name="note-title"
@@ -78,11 +84,14 @@ export function NoteHeader({
           className="flex-1 text-2xl font-semibold h-auto border-none shadow-none focus-visible:ring-0 placeholder:text-2xl px-0 bg-transparent"
         />
         <div className="flex shrink-0 items-center gap-1">
+          <Button onClick={onTogglePin} size="icon-xs" variant="ghost" className={cn({ 'bg-accent': pinned })}>
+            <Pin />
+          </Button>
           <Button
             onClick={onToggleOutline}
             size="icon-xs"
             variant="ghost"
-            className={cn('hidden lg:inline-flex', outlineVisible && 'bg-accent')}
+            className={cn('hidden lg:inline-flex', { 'bg-accent': outlineVisible })}
           >
             <List />
           </Button>
@@ -110,11 +119,15 @@ export function NoteHeader({
                   <DialogClose asChild>
                     <Button variant="outline">Abbrechen</Button>
                   </DialogClose>
-                  <Button variant="destructive" onClick={() => {
-                    startDeleting(async () => {
-                      await deleteNoteAction(noteId); 
-                    }); 
-                  }} disabled={deleting}>
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      startDeleting(async () => {
+                        await deleteNoteAction(noteId);
+                      });
+                    }}
+                    disabled={deleting}
+                  >
                     {deleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
                     Endgültig löschen
                   </Button>
@@ -128,6 +141,7 @@ export function NoteHeader({
           )}
         </div>
       </CardContent>
+      {children}
     </Card>
   );
 }

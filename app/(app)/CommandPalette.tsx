@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { FileText, ListChecks } from "lucide-react";
+import { FileText, ListChecks, Pin } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import {
   CommandDialog,
   CommandInput,
@@ -62,13 +64,18 @@ export function CommandPalette({ notes, todos }: CommandPaletteProps) {
             {notes.map((note) => (
               <CommandItem
                 key={note.id}
-                value={note.title}
+                value={[note.title, ...note.tags.map((t) => `#${t}`)].join(" ")}
                 onSelect={() => {
                   navigate(`/notes/${note.id}`);
                 }}
               >
-                <FileText />
+                {note.pinned ? <Pin /> : <FileText />}
                 <span className="truncate">{note.title}</span>
+                {note.tags.slice(0, 2).map((tag, i) => (
+                  <Badge key={tag} variant="secondary" className={cn("text-[10px] px-1 py-0", { "ml-auto": i === 0 })}>
+                    {tag.split("/").pop()}
+                  </Badge>
+                ))}
               </CommandItem>
             ))}
           </CommandGroup>

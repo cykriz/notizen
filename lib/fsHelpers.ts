@@ -61,11 +61,11 @@ export async function ensureDir(dir: string): Promise<void> {
 
 export async function readNoteFrontmatter(
   slug: string
-): Promise<{ data: Record<string, string>; content: string } | null> {
+): Promise<{ data: Record<string, unknown>; content: string } | null> {
   try {
     const raw = await fs.readFile(noteMdPath(slug), "utf-8");
     const parsed = matter(raw);
-    return { data: parsed.data as Record<string, string>, content: parsed.content };
+    return { data: parsed.data as Record<string, unknown>, content: parsed.content };
   } catch {
     return null;
   }

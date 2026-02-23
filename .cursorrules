@@ -12,6 +12,8 @@ interface NoteSummary {
   createdAt: string;
   updatedAt: string;
   attachmentCount: number;
+  tags: string[];       // hierarchical, slash-separated (e.g. "dev/python/fastapi")
+  pinned: boolean;
 }
 
 interface Note extends NoteSummary {
@@ -48,7 +50,7 @@ interface Todo {
 ### Filesystem Layout
 
 - Notes stored at `NOTES_ROOT/notes/YYYY-MM-DD-slug-uuid/`
-- Each note folder contains `note.md` + `attachments/`
+- Each note folder contains `note.md` (frontmatter: id, title, tags, pinned, createdAt, updatedAt) + `attachments/`
 - Slug format: `${date}-${slugifiedTitle}-${uuid}`
 - Todos stored at `NOTES_ROOT/todos.json` (single JSON array)
 - `NOTES_ROOT` configured via env var
@@ -69,12 +71,23 @@ const QUADRANT_META: readonly QuadrantMeta[];  // single source of truth for lab
 ```
 listNotes(): Promise<NoteSummary[]>
 getNote(id: string): Promise<Note | null>
-createNote(input: {title: string, content: string}): Promise<Note>
-updateNote(id: string, input: {title?: string, content?: string}): Promise<Note>
+createNote(input: {title: string, content: string, tags?: string[]}): Promise<Note>
+updateNote(id: string, input: {title?, content?, tags?, pinned?}): Promise<Note>
 deleteNote(id: string): Promise<void>
+listAllTags(): Promise<string[]>
 listAttachments(noteId: string): Promise<Attachment[]>
 saveAttachment(noteId: string, file: File): Promise<Attachment>
 deleteAttachment(noteId: string, attId: string): Promise<void>
+```
+
+### Tag Tree Utilities (`lib/tagTree.ts`)
+
+```
+interface TagNode { segment: string; fullPath: string; noteCount: number; children: TagNode[] }
+buildTagTree(notes: NoteSummary[]): TagNode[]
+getChildNodes(tree: TagNode[], path: string): TagNode[]
+getNotesAtPath(notes: NoteSummary[], path: string): NoteSummary[]
+getNotesUnderPath(notes: NoteSummary[], path: string): NoteSummary[]
 ```
 
 ### Core Functions (`lib/fsTodos.ts`)
@@ -102,6 +115,7 @@ app/api/todos/[id]/route.ts         → GET, PUT, DELETE
 - NextRequest/NextResponse
 - Zod validation on every endpoint
 - Error shape: `{ error: string }`
+- POST/PUT notes accept `tags: string[]` and `pinned: boolean`
 
 ### Components
 
@@ -112,13 +126,15 @@ app/api/todos/[id]/route.ts         → GET, PUT, DELETE
 | FileUpload | `components/FileUpload.tsx` | Drag & drop, Button, Card |
 | ThemeToggle | `components/ThemeToggle.tsx` | `"use client"`, Button + lucide icons |
 | AppSidebar | `app/(app)/AppSidebar.tsx` | `"use client"`, tabs for Notizen/Aufgaben |
-| NotesSidebarContent | `app/(app)/NotesSidebarContent.tsx` | `"use client"`, search + note list |
+| NotesSidebarContent | `app/(app)/NotesSidebarContent.tsx` | `"use client"`, pinned + Tags/Alle toggle |
+| TagBrowser | `app/(app)/TagBrowser.tsx` | `"use client"`, folder-style drill-down tag navigation |
 | TodosSidebarContent | `app/(app)/TodosSidebarContent.tsx` | `"use client"`, quadrant summary |
 | EisenhowerMatrix | `app/(app)/todos/EisenhowerMatrix.tsx` | `"use client"`, 2x2 grid |
 | QuadrantCard | `app/(app)/todos/QuadrantCard.tsx` | `"use client"`, single quadrant |
 | TodoCard | `app/(app)/todos/TodoCard.tsx` | `"use client"`, Checkbox + title |
 | TodoDialog | `app/(app)/todos/TodoDialog.tsx` | `"use client"`, create/edit Dialog |
-| CommandPalette | `app/(app)/CommandPalette.tsx` | `"use client"`, Cmd+P search overlay |
+| CommandPalette | `app/(app)/CommandPalette.tsx` | `"use client"`, Cmd+P search overlay, searches tags |
+| TagInput | `app/(app)/notes/[id]/TagInput.tsx` | `"use client"`, tag editing with autocomplete |
 
 ### Layout
 
@@ -176,7 +192,7 @@ button, card, input, dialog, textarea, badge, sidebar, separator, sheet, tooltip
 **Component rules:**
 - Use shadcn/ui from `components/ui/` for all interactive elements (Button, Card, Input, Dialog, Textarea, Badge, Checkbox, Select)
 - Import with `@/components/ui/...`
-- Use `cn()` from `@/lib/utils` for conditional classes
+- Use `cn()` from `@/lib/utils` for conditional classes — always use the object syntax (`cn({ "bg-accent": isActive })`) instead of `&&` short-circuits (`cn(isActive && "bg-accent")`)
 - Prefer CVA variants over inline Tailwind overrides when a component needs multiple visual styles
 - Never use raw HTML elements when a shadcn equivalent exists
 - Never hardcode colors — use semantic tokens (`bg-primary`, `text-muted-foreground`)
