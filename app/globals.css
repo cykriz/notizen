@@ -144,6 +144,10 @@
   --quadrant-eliminate-foreground: oklch(0.6 0 0);
 }
 
+@utility shadow-panel {
+  box-shadow: 0 2px 40px 10px var(--tw-shadow-color, var(--header-shadow));
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

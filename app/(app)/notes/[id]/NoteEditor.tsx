@@ -92,15 +92,15 @@ export function NoteEditor({ note }: NoteEditorProps) {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "o" && (e.metaKey || e.ctrlKey)) {
+      if (e.key === 'o' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setPreview((p) => (p === PREVIEW_EDIT ? PREVIEW_PREVIEW : PREVIEW_EDIT));
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown);
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
 
@@ -127,7 +127,7 @@ export function NoteEditor({ note }: NoteEditorProps) {
   }, []);
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+    <div className="flex flex-col flex-1 min-h-0">
       <NoteHeader
         noteId={note.id}
         title={title}
@@ -172,7 +172,7 @@ export function NoteEditor({ note }: NoteEditorProps) {
           noteId={note.id}
           attachments={attachments}
           onDeleted={handleAttachmentDeleted}
-          className="shrink-0 max-h-48 overflow-y-auto mx-4 mb-4 z-10 shadow-[0_28px_50px_40px_var(--header-shadow)]"
+          className="shrink-0 max-h-48 overflow-y-auto mx-4 mb-4 z-10 shadow-panel"
         />
       )}
     </div>

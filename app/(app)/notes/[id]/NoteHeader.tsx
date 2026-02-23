@@ -63,7 +63,7 @@ export function NoteHeader({
   );
 
   return (
-    <Card className="shrink-0 py-3 shadow-[0_-28px_50px_40px_var(--header-shadow)] z-10 mx-4 mt-4">
+    <Card className="shrink-0 py-3 shadow-panel z-10 mx-4 mt-4">
       <CardContent className="flex items-center gap-3 px-4 py-0">
         <Input
           id="note-title"

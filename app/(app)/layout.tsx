@@ -1,19 +1,11 @@
-import { listNotes } from "@/lib/fsNotes";
-import { listTodos } from "@/lib/fsTodos";
-import {
-  SidebarProvider,
-  SidebarInset,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
-import { AppSidebar } from "./AppSidebar";
-import { CommandPalette } from "./CommandPalette";
+import { listNotes } from '@/lib/fsNotes';
+import { listTodos } from '@/lib/fsTodos';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { Separator } from '@/components/ui/separator';
+import { AppSidebar } from './AppSidebar';
+import { CommandPalette } from './CommandPalette';
 
-export default async function AppLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const [notes, todos] = await Promise.all([listNotes(), listTodos()]);
 
   return (
@@ -26,7 +18,7 @@ export default async function AppLayout({
           <Separator orientation="vertical" className="h-4" />
           <span className="text-sm font-medium">Notizen</span>
         </header>
-        <div className="flex flex-1 flex-col min-h-0 overflow-auto">{children}</div>
+        <div className="flex flex-1 flex-col min-h-0">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

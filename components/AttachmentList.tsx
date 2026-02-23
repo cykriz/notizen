@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Download, Trash2, Paperclip } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import type { Attachment } from "@/lib/fsNotes";
+import { useState } from 'react';
+import { Download, Trash2, Paperclip } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import type { Attachment } from '@/lib/fsNotes';
 
 interface AttachmentListProps {
   noteId: string;
@@ -34,7 +34,7 @@ export function AttachmentList({ noteId, attachments, onDeleted, className }: At
     setDeleting(attId);
     try {
       const res = await fetch(`/api/notes/${noteId}/attachments/${attId}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
       if (res.ok) {
         onDeleted?.(attId);
@@ -45,34 +45,30 @@ export function AttachmentList({ noteId, attachments, onDeleted, className }: At
   };
 
   if (attachments.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground py-2">Keine Anhänge</p>
-    );
+    return <p className="text-sm text-muted-foreground py-2">Keine Anhänge</p>;
   }
 
   return (
-    <div className={cn("flex flex-col gap-2", className)}>
-      {attachments.map((att) => (
-        <Card key={att.id} className="py-3">
-          <CardContent className="flex items-center gap-3 px-4 py-0">
+    <Card className={cn('py-0', className)}>
+      <CardContent className="flex flex-col px-0 py-0">
+        {attachments.map((att, i) => (
+          <div
+            key={att.id}
+            className={cn('flex items-center gap-3 px-4 py-3', i > 0 && 'border-t border-border')}
+          >
             <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
 
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{att.originalName}</p>
               <div className="mt-0.5 flex items-center gap-2">
                 <Badge variant="secondary">{att.mimeType}</Badge>
-                <span className="text-xs text-muted-foreground">
-                  {formatSize(att.size)}
-                </span>
+                <span className="text-xs text-muted-foreground">{formatSize(att.size)}</span>
               </div>
             </div>
 
             <div className="flex shrink-0 items-center gap-1">
               <Button variant="ghost" size="icon-xs" asChild>
-                <a
-                  href={`/api/notes/${noteId}/attachments/${att.id}/download`}
-                  download={att.originalName}
-                >
+                <a href={`/api/notes/${noteId}/attachments/${att.id}/download`} download={att.originalName}>
                   <Download />
                 </a>
               </Button>
@@ -80,16 +76,16 @@ export function AttachmentList({ noteId, attachments, onDeleted, className }: At
                 variant="ghost"
                 size="icon-xs"
                 onClick={() => {
-                  void handleDelete(att.id); 
+                  void handleDelete(att.id);
                 }}
                 disabled={deleting === att.id}
               >
                 <Trash2 className="text-destructive" />
               </Button>
             </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }
