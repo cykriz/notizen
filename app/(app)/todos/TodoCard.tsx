@@ -1,16 +1,19 @@
-"use client";
+'use client';
 
-import { useTransition } from "react";
-import { Calendar } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { toggleTodoAction } from "./actions";
-import type { Todo } from "@/lib/fsTodos";
+import { useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { Calendar, FileText } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { toggleTodoAction } from './actions';
+import type { Todo } from '@/lib/fsTodos';
+import type { NoteSummary } from '@/lib/types';
 
 interface TodoCardProps {
   todo: Todo;
   onEdit: (todo: Todo) => void;
+  notes: NoteSummary[];
 }
 
 function isOverdue(dueDate: string): boolean {
@@ -18,21 +21,22 @@ function isOverdue(dueDate: string): boolean {
 }
 
 function formatDate(iso: string): string {
-  return new Intl.DateTimeFormat("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(iso));
+  return new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(iso));
 }
 
-export function TodoCard({ todo, onEdit }: TodoCardProps) {
+export function TodoCard({ todo, onEdit, notes }: TodoCardProps) {
   const [, startToggle] = useTransition();
+  const router = useRouter();
 
   const handleToggle = (checked: boolean) => {
     startToggle(async () => {
       await toggleTodoAction(todo.id, checked);
     });
   };
+
+  const linkedNotes = (todo.linkedNoteIds ?? [])
+    .map((nid) => notes.find((n) => n.id === nid))
+    .filter((n): n is NoteSummary => n !== undefined);
 
   return (
     <div
@@ -43,7 +47,7 @@ export function TodoCard({ todo, onEdit }: TodoCardProps) {
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
+        if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           onEdit(todo);
         }
@@ -59,25 +63,40 @@ export function TodoCard({ todo, onEdit }: TodoCardProps) {
         }}
         role="presentation"
       >
-        <Checkbox
-          checked={todo.completed}
-          onCheckedChange={(checked) => {
-            handleToggle(checked === true); 
-          }}
-        />
+        <Checkbox checked={todo.completed} onCheckedChange={(checked) => {
+          handleToggle(checked === true); 
+        }} />
       </div>
       <div className="flex-1 min-w-0">
-        <span className={cn("text-sm leading-tight", { "line-through text-muted-foreground": todo.completed })}>
+        <span className={cn('text-sm leading-tight', { 'line-through text-muted-foreground': todo.completed })}>
           {todo.title}
         </span>
         {todo.dueDate !== undefined && (
           <Badge
-            variant={!todo.completed && isOverdue(todo.dueDate) ? "destructive" : "secondary"}
+            variant={!todo.completed && isOverdue(todo.dueDate) ? 'destructive' : 'secondary'}
             className="ml-2 text-[10px] px-1.5 py-0"
           >
             <Calendar className="h-2.5 w-2.5 mr-0.5" />
             {formatDate(todo.dueDate)}
           </Badge>
+        )}
+        {linkedNotes.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1">
+            {linkedNotes.map((n) => (
+              <Badge
+                key={n.id}
+                variant="outline"
+                className="text-[10px] px-1.5 py-0 gap-0.5 cursor-pointer hover:bg-accent"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  router.push(`/notes/${n.id}`);
+                }}
+              >
+                <FileText className="h-2.5 w-2.5" />
+                <span className="max-w-24 truncate">{n.title}</span>
+              </Badge>
+            ))}
+          </div>
         )}
       </div>
     </div>

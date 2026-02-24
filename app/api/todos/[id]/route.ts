@@ -9,6 +9,7 @@ const UpdateTodoSchema = z.object({
   title: z.string().min(1).optional(),
   description: z.string().optional(),
   dueDate: z.string().optional(),
+  linkedNoteIds: z.array(z.string()).optional(),
   quadrant: QuadrantEnum.optional(),
   completed: z.boolean().optional(),
 });

@@ -1,6 +1,6 @@
-import { getNote, listAllTags } from "@/lib/fsNotes";
-import { notFound } from "next/navigation";
-import { NoteEditor } from "./NoteEditor";
+import { getNote, listAllTags, listNotes } from '@/lib/fsNotes';
+import { notFound } from 'next/navigation';
+import { NoteEditor } from './NoteEditor';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -8,11 +8,13 @@ interface PageProps {
 
 export default async function NoteDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const [note, allTags] = await Promise.all([getNote(id), listAllTags()]);
+  const [note, allTags, allNotes] = await Promise.all([getNote(id), listAllTags(), listNotes()]);
 
   if (!note) {
     notFound();
   }
 
-  return <NoteEditor key={note.id} note={note} allTags={allTags} />;
+  const otherNotes = allNotes.filter((n) => n.id !== note.id);
+
+  return <NoteEditor key={note.id} note={note} allTags={allTags} notes={otherNotes} />;
 }

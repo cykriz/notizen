@@ -37,6 +37,7 @@ export interface Todo {
   title: string;
   description?: string;
   dueDate?: string;
+  linkedNoteIds?: string[];
   quadrant: TodoQuadrant;
   completed: boolean;
   createdAt: string;

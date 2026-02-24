@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { QuadrantCard, quadrants } from "./QuadrantCard";
-import { TodoDialog } from "./TodoDialog";
-import type { Todo, TodoQuadrant } from "@/lib/fsTodos";
+import { QuadrantCard, quadrants } from './QuadrantCard';
+import { TodoDialog } from './TodoDialog';
+import type { Todo, TodoQuadrant } from '@/lib/fsTodos';
+import type { NoteSummary } from '@/lib/types';
 
 interface EisenhowerMatrixProps {
   todos: Todo[];
+  notes: NoteSummary[];
 }
 
-export function EisenhowerMatrix({ todos }: EisenhowerMatrixProps) {
+export function EisenhowerMatrix({ todos, notes }: EisenhowerMatrixProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | undefined>(undefined);
   const [defaultQuadrant, setDefaultQuadrant] = useState<TodoQuadrant>("do");
@@ -43,15 +45,17 @@ export function EisenhowerMatrix({ todos }: EisenhowerMatrixProps) {
             todos={todos.filter((t) => t.quadrant === meta.key)}
             onAdd={handleAdd}
             onEdit={handleEdit}
+            notes={notes}
           />
         ))}
       </div>
       <TodoDialog
-        key={editingTodo?.id ?? "new"}
+        key={editingTodo?.id ?? 'new'}
         open={dialogOpen}
         onOpenChange={handleOpenChange}
         todo={editingTodo}
         defaultQuadrant={defaultQuadrant}
+        notes={notes}
       />
     </>
   );

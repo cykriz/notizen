@@ -40,6 +40,7 @@ interface Todo {
   title: string;
   description?: string;
   dueDate?: string;
+  linkedNoteIds?: string[];
   quadrant: TodoQuadrant;
   completed: boolean;
   createdAt: string;
@@ -95,7 +96,7 @@ getNotesUnderPath(notes: NoteSummary[], path: string): NoteSummary[]
 ```
 listTodos(): Promise<Todo[]>
 getTodo(id: string): Promise<Todo | null>
-createTodo(input: {title, quadrant, description?, dueDate?}): Promise<Todo>
+createTodo(input: {title, quadrant, description?, dueDate?, linkedNoteIds?}): Promise<Todo>
 updateTodo(id: string, input: Partial<...>): Promise<Todo>
 deleteTodo(id: string): Promise<void>
 ```
@@ -116,12 +117,14 @@ app/api/todos/[id]/route.ts         → GET, PUT, DELETE
 - Zod validation on every endpoint
 - Error shape: `{ error: string }`
 - POST/PUT notes accept `tags: string[]` and `pinned: boolean`
+- POST/PUT todos accept `linkedNoteIds: string[]`
 
 ### Components
 
 | Component | Location | Notes |
 |---|---|---|
-| MarkdownEditor | `components/MarkdownEditor.tsx` | `"use client"`, shadcn Textarea fallback |
+| MarkdownEditor | `components/MarkdownEditor.tsx` | `"use client"`, `[[` trigger + Cmd+L for note linking, internal link renderer |
+| NoteLinkPicker | `components/NoteLinkPicker.tsx` | `"use client"`, reusable note search dialog (CommandDialog) |
 | AttachmentList | `components/AttachmentList.tsx` | Card, Badge, Button |
 | FileUpload | `components/FileUpload.tsx` | Drag & drop, Button, Card |
 | ThemeToggle | `components/ThemeToggle.tsx` | `"use client"`, Button + lucide icons |
@@ -131,8 +134,8 @@ app/api/todos/[id]/route.ts         → GET, PUT, DELETE
 | TodosSidebarContent | `app/(app)/TodosSidebarContent.tsx` | `"use client"`, quadrant summary |
 | EisenhowerMatrix | `app/(app)/todos/EisenhowerMatrix.tsx` | `"use client"`, 2x2 grid |
 | QuadrantCard | `app/(app)/todos/QuadrantCard.tsx` | `"use client"`, single quadrant |
-| TodoCard | `app/(app)/todos/TodoCard.tsx` | `"use client"`, Checkbox + title |
-| TodoDialog | `app/(app)/todos/TodoDialog.tsx` | `"use client"`, create/edit Dialog |
+| TodoCard | `app/(app)/todos/TodoCard.tsx` | `"use client"`, Checkbox + title + linked note badges |
+| TodoDialog | `app/(app)/todos/TodoDialog.tsx` | `"use client"`, create/edit Dialog + note linking |
 | CommandPalette | `app/(app)/CommandPalette.tsx` | `"use client"`, Cmd+P search overlay, searches tags |
 | TagInput | `app/(app)/notes/[id]/TagInput.tsx` | `"use client"`, tag editing with autocomplete |
 

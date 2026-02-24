@@ -4,10 +4,10 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { TodoCard } from "./TodoCard";
-import { QUADRANT_META } from "@/lib/constants";
-import type { QuadrantMeta } from "@/lib/types";
-import type { Todo, TodoQuadrant } from "@/lib/fsTodos";
+import { TodoCard } from './TodoCard';
+import { QUADRANT_META } from '@/lib/constants';
+import type { QuadrantMeta, NoteSummary } from '@/lib/types';
+import type { Todo, TodoQuadrant } from '@/lib/fsTodos';
 
 interface QuadrantCardMeta extends QuadrantMeta {
   colorClass: string;
@@ -31,9 +31,10 @@ interface QuadrantCardProps {
   todos: Todo[];
   onAdd: (quadrant: TodoQuadrant) => void;
   onEdit: (todo: Todo) => void;
+  notes: NoteSummary[];
 }
 
-export function QuadrantCard({ meta, todos, onAdd, onEdit }: QuadrantCardProps) {
+export function QuadrantCard({ meta, todos, onAdd, onEdit, notes }: QuadrantCardProps) {
   const open = todos.filter((t) => !t.completed);
   const done = todos.filter((t) => t.completed);
 
@@ -63,13 +64,13 @@ export function QuadrantCard({ meta, todos, onAdd, onEdit }: QuadrantCardProps) 
           <p className="py-4 text-center text-xs text-muted-foreground">Keine Aufgaben</p>
         )}
         {open.map((t) => (
-          <TodoCard key={t.id} todo={t} onEdit={onEdit} />
+          <TodoCard key={t.id} todo={t} onEdit={onEdit} notes={notes} />
         ))}
         {done.length > 0 && open.length > 0 && (
           <div className="my-1 border-t" />
         )}
         {done.map((t) => (
-          <TodoCard key={t.id} todo={t} onEdit={onEdit} />
+          <TodoCard key={t.id} todo={t} onEdit={onEdit} notes={notes} />
         ))}
       </CardContent>
     </Card>

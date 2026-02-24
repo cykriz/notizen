@@ -42,6 +42,7 @@ interface CreateTodoInput {
   quadrant: TodoQuadrant;
   description?: string;
   dueDate?: string;
+  linkedNoteIds?: string[];
 }
 
 export async function createTodo(input: CreateTodoInput): Promise<Todo> {
@@ -56,6 +57,7 @@ export async function createTodo(input: CreateTodoInput): Promise<Todo> {
     updatedAt: now,
     ...(input.description !== undefined && { description: input.description }),
     ...(input.dueDate !== undefined && { dueDate: input.dueDate }),
+    ...(input.linkedNoteIds !== undefined && { linkedNoteIds: input.linkedNoteIds }),
   };
   todos.push(todo);
   await writeTodos(todos);
@@ -66,6 +68,7 @@ interface UpdateTodoInput {
   title?: string;
   description?: string;
   dueDate?: string;
+  linkedNoteIds?: string[];
   quadrant?: TodoQuadrant;
   completed?: boolean;
 }

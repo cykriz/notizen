@@ -10,6 +10,7 @@ const CreateTodoSchema = z.object({
   quadrant: QuadrantEnum,
   description: z.string().optional(),
   dueDate: z.string().optional(),
+  linkedNoteIds: z.array(z.string()).optional(),
 });
 
 export async function GET() {

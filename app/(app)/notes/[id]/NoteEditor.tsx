@@ -6,7 +6,7 @@ import { AttachmentList } from '@/components/AttachmentList';
 import { updateNoteAction } from '../actions';
 import type { Note, Attachment } from '@/lib/fsNotes';
 import { PREVIEW_EDIT, PREVIEW_PREVIEW } from '@/lib/constants';
-import type { PreviewMode } from '@/lib/types';
+import type { NoteSummary, PreviewMode } from '@/lib/types';
 import { NoteHeader } from './NoteHeader';
 import { NoteOutline } from './NoteOutline';
 import { TagInput } from './TagInput';
@@ -14,9 +14,10 @@ import { TagInput } from './TagInput';
 interface NoteEditorProps {
   note: Note;
   allTags: string[];
+  notes: NoteSummary[];
 }
 
-export function NoteEditor({ note, allTags }: NoteEditorProps) {
+export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content);
   const [attachments, setAttachments] = useState<Attachment[]>(note.attachments);
@@ -57,7 +58,7 @@ export function NoteEditor({ note, allTags }: NoteEditorProps) {
     }
 
     savedTimer.current = setTimeout(() => {
-      setSaved(false);
+      setSaved(false); 
     }, 2000);
   }, []);
   const handleSave = () => {
@@ -186,6 +187,7 @@ export function NoteEditor({ note, allTags }: NoteEditorProps) {
           noteId={note.id}
           onFileUploaded={handleUploaded}
           preview={preview}
+          notes={notes}
         />
       </div>
       {attachments.length > 0 && (

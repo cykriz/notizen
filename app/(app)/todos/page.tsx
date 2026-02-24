@@ -1,7 +1,8 @@
-import { listTodos } from "@/lib/fsTodos";
-import { EisenhowerMatrix } from "./EisenhowerMatrix";
+import { listTodos } from '@/lib/fsTodos';
+import { listNotes } from '@/lib/fsNotes';
+import { EisenhowerMatrix } from './EisenhowerMatrix';
 
 export default async function TodosPage() {
-  const todos = await listTodos();
-  return <EisenhowerMatrix todos={todos} />;
+  const [todos, notes] = await Promise.all([listTodos(), listNotes()]);
+  return <EisenhowerMatrix todos={todos} notes={notes} />;
 }

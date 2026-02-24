@@ -8,6 +8,7 @@ interface CreateInput {
   quadrant: TodoQuadrant;
   description?: string;
   dueDate?: string;
+  linkedNoteIds?: string[];
 }
 
 export async function createTodoAction(input: CreateInput) {
@@ -19,6 +20,7 @@ interface UpdateInput {
   title?: string;
   description?: string;
   dueDate?: string;
+  linkedNoteIds?: string[];
   quadrant?: TodoQuadrant;
   completed?: boolean;
 }
