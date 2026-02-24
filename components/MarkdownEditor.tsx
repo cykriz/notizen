@@ -146,7 +146,12 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         height="100%"
         preview={preview}
         hideToolbar
-        textareaProps={{ placeholder: 'Schreibe hier deine Notiz …' }}
+        textareaProps={{
+          placeholder: 'Schreibe hier deine Notiz …',
+          autoCorrect: 'on',
+          autoCapitalize: 'sentences',
+          spellCheck: true,
+        }}
         previewOptions={{ components: { a: InternalLinkRenderer } }}
       />
       {dragging && (

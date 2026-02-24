@@ -3,6 +3,7 @@ import { listTodos } from '@/lib/fsTodos';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { CommandPalette } from './CommandPalette';
+import { MobileSidebarFab } from './MobileSidebarFab';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const [notes, todos] = await Promise.all([listNotes(), listTodos()]);
@@ -14,6 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <SidebarInset className="max-h-svh">
         <div className="flex flex-1 flex-col min-h-0">{children}</div>
       </SidebarInset>
+      <MobileSidebarFab />
     </SidebarProvider>
   );
 }

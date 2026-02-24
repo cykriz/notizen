@@ -136,13 +136,14 @@ app/api/todos/[id]/route.ts         → GET, PUT, DELETE
 | QuadrantCard | `app/(app)/todos/QuadrantCard.tsx` | `"use client"`, single quadrant |
 | TodoCard | `app/(app)/todos/TodoCard.tsx` | `"use client"`, Checkbox + title + linked note badges |
 | TodoDialog | `app/(app)/todos/TodoDialog.tsx` | `"use client"`, create/edit Dialog + note linking |
+| MobileSidebarFab | `app/(app)/MobileSidebarFab.tsx` | `"use client"`, floating button to open sidebar on mobile (`md:hidden`) |
 | CommandPalette | `app/(app)/CommandPalette.tsx` | `"use client"`, Cmd+P search overlay, searches tags |
 | TagInput | `app/(app)/notes/[id]/TagInput.tsx` | `"use client"`, tag editing with autocomplete |
 
 ### Layout
 
 - `app/(app)/layout.tsx` — Server component: fetches notes + todos, wraps pages in `SidebarProvider` + `AppSidebar` + `SidebarInset`
-- Mobile header with `SidebarTrigger` shown via `md:hidden`
+- No mobile header — sidebar is opened via `MobileSidebarFab` (floating action button, `md:hidden`)
 - Route group `(app)` contains both `notes/` and `todos/`
 
 ### Pages

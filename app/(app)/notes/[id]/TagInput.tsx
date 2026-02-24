@@ -62,10 +62,14 @@ export function TagInput({ tags, allTags, onChange, className }: TagInputProps) 
     }
   };
 
+  const showSuggestions = open && suggestions.length > 0;
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && query.trim() !== '') {
-      e.preventDefault();
-      addTag(query);
+      if (!showSuggestions) {
+        e.preventDefault();
+        addTag(query);
+      }
     }
 
     if (e.key === 'Backspace' && query === '' && tags.length > 0) {
@@ -92,7 +96,11 @@ export function TagInput({ tags, allTags, onChange, className }: TagInputProps) 
           }}
         />
       ))}
-      <div className="relative flex-1 min-w-[120px]">
+      <Command
+        shouldFilter={false}
+        loop
+        className="relative flex-1 min-w-[120px] overflow-visible bg-transparent h-auto rounded-none text-inherit"
+      >
         <Input
           ref={inputRef}
           value={query}
@@ -113,30 +121,28 @@ export function TagInput({ tags, allTags, onChange, className }: TagInputProps) 
           rounded={false}
           className="h-6 border-none bg-transparent px-1 text-xs shadow-none focus-visible:ring-0"
         />
-        {open && suggestions.length > 0 && (
+        {showSuggestions && (
           <div className="absolute left-0 bottom-full mb-1 z-50 w-56 rounded-md border bg-popover shadow-md">
-            <Command>
-              <CommandList>
-                <CommandGroup>
-                  {suggestions.slice(0, 8).map((tag) => (
-                    <CommandItem
-                      key={tag}
-                      value={tag}
-                      onSelect={() => {
-                        addTag(tag);
-                      }}
-                    >
-                      <Tag className="h-3 w-3" />
-                      {tag}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-                <CommandEmpty className="hidden" />
-              </CommandList>
-            </Command>
+            <CommandList>
+              <CommandGroup>
+                {suggestions.slice(0, 8).map((tag) => (
+                  <CommandItem
+                    key={tag}
+                    value={tag}
+                    onSelect={() => {
+                      addTag(tag);
+                    }}
+                  >
+                    <Tag className="h-3 w-3" />
+                    {tag}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+              <CommandEmpty className="hidden" />
+            </CommandList>
           </div>
         )}
-      </div>
+      </Command>
     </div>
   );
 }
