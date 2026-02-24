@@ -6,6 +6,7 @@ import { useTheme } from 'next-themes';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFileDrop } from '@/hooks/useFileDrop';
+import { useListKeys } from '@/hooks/useListKeys';
 import { InternalLinkRenderer } from '@/components/InternalLink';
 import { NoteLinkPicker } from '@/components/NoteLinkPicker';
 import type { Attachment } from '@/lib/fsNotes';
@@ -51,6 +52,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     onFileUploaded,
     wrapperRef,
   });
+  const { applyPendingList } = useListKeys(wrapperRef, value, onChange);
 
   useImperativeHandle(
     ref,
@@ -106,6 +108,11 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       const next = v ?? '';
       const textarea = wrapperRef.current?.querySelector('textarea');
       const pos = textarea?.selectionStart ?? next.length;
+
+      if (applyPendingList(next, pos, textarea ?? null)) {
+        return;
+      }
+
       if (notes && notes.length > 0 && pos >= 2 && next.slice(pos - 2, pos) === '[[') {
         cursorPosRef.current = pos - 2;
         onChange(next.slice(0, pos - 2) + next.slice(pos));
@@ -115,7 +122,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
       onChange(next);
     },
-    [notes, onChange],
+    [notes, onChange, applyPendingList],
   );
 
   const handleNoteSelect = useCallback(
