@@ -13,6 +13,7 @@ interface HeadingItem {
 interface NoteOutlineProps {
   content: string;
   onHeadingClick?: (line: number) => void;
+  className?: string;
 }
 
 function extractHeadings(markdown: string): HeadingItem[] {
@@ -42,17 +43,19 @@ const LEVEL_INDENT: Record<number, string> = {
   6: 'pl-19',
 };
 
-export function NoteOutline({ content, onHeadingClick }: NoteOutlineProps) {
+export function NoteOutline({ content, onHeadingClick, className }: NoteOutlineProps) {
   const headings = useMemo(() => extractHeadings(content), [content]);
 
   if (headings.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full text-muted-foreground text-xs">Keine Überschriften</div>
+      <div className={cn('flex items-center justify-center h-full text-muted-foreground text-xs', className)}>
+        Keine Überschriften
+      </div>
     );
   }
 
   return (
-    <nav className="py-4 overflow-y-auto h-full">
+    <nav className={cn('py-4 overflow-y-auto h-full', className)}>
       <p className="px-4 mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">Gliederung</p>
       <ul className="px-1">
         {headings.map((heading, idx) => (
