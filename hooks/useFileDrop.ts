@@ -77,5 +77,43 @@ export function useFileDrop({ noteId, value, onChange, onFileUploaded, wrapperRe
     [wrapperRef],
   );
 
-  return { dragging, uploading, handleDrop, handleDragOver, handleDragLeave };
+  const handlePaste = useCallback(
+    async (e: React.ClipboardEvent) => {
+      const items = Array.from(e.clipboardData.items);
+      const imageFiles = items
+        .filter((item) => item.type.startsWith('image/'))
+        .map((item) => item.getAsFile())
+        .filter((f): f is File => f !== null);
+
+      if (imageFiles.length === 0 || noteId === undefined || noteId === '') {
+        return;
+      }
+
+      e.preventDefault();
+      setUploading(true);
+      try {
+        const links: string[] = [];
+        for (const file of imageFiles) {
+          const form = new FormData();
+          form.append('file', file);
+          const res = await fetch(`/api/notes/${noteId}/attachments`, { method: 'POST', body: form });
+          if (res.ok) {
+            const att = (await res.json()) as Attachment;
+            onFileUploaded?.(att);
+            links.push(buildMarkdownLink(att, noteId));
+          }
+        }
+        if (links.length > 0) {
+          const textarea = wrapperRef.current?.querySelector('textarea');
+          const pos = textarea?.selectionStart ?? value.length;
+          onChange(insertAtCursor(value, pos, links.join('\n')));
+        }
+      } finally {
+        setUploading(false);
+      }
+    },
+    [noteId, value, onChange, onFileUploaded, wrapperRef],
+  );
+
+  return { dragging, uploading, handleDrop, handleDragOver, handleDragLeave, handlePaste };
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useCallback, useRef, useEffect } from 'react';
+import { useState, useTransition, useCallback, useRef, useEffect, useMemo } from 'react';
 import { MarkdownEditor, type MarkdownEditorHandle } from '@/components/MarkdownEditor';
 import { AttachmentList } from '@/components/AttachmentList';
 import { updateNoteAction } from '../actions';
@@ -29,6 +29,10 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
   const [outlineVisible, setOutlineVisible] = useState(() => /^#{1,6}\s+.+$/m.test(note.content));
   const savedTimer = useRef<ReturnType<typeof setTimeout>>(null);
 
+  const nonImageAttachments = useMemo(
+    () => attachments.filter((a) => !a.mimeType.startsWith('image/')),
+    [attachments],
+  );
   const isDirty = title !== note.title || content !== note.content;
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout>>(null);
   const latestTitle = useRef(title);
@@ -190,10 +194,10 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
           notes={notes}
         />
       </div>
-      {attachments.length > 0 && (
+      {nonImageAttachments.length > 0 && (
         <AttachmentList
           noteId={note.id}
-          attachments={attachments}
+          attachments={nonImageAttachments}
           onDeleted={handleAttachmentDeleted}
           className="shrink-0 max-h-48 overflow-y-auto mx-2 mb-2 z-10 shadow-panel"
         />

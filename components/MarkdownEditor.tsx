@@ -44,7 +44,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
   const wrapperRef = useRef<HTMLDivElement>(null);
   const cursorPosRef = useRef<number>(value.length);
 
-  const { dragging, uploading, handleDrop, handleDragOver, handleDragLeave } = useFileDrop({
+  const { dragging, uploading, handleDrop, handleDragOver, handleDragLeave, handlePaste } = useFileDrop({
     noteId,
     value,
     onChange,
@@ -139,6 +139,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
+      onPaste={handlePaste}
     >
       <MDEditor
         value={value}
