@@ -172,7 +172,7 @@ button, card, input, dialog, textarea, badge, sidebar, separator, sheet, tooltip
 - Tailwind responsive design
 - `NOTES_ROOT` env var for data directory
 - `revalidatePath()` after mutations
-- Inline tests in every file
+- Tests live in separate `*.test.ts` files next to the module they test (e.g. `lib/foo.test.ts` for `lib/foo.ts`)
 - File naming: PascalCase for components/pages, camelCase for lib/utils, lowercase for config
 - Before writing any UI code, check `components/ui/` for an existing shadcn component first
 - Never implement custom UI components from scratch. First check if a matching shadcn/ui component exists (`npx shadcn@latest add <name>`). Only build custom components when no shadcn equivalent is available.

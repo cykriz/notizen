@@ -25,7 +25,6 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
   const [saved, setSaved] = useState(false);
   const [preview, setPreview] = useState<PreviewMode>(note.content.trim() === '' ? PREVIEW_EDIT : PREVIEW_PREVIEW);
   const [tags, setTags] = useState<string[]>(note.tags);
-  const [pinned, setPinned] = useState(note.pinned);
   const [outlineVisible, setOutlineVisible] = useState(() => /^#{1,6}\s+.+$/m.test(note.content));
   const savedTimer = useRef<ReturnType<typeof setTimeout>>(null);
 
@@ -98,6 +97,12 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
   }, [title, content, note.id, note.title, note.content, showSavedFeedback]);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'o' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
+        e.preventDefault();
+        setOutlineVisible((v) => !v);
+        return;
+      }
+
       if (e.key === 'o' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setPreview((p) => (p === PREVIEW_EDIT ? PREVIEW_PREVIEW : PREVIEW_EDIT));
@@ -137,21 +142,11 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
     [note.id],
   );
 
-  const handleTogglePin = useCallback(() => {
-    const newPinned = !pinned;
-    setPinned(newPinned);
-    startSaving(async () => {
-      await updateNoteAction(note.id, { pinned: newPinned });
-    });
-  }, [note.id, pinned]);
-
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <NoteHeader
-        noteId={note.id}
         title={title}
         onTitleChange={setTitle}
-        noteTitle={note.title}
         preview={preview}
         onTogglePreview={() => {
           setPreview((p) => (p === PREVIEW_EDIT ? PREVIEW_PREVIEW : PREVIEW_EDIT));
@@ -167,8 +162,9 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
         onToggleOutline={() => {
           setOutlineVisible((v) => !v);
         }}
-        pinned={pinned}
-        onTogglePin={handleTogglePin}
+        tags={tags}
+        allTags={allTags}
+        onTagsChange={handleTagsChange}
       >
         <div className="md:hidden border-t border-border">
           <TagInput tags={tags} allTags={allTags} onChange={handleTagsChange} />
@@ -178,7 +174,6 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
         {outlineVisible && (
           <aside className="hidden md:flex flex-col w-56 shrink-0">
             <NoteOutline content={content} onHeadingClick={handleHeadingClick} className="flex-1 min-h-0" />
-            <TagInput tags={tags} allTags={allTags} onChange={handleTagsChange} className="mt-auto" />
           </aside>
         )}
         <MarkdownEditor
