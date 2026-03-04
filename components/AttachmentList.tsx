@@ -50,12 +50,9 @@ export function AttachmentList({ noteId, attachments, onDeleted, className }: At
 
   return (
     <Card className={cn('py-0', className)}>
-      <CardContent className="flex flex-col px-0 py-0">
+      <CardContent className="note-section-padding flex flex-col">
         {attachments.map((att, i) => (
-          <div
-            key={att.id}
-            className={cn('flex items-center gap-3 px-4 py-3', { 'border-t border-border': i > 0 })}
-          >
+          <div key={att.id} className={cn('flex items-center gap-3', { 'border-t border-border': i > 0 })}>
             <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
 
             <div className="min-w-0 flex-1">

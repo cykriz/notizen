@@ -72,7 +72,7 @@ export function CommandPalette({ notes, todos }: CommandPaletteProps) {
                 {note.pinned ? <Pin /> : <FileText />}
                 <span className="truncate">{note.title}</span>
                 {note.tags.slice(0, 2).map((tag, i) => (
-                  <Badge key={tag} variant="secondary" className={cn("text-[10px] px-1 py-0", { "ml-auto": i === 0 })}>
+                  <Badge key={tag} variant="secondary" className={cn("text-xs px-1 py-0", { "ml-auto": i === 0 })}>
                     {tag.split("/").pop()}
                   </Badge>
                 ))}

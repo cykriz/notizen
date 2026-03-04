@@ -70,7 +70,7 @@ export function NoteHeader({
 
   return (
     <Card className="shrink-0 gap-0 py-0 shadow-panel z-10 mx-2 mt-2">
-      <CardContent className="flex items-center gap-3 px-4 py-3">
+      <CardContent className="note-section-padding flex items-center gap-3">
         <Input
           id="note-title"
           name="note-title"
@@ -81,9 +81,9 @@ export function NoteHeader({
           }}
           placeholder="Notiz-Titel…"
           rounded={false}
-          className="flex-1 text-2xl font-semibold h-auto border-none shadow-none focus-visible:ring-0 placeholder:text-2xl px-0 bg-transparent"
+          className="flex-1 text-lg p-0 font-semibold h-auto border-none shadow-none focus-visible:ring-0 placeholder:text-xl md:placeholder:text-2xl bg-transparent"
         />
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center gap-2 md:gap-1">
           <Button onClick={onTogglePin} size="icon-xs" variant="ghost" className={cn({ 'bg-accent': pinned })}>
             <Pin />
           </Button>

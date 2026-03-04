@@ -82,7 +82,7 @@ export function TagInput({ tags, allTags, onChange, className }: TagInputProps) 
   };
 
   return (
-    <div className={cn('relative flex flex-wrap items-center gap-1.5 p-4 inset-shadow-sm', className)}>
+    <div className={cn('note-section-padding relative flex flex-wrap items-center gap-1.5 inset-shadow-sm', className)}>
       <Tag className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
       {tags.map((tag, i) => (
         <TagBadge
@@ -119,7 +119,7 @@ export function TagInput({ tags, allTags, onChange, className }: TagInputProps) 
           onKeyDown={handleKeyDown}
           placeholder="Tag hinzufügen…"
           rounded={false}
-          className="h-6 border-none bg-transparent px-1 text-xs shadow-none focus-visible:ring-0"
+          className="h-7 md:h-6 border-none bg-transparent px-1 text-sm md:text-xs shadow-none focus-visible:ring-0"
         />
         {showSuggestions && (
           <div className="absolute left-0 bottom-full mb-1 z-50 w-56 rounded-md border bg-popover shadow-md">

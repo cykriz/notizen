@@ -59,7 +59,7 @@ export function QuadrantCard({ meta, todos, onAdd, onEdit, notes }: QuadrantCard
           <span className="sr-only">Aufgabe hinzufügen</span>
         </Button>
       </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto p-1.5 px-0">
+      <CardContent className="flex-1 overflow-y-auto p-2 px-1 md:p-1.5 md:px-0">
         {open.length === 0 && done.length === 0 && (
           <p className="py-4 text-center text-xs text-muted-foreground">Keine Aufgaben</p>
         )}

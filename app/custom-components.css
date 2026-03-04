@@ -1,3 +1,7 @@
+.note-section-padding {
+  @apply px-4 py-2;
+}
+
 [data-color-mode] {
   --color-fg-default: var(--foreground);
   --color-canvas-default: var(--background);
@@ -6,11 +10,17 @@
   --color-neutral-muted: var(--muted);
   --color-accent-fg: var(--primary);
   --color-danger-fg: var(--destructive);
+
+  /* MDEditor: shared typography and layout for edit + preview */
+  --md-editor-font-family: var(--font-sans);
+  --md-editor-font-size: 16px;
+  --md-editor-line-height: 1.6;
+  --md-editor-padding-block: 24px;
+  --md-editor-padding-inline: max(24px, calc((100% - 42rem) / 2));
 }
 
 [data-color-mode] .w-md-editor {
-  --md-editor-font-family: var(--font-sans);
-  font-family: var(--font-sans) !important;
+  font-family: var(--md-editor-font-family) !important;
   box-shadow: none !important;
   border-radius: 0 !important;
   background-color: var(--background) !important;
@@ -24,19 +34,18 @@
 }
 
 [data-color-mode] .w-md-editor-text {
-  /* Center content in a 42rem column; falls back to 24px on narrow screens */
-  padding: 24px max(24px, calc((100% - 42rem) / 2)) !important;
-  font-family: var(--font-sans) !important;
-  font-size: 18px !important;
-  line-height: 32px !important;
+  padding: var(--md-editor-padding-block) var(--md-editor-padding-inline) !important;
+  font-family: var(--md-editor-font-family) !important;
+  font-size: var(--md-editor-font-size) !important;
+  line-height: var(--md-editor-line-height) !important;
   letter-spacing: normal !important;
   min-height: 100% !important;
 }
 
 [data-color-mode] .w-md-editor-text-input {
-  font-family: var(--font-sans) !important;
-  font-size: 18px !important;
-  line-height: 32px !important;
+  font-family: var(--md-editor-font-family) !important;
+  font-size: var(--md-editor-font-size) !important;
+  line-height: var(--md-editor-line-height) !important;
   letter-spacing: normal !important;
   min-height: 100% !important;
 }
@@ -47,15 +56,14 @@
 
 [data-color-mode] .w-md-editor-text-pre,
 [data-color-mode] .w-md-editor-text-pre > code {
-  font-family: var(--font-sans) !important;
-  font-size: 18px !important;
-  line-height: 32px !important;
+  font-family: var(--md-editor-font-family) !important;
+  font-size: var(--md-editor-font-size) !important;
+  line-height: var(--md-editor-line-height) !important;
   letter-spacing: normal !important;
 }
 
 [data-color-mode] .w-md-editor-preview {
-  /* Center content in a 42rem column; falls back to 24px on narrow screens */
-  padding: 24px max(24px, calc((100% - 42rem) / 2)) !important;
+  padding: var(--md-editor-padding-block) var(--md-editor-padding-inline) !important;
 }
 
 [data-color-mode] .w-md-editor-text-pre .token {
@@ -69,8 +77,9 @@
 }
 
 [data-color-mode] .wmde-markdown {
-  font-size: 18px !important;
-  line-height: 1.75 !important;
+  font-family: var(--md-editor-font-family) !important;
+  font-size: var(--md-editor-font-size) !important;
+  line-height: var(--md-editor-line-height) !important;
   color: var(--foreground) !important;
   background-color: var(--background) !important;
   -webkit-font-smoothing: antialiased;

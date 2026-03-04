@@ -102,7 +102,7 @@ export function TodoDialog({ open, onOpenChange, todo, defaultQuadrant, notes }:
             }}
             rows={3}
           />
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <div className="flex-1">
               <label className="mb-1.5 block text-sm font-medium" htmlFor="todo-due">
                 Fälligkeitsdatum
@@ -163,7 +163,7 @@ export function TodoDialog({ open, onOpenChange, todo, defaultQuadrant, notes }:
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-6 px-2 text-xs"
+                  className="h-8 px-3 text-xs"
                   onClick={() => {
                     setPickerOpen(true);
                   }}

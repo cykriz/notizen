@@ -15,6 +15,7 @@ export function useListKeys(
   onChange: (v: string) => void,
 ) {
   const valueRef = useRef(value);
+  /** Ref so keydown handler and applyPendingList always call the latest onChange without re-subscribing or stale closures. */
   const onChangeRef = useRef(onChange);
   const pendingRef = useRef<PendingList>(null);
 
@@ -72,7 +73,7 @@ export function useListKeys(
             textarea.selectionEnd = p;
           });
         } else {
-          onChangeRef.current(`${val.slice(0, lineStart)  }  ${  line  }${val.slice(lineEnd)}`);
+          onChangeRef.current(`${val.slice(0, lineStart)}  ${line}${val.slice(lineEnd)}`);
           requestAnimationFrame(() => {
             const p = selectionStart + 2;
             textarea.selectionStart = p;
@@ -100,11 +101,7 @@ export function useListKeys(
   }, [wrapperRef]);
 
   /** Returns true if the change was handled (caller should return early). */
-  function applyPendingList(
-    next: string,
-    pos: number,
-    textarea: HTMLTextAreaElement | null,
-  ): boolean {
+  function applyPendingList(next: string, pos: number, textarea: HTMLTextAreaElement | null): boolean {
     const pending = pendingRef.current;
     if (pending === null) {
       return false;
@@ -116,12 +113,12 @@ export function useListKeys(
 
     if (pending === 'exit') {
       const prevLineStart = next.lastIndexOf('\n', curLineStart - 2) + 1;
-      onChange(next.slice(0, prevLineStart) + next.slice(pos));
+      onChangeRef.current(next.slice(0, prevLineStart) + next.slice(pos));
       setCursor(textarea, prevLineStart);
       return true;
     }
 
-    onChange(next.slice(0, curLineStart) + pending.marker + next.slice(pos));
+    onChangeRef.current(next.slice(0, curLineStart) + pending.marker + next.slice(pos));
     setCursor(textarea, curLineStart + pending.marker.length);
     return true;
   }

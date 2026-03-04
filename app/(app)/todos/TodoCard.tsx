@@ -40,7 +40,7 @@ export function TodoCard({ todo, onEdit, notes }: TodoCardProps) {
 
   return (
     <div
-      className="group flex items-start gap-2 rounded-md px-2 py-1.5 hover:bg-accent/50 cursor-pointer"
+      className="group flex items-start gap-2 rounded-md px-2.5 py-2 md:px-2 md:py-1.5 hover:bg-accent/50 cursor-pointer"
       onClick={() => {
         onEdit(todo); 
       }}
@@ -74,7 +74,7 @@ export function TodoCard({ todo, onEdit, notes }: TodoCardProps) {
         {todo.dueDate !== undefined && (
           <Badge
             variant={!todo.completed && isOverdue(todo.dueDate) ? 'destructive' : 'secondary'}
-            className="ml-2 text-[10px] px-1.5 py-0"
+            className="ml-2 text-xs px-1.5 py-0"
           >
             <Calendar className="h-2.5 w-2.5 mr-0.5" />
             {formatDate(todo.dueDate)}
@@ -86,7 +86,7 @@ export function TodoCard({ todo, onEdit, notes }: TodoCardProps) {
               <Badge
                 key={n.id}
                 variant="outline"
-                className="text-[10px] px-1.5 py-0 gap-0.5 cursor-pointer hover:bg-accent"
+                className="text-xs px-1.5 py-0 gap-0.5 cursor-pointer hover:bg-accent"
                 onClick={(e) => {
                   e.stopPropagation();
                   router.push(`/notes/${n.id}`);
