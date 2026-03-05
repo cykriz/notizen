@@ -58,7 +58,7 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown); 
+      window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
 
@@ -70,10 +70,13 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
     setOutlineVisible((v) => !v);
   }, []);
 
-  const handleContentChange = useCallback((v: string) => {
-    setContent(v);
-    handleSavedReset();
-  }, [handleSavedReset]);
+  const handleContentChange = useCallback(
+    (v: string) => {
+      setContent(v);
+      handleSavedReset();
+    },
+    [handleSavedReset],
+  );
 
   const handleUploaded = useCallback((att: Attachment) => {
     setAttachments((prev) => [...prev, att]);
@@ -88,7 +91,7 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
   useEffect(() => {
     if (preview === PREVIEW_EDIT) {
       requestAnimationFrame(() => {
-        editorRef.current?.focus(); 
+        editorRef.current?.focus();
       });
     }
   }, [preview]);

@@ -21,14 +21,7 @@ export async function updateNoteAction(
     title: data.title?.trim() === '' ? DEFAULT_TITLE : data.title,
   };
   await updateNote(id, normalized);
-
-  const sidebarChanged =
-    normalized.title !== undefined || normalized.tags !== undefined || normalized.pinned !== undefined;
-  
-  if (sidebarChanged) {
-    revalidatePath('/notes');
-  }
-
+  revalidatePath('/notes');
   revalidatePath(`/notes/${id}`);
 }
 
