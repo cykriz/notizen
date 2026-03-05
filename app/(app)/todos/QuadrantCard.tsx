@@ -1,11 +1,13 @@
-"use client";
+'use client';
 
-import { memo } from "react";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { memo, useState, useTransition } from 'react';
+import { Plus, Pencil } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { TodoCard } from './TodoCard';
+import { createTodoAction } from './actions';
 import { QUADRANT_META } from '@/lib/constants';
 import type { QuadrantMeta, NoteSummary } from '@/lib/types';
 import type { Todo, TodoQuadrant } from '@/lib/fsTodos';
@@ -16,10 +18,19 @@ interface QuadrantCardMeta extends QuadrantMeta {
 }
 
 const colorMap: Record<TodoQuadrant, { colorClass: string; headerClass: string }> = {
-  do: { colorClass: "bg-quadrant-do text-quadrant-do-foreground", headerClass: "text-quadrant-do-foreground" },
-  schedule: { colorClass: "bg-quadrant-schedule text-quadrant-schedule-foreground", headerClass: "text-quadrant-schedule-foreground" },
-  delegate: { colorClass: "bg-quadrant-delegate text-quadrant-delegate-foreground", headerClass: "text-quadrant-delegate-foreground" },
-  eliminate: { colorClass: "bg-quadrant-eliminate text-quadrant-eliminate-foreground", headerClass: "text-quadrant-eliminate-foreground" },
+  do: { colorClass: 'bg-quadrant-do text-quadrant-do-foreground', headerClass: 'text-quadrant-do-foreground' },
+  schedule: {
+    colorClass: 'bg-quadrant-schedule text-quadrant-schedule-foreground',
+    headerClass: 'text-quadrant-schedule-foreground',
+  },
+  delegate: {
+    colorClass: 'bg-quadrant-delegate text-quadrant-delegate-foreground',
+    headerClass: 'text-quadrant-delegate-foreground',
+  },
+  eliminate: {
+    colorClass: 'bg-quadrant-eliminate text-quadrant-eliminate-foreground',
+    headerClass: 'text-quadrant-eliminate-foreground',
+  },
 };
 
 export const quadrants: QuadrantCardMeta[] = QUADRANT_META.map((m) => ({
@@ -30,7 +41,7 @@ export const quadrants: QuadrantCardMeta[] = QUADRANT_META.map((m) => ({
 interface QuadrantCardProps {
   meta: QuadrantCardMeta;
   todos: Todo[];
-  onAdd: (quadrant: TodoQuadrant) => void;
+  onAdd: (quadrant: TodoQuadrant, title?: string) => void;
   onEdit: (todo: Todo) => void;
   notes: NoteSummary[];
 }
@@ -38,42 +49,76 @@ interface QuadrantCardProps {
 export const QuadrantCard = memo(function QuadrantCard({ meta, todos, onAdd, onEdit, notes }: QuadrantCardProps) {
   const open = todos.filter((t) => !t.completed);
   const done = todos.filter((t) => t.completed);
+  const [inputValue, setInputValue] = useState('');
+  const [, startTransition] = useTransition();
+
+  const handleQuickAdd = () => {
+    const trimmed = inputValue.trim();
+    if (trimmed === '') {
+      return;
+    }
+
+    setInputValue('');
+    startTransition(async () => {
+      await createTodoAction({ title: trimmed, quadrant: meta.key });
+    });
+  };
+
+  const handleEditClick = () => {
+    const title = inputValue.trim();
+    setInputValue('');
+    onAdd(meta.key, title !== '' ? title : undefined);
+  };
 
   return (
     <Card className="flex flex-col min-h-0 overflow-hidden gap-0 py-0">
-      <CardHeader className={cn("flex-row items-center gap-2 py-2.5 px-3", meta.colorClass)}>
+      <CardHeader className={cn('flex-row items-center gap-2 py-2.5 px-3', meta.colorClass)}>
         <div className="flex-1 min-w-0">
-          <CardTitle className={cn("text-sm font-semibold", meta.headerClass)}>
-            {meta.label}
-          </CardTitle>
-          <p className={cn("text-xs opacity-75", meta.headerClass)}>{meta.description}</p>
+          <CardTitle className={cn('text-sm font-semibold', meta.headerClass)}>{meta.label}</CardTitle>
+          <p className={cn('text-xs opacity-75', meta.headerClass)}>{meta.description}</p>
         </div>
         <Button
           size="icon-xs"
           variant="ghost"
           className={meta.headerClass}
           onClick={() => {
-            onAdd(meta.key); 
+            onAdd(meta.key);
           }}
         >
           <Plus />
           <span className="sr-only">Aufgabe hinzufügen</span>
         </Button>
       </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto p-2 px-1 md:p-1.5 md:px-0">
+      <CardContent className="flex-1 overflow-y-auto mx-2 md:p-1.5 md:px-0">
         {open.length === 0 && done.length === 0 && (
           <p className="py-4 text-center text-xs text-muted-foreground">Keine Aufgaben</p>
         )}
         {open.map((t) => (
           <TodoCard key={t.id} todo={t} onEdit={onEdit} notes={notes} />
         ))}
-        {done.length > 0 && open.length > 0 && (
-          <div className="my-1 border-t" />
-        )}
+        {done.length > 0 && open.length > 0 && <div className="my-1 border-t" />}
         {done.map((t) => (
           <TodoCard key={t.id} todo={t} onEdit={onEdit} notes={notes} />
         ))}
       </CardContent>
+      <div className="flex items-center gap-1 border-t px-2 py-1">
+        <Input
+          value={inputValue}
+          onChange={(e) => {
+            setInputValue(e.target.value); 
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              handleQuickAdd();
+            }
+          }}
+          placeholder="Neue Aufgabe…"
+          className="h-7 border-0 shadow-none bg-transparent focus-visible:ring-0 focus-visible:border-0 px-1"
+        />
+        <Button size="icon-xs" variant="ghost" className="shrink-0 text-muted-foreground" onClick={handleEditClick}>
+          <Pencil className="h-3.5 w-3.5" />
+        </Button>
+      </div>
     </Card>
   );
 });

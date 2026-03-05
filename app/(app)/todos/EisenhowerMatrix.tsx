@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo } from 'react';
 import { QuadrantCard, quadrants } from './QuadrantCard';
 import { TodoDialog } from './TodoDialog';
 import type { Todo, TodoQuadrant } from '@/lib/fsTodos';
@@ -14,7 +14,9 @@ interface EisenhowerMatrixProps {
 export function EisenhowerMatrix({ todos, notes }: EisenhowerMatrixProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | undefined>(undefined);
-  const [defaultQuadrant, setDefaultQuadrant] = useState<TodoQuadrant>("do");
+  const [defaultQuadrant, setDefaultQuadrant] = useState<TodoQuadrant>('do');
+  const [defaultTitle, setDefaultTitle] = useState('');
+  const [dialogKey, setDialogKey] = useState(0);
 
   const todosByQuadrant = useMemo(() => {
     const map: Record<TodoQuadrant, Todo[]> = { do: [], schedule: [], delegate: [], eliminate: [] };
@@ -24,9 +26,11 @@ export function EisenhowerMatrix({ todos, notes }: EisenhowerMatrixProps) {
     return map;
   }, [todos]);
 
-  const handleAdd = useCallback((quadrant: TodoQuadrant) => {
+  const handleAdd = useCallback((quadrant: TodoQuadrant, title?: string) => {
     setEditingTodo(undefined);
     setDefaultQuadrant(quadrant);
+    setDefaultTitle(title ?? '');
+    setDialogKey((k) => k + 1);
     setDialogOpen(true);
   }, []);
 
@@ -45,7 +49,7 @@ export function EisenhowerMatrix({ todos, notes }: EisenhowerMatrixProps) {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-0 p-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 min-h-0 py-2 px-3">
         {quadrants.map((meta) => (
           <QuadrantCard
             key={meta.key}
@@ -58,11 +62,12 @@ export function EisenhowerMatrix({ todos, notes }: EisenhowerMatrixProps) {
         ))}
       </div>
       <TodoDialog
-        key={editingTodo?.id ?? 'new'}
+        key={editingTodo?.id ?? `new-${String(dialogKey)}`}
         open={dialogOpen}
         onOpenChange={handleOpenChange}
         todo={editingTodo}
         defaultQuadrant={defaultQuadrant}
+        defaultTitle={defaultTitle}
         notes={notes}
       />
     </>

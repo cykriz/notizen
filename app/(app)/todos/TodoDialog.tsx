@@ -19,12 +19,13 @@ interface TodoDialogProps {
   onOpenChange: (open: boolean) => void;
   todo?: Todo;
   defaultQuadrant?: TodoQuadrant;
+  defaultTitle?: string;
   notes: NoteSummary[];
 }
 
-export function TodoDialog({ open, onOpenChange, todo, defaultQuadrant, notes }: TodoDialogProps) {
+export function TodoDialog({ open, onOpenChange, todo, defaultQuadrant, defaultTitle, notes }: TodoDialogProps) {
   const isEdit = todo !== undefined;
-  const [title, setTitle] = useState(todo?.title ?? '');
+  const [title, setTitle] = useState(todo?.title ?? defaultTitle ?? '');
   const [description, setDescription] = useState(todo?.description ?? '');
   const [dueDate, setDueDate] = useState(todo?.dueDate ?? '');
   const [quadrant, setQuadrant] = useState<TodoQuadrant>(todo?.quadrant ?? defaultQuadrant ?? 'do');
