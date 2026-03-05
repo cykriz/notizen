@@ -1,13 +1,13 @@
 'use client';
 
-import { memo, useState, useTransition } from 'react';
+import { memo, useRef, useState, useTransition } from 'react';
 import { Plus, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { TodoCard } from './TodoCard';
-import { createTodoAction } from './actions';
+import { createTodoAction, updateTodoAction } from './actions';
 import { QUADRANT_META } from '@/lib/constants';
 import type { QuadrantMeta, NoteSummary } from '@/lib/types';
 import type { Todo, TodoQuadrant } from '@/lib/fsTodos';
@@ -70,8 +70,51 @@ export const QuadrantCard = memo(function QuadrantCard({ meta, todos, onAdd, onE
     onAdd(meta.key, title !== '' ? title : undefined);
   };
 
+  const [isDragTarget, setIsDragTarget] = useState(false);
+  // Tracks nested dragEnter/dragLeave pairs to avoid flicker from child elements
+  const dragCounter = useRef(0);
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounter.current += 1;
+    setIsDragTarget(true);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDragLeave = () => {
+    dragCounter.current -= 1;
+    if (dragCounter.current === 0) {
+      setIsDragTarget(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounter.current = 0;
+    setIsDragTarget(false);
+    const todoId = e.dataTransfer.getData('application/x-todo-id');
+    const fromQuadrant = e.dataTransfer.getData('application/x-todo-quadrant');
+    if (todoId !== '' && fromQuadrant !== meta.key) {
+      startTransition(async () => {
+        await updateTodoAction(todoId, { quadrant: meta.key });
+      });
+    }
+  };
+
   return (
-    <Card className="flex flex-col min-h-0 overflow-hidden gap-0 py-0">
+    <Card
+      className={cn('flex flex-col min-h-0 overflow-hidden gap-0 py-0', {
+        'ring-2 ring-primary/50': isDragTarget,
+      })}
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <CardHeader className={cn('flex-row items-center gap-2 py-2.5 px-3', meta.colorClass)}>
         <div className="flex-1 min-w-0">
           <CardTitle className={cn('text-sm font-semibold', meta.headerClass)}>{meta.label}</CardTitle>
@@ -105,7 +148,7 @@ export const QuadrantCard = memo(function QuadrantCard({ meta, todos, onAdd, onE
         <Input
           value={inputValue}
           onChange={(e) => {
-            setInputValue(e.target.value); 
+            setInputValue(e.target.value);
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {

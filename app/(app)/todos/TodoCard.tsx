@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useMemo, useTransition } from 'react';
+import { memo, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar, FileText } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -23,6 +23,7 @@ function isOverdue(dueDate: string): boolean {
 export const TodoCard = memo(function TodoCard({ todo, onEdit, notes }: TodoCardProps) {
   const [, startToggle] = useTransition();
   const router = useRouter();
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleToggle = (checked: boolean) => {
     startToggle(async () => {
@@ -40,9 +41,22 @@ export const TodoCard = memo(function TodoCard({ todo, onEdit, notes }: TodoCard
 
   return (
     <div
-      className="group flex items-start gap-2 rounded-md px-2.5 py-2 md:px-2 md:py-1.5 hover:bg-accent/50 cursor-pointer"
+      className={cn(
+        'group flex items-start gap-2 rounded-md px-2.5 py-2 md:px-2 md:py-1.5 hover:bg-accent/50 cursor-pointer',
+        { 'opacity-50': isDragging },
+      )}
+      draggable
+      onDragStart={(e) => {
+        setIsDragging(true);
+        e.dataTransfer.setData('application/x-todo-id', todo.id);
+        e.dataTransfer.setData('application/x-todo-quadrant', todo.quadrant);
+        e.dataTransfer.effectAllowed = 'move';
+      }}
+      onDragEnd={() => {
+        setIsDragging(false);
+      }}
       onClick={() => {
-        onEdit(todo); 
+        onEdit(todo);
       }}
       role="button"
       tabIndex={0}
@@ -56,16 +70,19 @@ export const TodoCard = memo(function TodoCard({ todo, onEdit, notes }: TodoCard
       <div
         className="pt-0.5"
         onClick={(e) => {
-          e.stopPropagation(); 
+          e.stopPropagation();
         }}
         onKeyDown={(e) => {
-          e.stopPropagation(); 
+          e.stopPropagation();
         }}
         role="presentation"
       >
-        <Checkbox checked={todo.completed} onCheckedChange={(checked) => {
-          handleToggle(checked === true); 
-        }} />
+        <Checkbox
+          checked={todo.completed}
+          onCheckedChange={(checked) => {
+            handleToggle(checked === true);
+          }}
+        />
       </div>
       <div className="flex-1 min-w-0">
         <span className={cn('text-sm leading-tight', { 'line-through text-muted-foreground': todo.completed })}>
