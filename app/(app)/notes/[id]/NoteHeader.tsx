@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { Save, Loader2, Eye, Pencil, List } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -24,10 +25,9 @@ interface NoteHeaderProps {
   tags: string[];
   allTags: string[];
   onTagsChange: (tags: string[]) => void;
-  children?: React.ReactNode;
 }
 
-export function NoteHeader({
+export const NoteHeader = memo(function NoteHeader({
   title,
   onTitleChange,
   preview,
@@ -42,7 +42,6 @@ export function NoteHeader({
   tags,
   allTags,
   onTagsChange,
-  children,
 }: NoteHeaderProps) {
   return (
     <Card className="shrink-0 gap-0 py-0 shadow-panel z-10 mx-2 mt-2">
@@ -83,7 +82,9 @@ export function NoteHeader({
           </Button>
         </div>
       </CardContent>
-      {children}
+      <div className="md:hidden border-t border-border">
+        <TagInput tags={tags} allTags={allTags} onChange={onTagsChange} />
+      </div>
     </Card>
   );
-}
+});

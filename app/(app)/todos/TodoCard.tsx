@@ -1,11 +1,11 @@
 'use client';
 
-import { useTransition } from 'react';
+import { memo, useMemo, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar, FileText } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { cn, formatDate } from '@/lib/utils';
 import { toggleTodoAction } from './actions';
 import type { Todo } from '@/lib/fsTodos';
 import type { NoteSummary } from '@/lib/types';
@@ -20,11 +20,7 @@ function isOverdue(dueDate: string): boolean {
   return new Date(dueDate) < new Date(new Date().toISOString().slice(0, 10));
 }
 
-function formatDate(iso: string): string {
-  return new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(iso));
-}
-
-export function TodoCard({ todo, onEdit, notes }: TodoCardProps) {
+export const TodoCard = memo(function TodoCard({ todo, onEdit, notes }: TodoCardProps) {
   const [, startToggle] = useTransition();
   const router = useRouter();
 
@@ -34,9 +30,13 @@ export function TodoCard({ todo, onEdit, notes }: TodoCardProps) {
     });
   };
 
-  const linkedNotes = (todo.linkedNoteIds ?? [])
-    .map((nid) => notes.find((n) => n.id === nid))
-    .filter((n): n is NoteSummary => n !== undefined);
+  const linkedNotes = useMemo(
+    () =>
+      (todo.linkedNoteIds ?? [])
+        .map((nid) => notes.find((n) => n.id === nid))
+        .filter((n): n is NoteSummary => n !== undefined),
+    [todo.linkedNoteIds, notes],
+  );
 
   return (
     <div
@@ -101,4 +101,4 @@ export function TodoCard({ todo, onEdit, notes }: TodoCardProps) {
       </div>
     </div>
   );
-}
+});

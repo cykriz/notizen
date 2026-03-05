@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { QuadrantCard, quadrants } from './QuadrantCard';
 import { TodoDialog } from './TodoDialog';
 import type { Todo, TodoQuadrant } from '@/lib/fsTodos';
@@ -16,24 +16,32 @@ export function EisenhowerMatrix({ todos, notes }: EisenhowerMatrixProps) {
   const [editingTodo, setEditingTodo] = useState<Todo | undefined>(undefined);
   const [defaultQuadrant, setDefaultQuadrant] = useState<TodoQuadrant>("do");
 
-  const handleAdd = (quadrant: TodoQuadrant) => {
+  const todosByQuadrant = useMemo(() => {
+    const map: Record<TodoQuadrant, Todo[]> = { do: [], schedule: [], delegate: [], eliminate: [] };
+    for (const t of todos) {
+      map[t.quadrant].push(t);
+    }
+    return map;
+  }, [todos]);
+
+  const handleAdd = useCallback((quadrant: TodoQuadrant) => {
     setEditingTodo(undefined);
     setDefaultQuadrant(quadrant);
     setDialogOpen(true);
-  };
+  }, []);
 
-  const handleEdit = (todo: Todo) => {
+  const handleEdit = useCallback((todo: Todo) => {
     setEditingTodo(todo);
     setDefaultQuadrant(todo.quadrant);
     setDialogOpen(true);
-  };
+  }, []);
 
-  const handleOpenChange = (open: boolean) => {
+  const handleOpenChange = useCallback((open: boolean) => {
     setDialogOpen(open);
     if (!open) {
       setEditingTodo(undefined);
     }
-  };
+  }, []);
 
   return (
     <>
@@ -42,7 +50,7 @@ export function EisenhowerMatrix({ todos, notes }: EisenhowerMatrixProps) {
           <QuadrantCard
             key={meta.key}
             meta={meta}
-            todos={todos.filter((t) => t.quadrant === meta.key)}
+            todos={todosByQuadrant[meta.key]}
             onAdd={handleAdd}
             onEdit={handleEdit}
             notes={notes}

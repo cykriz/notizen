@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,7 +35,7 @@ interface QuadrantCardProps {
   notes: NoteSummary[];
 }
 
-export function QuadrantCard({ meta, todos, onAdd, onEdit, notes }: QuadrantCardProps) {
+export const QuadrantCard = memo(function QuadrantCard({ meta, todos, onAdd, onEdit, notes }: QuadrantCardProps) {
   const open = todos.filter((t) => !t.completed);
   const done = todos.filter((t) => t.completed);
 
@@ -75,4 +76,4 @@ export function QuadrantCard({ meta, todos, onAdd, onEdit, notes }: QuadrantCard
       </CardContent>
     </Card>
   );
-}
+});

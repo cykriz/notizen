@@ -1,9 +1,9 @@
 'use client';
 
-import { useTransition, useSyncExternalStore } from 'react';
+import { memo, useTransition, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { Paperclip, Pin, Trash2, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -23,24 +23,20 @@ import type { NoteSummary } from '@/lib/types';
 const noop = () => {};
 const emptySubscribe = () => noop;
 
-function formatDate(iso: string): string {
-  return new Intl.DateTimeFormat('de-DE', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).format(new Date(iso));
-}
-
 interface NoteListItemProps {
   note: NoteSummary;
   isActive: boolean;
   onNavigate: () => void;
 }
 
-export function NoteListItem({ note, isActive, onNavigate }: NoteListItemProps) {
+export const NoteListItem = memo(function NoteListItem({ note, isActive, onNavigate }: NoteListItemProps) {
   const [pinning, startPinning] = useTransition();
   const [deleting, startDeleting] = useTransition();
-  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
 
   const handleTogglePin = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -52,9 +48,9 @@ export function NoteListItem({ note, isActive, onNavigate }: NoteListItemProps) 
 
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton asChild isActive={isActive} className="h-auto py-2">
+      <SidebarMenuButton asChild isActive={isActive} className="h-auto py-2 pr-18 md:pr-2">
         <Link href={`/notes/${note.id}`} onClick={onNavigate}>
-          <div className="flex flex-col gap-0.5 leading-tight">
+          <div className="flex min-w-0 flex-col gap-0.5 leading-tight">
             <span className="truncate font-medium">{note.title}</span>
             <span className="text-xs text-sidebar-foreground/60">{formatDate(note.updatedAt)}</span>
           </div>
@@ -62,7 +58,7 @@ export function NoteListItem({ note, isActive, onNavigate }: NoteListItemProps) 
       </SidebarMenuButton>
 
       {note.attachmentCount > 0 && (
-        <SidebarMenuBadge className="md:group-hover/menu-item:hidden">
+        <SidebarMenuBadge className="hidden md:flex md:group-hover/menu-item:hidden">
           <Paperclip className="h-3 w-3" />
           {note.attachmentCount}
         </SidebarMenuBadge>
@@ -75,6 +71,12 @@ export function NoteListItem({ note, isActive, onNavigate }: NoteListItemProps) 
           'transition-opacity',
         )}
       >
+        {note.attachmentCount > 0 && (
+          <span className="md:hidden flex items-center gap-0.5 text-xs text-sidebar-foreground/60 mr-0.5">
+            <Paperclip className="h-3 w-3" />
+            {note.attachmentCount}
+          </span>
+        )}
         <Button
           variant="ghost"
           size="icon-xs"
@@ -126,4 +128,4 @@ export function NoteListItem({ note, isActive, onNavigate }: NoteListItemProps) 
       </div>
     </SidebarMenuItem>
   );
-}
+});

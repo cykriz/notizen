@@ -1,4 +1,4 @@
-import { useState, useCallback, type RefObject } from 'react';
+import { useState, useCallback, useRef, useEffect, type RefObject } from 'react';
 import { insertAtCursor } from '@/lib/editorInsert';
 import type { Attachment } from '@/lib/fsNotes';
 
@@ -9,6 +9,33 @@ function buildMarkdownLink(att: Attachment, noteId: string): string {
   }
 
   return `[${att.originalName}](${url})`;
+}
+
+interface UploadContext {
+  noteId: string;
+  wrapperRef: RefObject<HTMLDivElement | null>;
+  valueRef: React.RefObject<string>;
+  onChangeRef: React.RefObject<(v: string) => void>;
+  onFileUploadedRef: React.RefObject<((att: Attachment) => void) | undefined>;
+}
+
+async function uploadAndInsert(files: File[], ctx: UploadContext): Promise<void> {
+  const links: string[] = [];
+  for (const file of files) {
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetch(`/api/notes/${ctx.noteId}/attachments`, { method: 'POST', body: form });
+    if (res.ok) {
+      const att = (await res.json()) as Attachment;
+      ctx.onFileUploadedRef.current?.(att);
+      links.push(buildMarkdownLink(att, ctx.noteId));
+    }
+  }
+  if (links.length > 0) {
+    const textarea = ctx.wrapperRef.current?.querySelector('textarea');
+    const cursorOffset = textarea?.selectionStart ?? ctx.valueRef.current.length;
+    ctx.onChangeRef.current(insertAtCursor(ctx.valueRef.current, cursorOffset, links.join('\n')));
+  }
 }
 
 interface UseFileDropOptions {
@@ -23,6 +50,16 @@ export function useFileDrop({ noteId, value, onChange, onFileUploaded, wrapperRe
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
 
+  const valueRef = useRef(value);
+  const onChangeRef = useRef(onChange);
+  const onFileUploadedRef = useRef(onFileUploaded);
+  
+  useEffect(() => {
+    valueRef.current = value;
+    onChangeRef.current = onChange;
+    onFileUploadedRef.current = onFileUploaded;
+  });
+
   const handleDrop = useCallback(
     async (e: React.DragEvent) => {
       e.preventDefault();
@@ -34,27 +71,15 @@ export function useFileDrop({ noteId, value, onChange, onFileUploaded, wrapperRe
 
       setUploading(true);
       try {
-        const links: string[] = [];
-        for (const file of Array.from(e.dataTransfer.files)) {
-          const form = new FormData();
-          form.append('file', file);
-          const res = await fetch(`/api/notes/${noteId}/attachments`, { method: 'POST', body: form });
-          if (res.ok) {
-            const att = (await res.json()) as Attachment;
-            onFileUploaded?.(att);
-            links.push(buildMarkdownLink(att, noteId));
-          }
-        }
-        if (links.length > 0) {
-          const textarea = wrapperRef.current?.querySelector('textarea');
-          const pos = textarea?.selectionStart ?? value.length;
-          onChange(insertAtCursor(value, pos, links.join('\n')));
-        }
+        await uploadAndInsert(
+          Array.from(e.dataTransfer.files),
+          { noteId, wrapperRef, valueRef, onChangeRef, onFileUploadedRef },
+        );
       } finally {
         setUploading(false);
       }
     },
-    [noteId, value, onChange, onFileUploaded, wrapperRef],
+    [noteId, wrapperRef],
   );
 
   const handleDragOver = useCallback(
@@ -79,8 +104,7 @@ export function useFileDrop({ noteId, value, onChange, onFileUploaded, wrapperRe
 
   const handlePaste = useCallback(
     async (e: React.ClipboardEvent) => {
-      const items = Array.from(e.clipboardData.items);
-      const imageFiles = items
+      const imageFiles = Array.from(e.clipboardData.items)
         .filter((item) => item.type.startsWith('image/'))
         .map((item) => item.getAsFile())
         .filter((f): f is File => f !== null);
@@ -92,27 +116,15 @@ export function useFileDrop({ noteId, value, onChange, onFileUploaded, wrapperRe
       e.preventDefault();
       setUploading(true);
       try {
-        const links: string[] = [];
-        for (const file of imageFiles) {
-          const form = new FormData();
-          form.append('file', file);
-          const res = await fetch(`/api/notes/${noteId}/attachments`, { method: 'POST', body: form });
-          if (res.ok) {
-            const att = (await res.json()) as Attachment;
-            onFileUploaded?.(att);
-            links.push(buildMarkdownLink(att, noteId));
-          }
-        }
-        if (links.length > 0) {
-          const textarea = wrapperRef.current?.querySelector('textarea');
-          const pos = textarea?.selectionStart ?? value.length;
-          onChange(insertAtCursor(value, pos, links.join('\n')));
-        }
+        await uploadAndInsert(
+          imageFiles,
+          { noteId, wrapperRef, valueRef, onChangeRef, onFileUploadedRef },
+        );
       } finally {
         setUploading(false);
       }
     },
-    [noteId, value, onChange, onFileUploaded, wrapperRef],
+    [noteId, wrapperRef],
   );
 
   return { dragging, uploading, handleDrop, handleDragOver, handleDragLeave, handlePaste };

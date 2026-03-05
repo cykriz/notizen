@@ -1,11 +1,11 @@
-import { useEffect, useRef, type RefObject } from 'react';
+import { useCallback, useEffect, useRef, type RefObject } from 'react';
 
 type PendingList = { marker: string } | 'exit' | null;
 
 const LIST_RE = /^(\s*)(([*+-])|((\d+)\.))(\s)/;
 
 /**
- * List shortcuts for MDEditor: Tab indent/dedent, Enter continuation.
+ * List shortcuts for the editor textarea: Tab indent/dedent, Enter continuation.
  * Tab is handled directly (capture-phase preventDefault). Enter stores
  * intent in a ref — call `applyPendingList` in onChange to apply it.
  */
@@ -59,6 +59,7 @@ export function useListKeys(
       if (e.key === 'Tab') {
         e.preventDefault();
         e.stopPropagation();
+        const savedScroll = textarea.scrollTop;
         if (e.shiftKey) {
           const sp = /^( {1,2})/.exec(line);
           if (!sp) {
@@ -67,18 +68,10 @@ export function useListKeys(
 
           const removed = sp[1].length;
           onChangeRef.current(val.slice(0, lineStart) + line.slice(removed) + val.slice(lineEnd));
-          requestAnimationFrame(() => {
-            const p = Math.max(lineStart, selectionStart - removed);
-            textarea.selectionStart = p;
-            textarea.selectionEnd = p;
-          });
+          setCursor(textarea, Math.max(lineStart, selectionStart - removed), savedScroll);
         } else {
           onChangeRef.current(`${val.slice(0, lineStart)}  ${line}${val.slice(lineEnd)}`);
-          requestAnimationFrame(() => {
-            const p = selectionStart + 2;
-            textarea.selectionStart = p;
-            textarea.selectionEnd = p;
-          });
+          setCursor(textarea, selectionStart + 2, savedScroll);
         }
 
         return;
@@ -100,33 +93,35 @@ export function useListKeys(
     };
   }, [wrapperRef]);
 
-  /** Returns true if the change was handled (caller should return early). */
-  function applyPendingList(next: string, pos: number, textarea: HTMLTextAreaElement | null): boolean {
-    const pending = pendingRef.current;
-    if (pending === null) {
-      return false;
-    }
+  const applyPendingList = useCallback(
+    (next: string, pos: number, textarea: HTMLTextAreaElement | null): boolean => {
+      const pending = pendingRef.current;
+      if (pending === null) {
+        return false;
+      }
 
-    pendingRef.current = null;
+      pendingRef.current = null;
+      const savedScroll = textarea?.scrollTop ?? 0;
+      const curLineStart = next.lastIndexOf('\n', pos - 1) + 1;
 
-    const curLineStart = next.lastIndexOf('\n', pos - 1) + 1;
+      if (pending === 'exit') {
+        const prevLineStart = next.lastIndexOf('\n', curLineStart - 2) + 1;
+        onChangeRef.current(next.slice(0, prevLineStart) + next.slice(pos));
+        setCursor(textarea, prevLineStart, savedScroll);
+        return true;
+      }
 
-    if (pending === 'exit') {
-      const prevLineStart = next.lastIndexOf('\n', curLineStart - 2) + 1;
-      onChangeRef.current(next.slice(0, prevLineStart) + next.slice(pos));
-      setCursor(textarea, prevLineStart);
+      onChangeRef.current(next.slice(0, curLineStart) + pending.marker + next.slice(pos));
+      setCursor(textarea, curLineStart + pending.marker.length, savedScroll);
       return true;
-    }
-
-    onChangeRef.current(next.slice(0, curLineStart) + pending.marker + next.slice(pos));
-    setCursor(textarea, curLineStart + pending.marker.length);
-    return true;
-  }
+    },
+    [],
+  );
 
   return { applyPendingList };
 }
 
-function setCursor(textarea: HTMLTextAreaElement | null, pos: number) {
+function setCursor(textarea: HTMLTextAreaElement | null, pos: number, scrollTop: number) {
   requestAnimationFrame(() => {
     if (!textarea) {
       return;
@@ -134,5 +129,6 @@ function setCursor(textarea: HTMLTextAreaElement | null, pos: number) {
 
     textarea.selectionStart = pos;
     textarea.selectionEnd = pos;
+    textarea.scrollTop = scrollTop;
   });
 }
