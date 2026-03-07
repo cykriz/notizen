@@ -30,16 +30,6 @@ bun run dev
 
 App runs at `http://localhost:3000`. Notes are stored in `./dev-notes/notes/`.
 
-## Docker
-
-### Build & Run Locally
-
-```bash
-docker compose up --build
-```
-
-Notes persist in `./dev-notes/` on the host.
-
 ### Environment Variables
 
 | Variable     | Default            | Description                    |
@@ -52,98 +42,43 @@ Notes persist in `./dev-notes/` on the host.
 ### Prerequisites
 
 - Synology DSM 7.x with **Container Manager** (Docker) installed
-- SSH access or Container Manager UI
+- SSH access (host configured as `ds` in `~/.ssh/config`)
 
-### Step 1: Create Data Directory
-
-Via SSH:
-
-```bash
-mkdir -p /volume1/docker/app/notes
-```
-
-Or via **File Station**: create the folder `docker/notizen/notes` on Volume 1.
-
-### Step 2: Build the Image
-
-Option A — Build on the NAS (if resources allow):
-
-```bash
-cd /volume1/docker/app
-docker build -t notizen .
-```
-
-Option B — One-command deploy from local machine:
+### One-Command Deploy
 
 ```bash
 bun run deploy
 ```
 
-This builds for `linux/amd64`, transfers the image to the NAS via SCP, and restarts the container. See `scripts/deploy.sh` for details.
+This runs `scripts/deploy.sh`, which:
 
-Option C — Manual build & transfer:
+1. Builds the Docker image for `linux/amd64`
+2. Transfers it to the NAS via SCP
+3. Copies `docker-compose.yml` to the NAS
+4. Runs `docker compose up -d --force-recreate`
+5. Cleans up local build artifacts
+
+### Manual Deploy
+
+Build and transfer the image yourself:
 
 ```bash
-# On your machine (cross-compile for amd64 if building on Apple Silicon)
 docker build --platform linux/amd64 -t notizen .
 docker save notizen | gzip > notizen.tar.gz
-
-# Copy to NAS
-scp notizen.tar.gz user@synology:/volume1/docker/
-
-# On NAS via SSH
-docker load -i /volume1/docker/app.tar.gz
+scp notizen.tar.gz user@nas:/tmp/
 ```
 
-### Step 3: Run the Container
-
-Via SSH:
+Then on the NAS:
 
 ```bash
-docker run -d \
-  --name notizen \
-  --restart always \
-  -p 3000:3000 \
-  -v /volume1/docker/app/notes:/app/data \
-  -e NOTES_ROOT=/app/data \
-  notizen
+docker load -i /tmp/notizen.tar.gz
+cd /volume1/docker/app
+docker compose up -d --force-recreate
 ```
 
-Or via **Container Manager UI**:
-
-1. Go to **Image** → select `notizen`
-2. Click **Run** → name it `notizen`
-3. **Port Settings**: Local `3000` → Container `3000`
-4. **Volume**: `/volume1/docker/app/notes` → `/app/data` (read/write)
-5. **Environment**: `NOTES_ROOT` = `/app/data`
-6. Enable **auto-restart**
-7. Click **Done**
-
-### Step 4: Access the App
+### Access the App
 
 Open `http://<synology-ip>:3000` in your browser.
-
-### Docker Compose on Synology
-
-Create `/volume1/docker/app/docker-compose.yml`:
-
-```yaml
-services:
-  web:
-    image: notizen
-    ports:
-      - "3000:3000"
-    volumes:
-      - "/volume1/docker/app/notes:/app/data"
-    environment:
-      NOTES_ROOT: /app/data
-    restart: always
-```
-
-```bash
-cd /volume1/docker/app
-docker compose up -d
-```
 
 ### Reverse Proxy (Optional)
 

@@ -1,5 +1,8 @@
 import { listNotes } from '@/lib/fsNotes';
 import { listTodos } from '@/lib/fsTodos';
+
+export const dynamic = 'force-dynamic';
+
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { CommandPalette } from './CommandPalette';

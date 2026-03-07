@@ -1,9 +1,12 @@
+name: notizen
 services:
   web:
-    build: .
+    image: notizen
+    container_name: notizen
     ports:
       - '3000:3000'
     volumes:
-      - './dev-notes:/app/data'
+      - '/volume1/docker/app/notes:/app/data'
     environment:
       NOTES_ROOT: /app/data
+    restart: always

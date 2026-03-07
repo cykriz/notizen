@@ -10,9 +10,9 @@ CONTAINER="notizen"
 cleanup() {
   echo "==> Lokale Docker-Artefakte aufräumen..."
   rm -f "$ARCHIVE"
-  docker rmi "$IMAGE" 2>/dev/null || true
-  docker image prune -f
-  docker builder prune -f
+  docker rmi "$IMAGE" >/dev/null 2>&1 || true
+  docker image prune -f >/dev/null 2>&1
+  docker builder prune -f >/dev/null 2>&1
 }
 trap cleanup EXIT
 
@@ -23,21 +23,19 @@ echo "==> Image exportieren..."
 docker save "$IMAGE" | gzip > "$ARCHIVE"
 
 echo "==> Image auf NAS kopieren..."
-scp "$ARCHIVE" "$NAS:$REMOTE_DIR/$ARCHIVE"
+ssh "$NAS" "mkdir -p $REMOTE_DIR/notes"
+scp -O "$ARCHIVE" "$NAS:/tmp/$ARCHIVE"
 
 echo "==> Auf NAS: Image laden & Container neu starten..."
+scp -O docker-compose.yml "$NAS:$REMOTE_DIR/docker-compose.yml"
 ssh "$NAS" "
+  export PATH=/usr/local/bin:/usr/syno/bin:\$PATH && \
+  mv /tmp/$ARCHIVE $REMOTE_DIR/$ARCHIVE && \
   docker load -i $REMOTE_DIR/$ARCHIVE && \
   rm $REMOTE_DIR/$ARCHIVE && \
-  docker stop $CONTAINER 2>/dev/null || true && \
-  docker rm $CONTAINER 2>/dev/null || true && \
-  docker run -d \
-    --name $CONTAINER \
-    --restart always \
-    -p 3000:3000 \
-    -v $REMOTE_DIR/notes:/app/data \
-    -e NOTES_ROOT=/app/data \
-    $IMAGE && \
+  docker rm -f $CONTAINER 2>/dev/null || true && \
+  cd $REMOTE_DIR && \
+  docker compose up -d --force-recreate && \
   docker image prune -f
 "
 
