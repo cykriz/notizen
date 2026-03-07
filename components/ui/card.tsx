@@ -13,6 +13,7 @@ function Card({ className, ...props }: React.ComponentProps<'div'>) {
 }
 
 function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
+  const { children } = props;
   return (
     <div
       data-slot="card-header"
@@ -21,7 +22,9 @@ function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
         className,
       )}
       {...props}
-    />
+    >
+      {children}
+    </div>
   );
 }
 

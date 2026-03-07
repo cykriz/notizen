@@ -1,23 +1,19 @@
 'use client';
 
 import {
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-  useImperativeHandle,
-  forwardRef,
-  useMemo,
-  memo,
-  useSyncExternalStore,
+  useEffect, useCallback, useRef, useImperativeHandle,
+  forwardRef, useMemo, memo, useSyncExternalStore,
 } from 'react';
 import dynamic from 'next/dynamic';
 import { useTheme } from 'next-themes';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Heading, IndentIncrease } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { useFileDrop } from '@/hooks/useFileDrop';
+import { useLineTransform } from '@/hooks/useLineTransform';
 import { useListKeys } from '@/hooks/useListKeys';
+import { useNoteLinkPicker } from '@/hooks/useNoteLinkPicker';
 import { InternalLinkRenderer } from '@/components/InternalLink';
 import { NoteLinkPicker } from '@/components/NoteLinkPicker';
 import { PREVIEW_EDIT } from '@/lib/constants';
@@ -62,17 +58,14 @@ export const MarkdownEditor = memo(
       () => true,
       () => false,
     );
-    const [pickerOpen, setPickerOpen] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
-    const cursorPosRef = useRef<number>(value.length);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
     const valueRef = useRef(value);
     const onChangeRef = useRef(onChange);
-    const notesRef = useRef(notes);
 
     useEffect(() => {
       valueRef.current = value;
       onChangeRef.current = onChange;
-      notesRef.current = notes;
     });
 
     const isEditing = preview === PREVIEW_EDIT;
@@ -85,20 +78,23 @@ export const MarkdownEditor = memo(
       wrapperRef,
     });
     const { applyPendingList } = useListKeys(wrapperRef, value, onChange);
+    const { increaseHeading, indentList } = useLineTransform(textareaRef, value, onChange);
+    const { pickerOpen, setPickerOpen, handleNoteSelect, checkLinkTrigger } = useNoteLinkPicker({
+      textareaRef, valueRef, onChangeRef, notes,
+    });
 
     useImperativeHandle(
       ref,
       () => ({
         scrollToLine(line: number) {
-          const textarea = wrapperRef.current?.querySelector('textarea');
-          if (textarea) {
+          if (textareaRef.current) {
             const lines = valueRef.current.split('\n');
             let charPos = 0;
             for (let i = 0; i < line && i < lines.length; i++) {
               charPos += lines[i].length + 1;
             }
-            textarea.focus();
-            textarea.setSelectionRange(charPos, charPos);
+            textareaRef.current.focus();
+            textareaRef.current.setSelectionRange(charPos, charPos);
             return;
           }
 
@@ -117,47 +113,27 @@ export const MarkdownEditor = memo(
           }
         },
         focus() {
-          wrapperRef.current?.querySelector('textarea')?.focus();
+          textareaRef.current?.focus();
         },
       }),
       [],
     );
 
-    useEffect(() => {
-      const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'l' && (e.metaKey || e.ctrlKey) && notes && notes.length > 0) {
-          e.preventDefault();
-          const textarea = wrapperRef.current?.querySelector('textarea');
-          cursorPosRef.current = textarea?.selectionStart ?? valueRef.current.length;
-          setPickerOpen(true);
-        }
-      };
-      window.addEventListener('keydown', handleKeyDown);
-      return () => {
-        window.removeEventListener('keydown', handleKeyDown);
-      };
-    }, [notes]);
-
     const handleChange = useCallback(
       (v: string | undefined) => {
         const next = v ?? '';
-        const textarea = wrapperRef.current?.querySelector('textarea');
-        const pos = textarea?.selectionStart ?? next.length;
-        if (applyPendingList(next, pos, textarea ?? null)) {
+        const pos = textareaRef.current?.selectionStart ?? next.length;
+        if (applyPendingList(next, pos, textareaRef.current)) {
           return;
         }
 
-        const n = notesRef.current;
-        if (n && n.length > 0 && pos >= 2 && next.slice(pos - 2, pos) === '[[') {
-          cursorPosRef.current = pos - 2;
-          onChangeRef.current(next.slice(0, pos - 2) + next.slice(pos));
-          setPickerOpen(true);
+        if (checkLinkTrigger(next, pos)) {
           return;
         }
 
         onChangeRef.current(next);
       },
-      [applyPendingList],
+      [applyPendingList, checkLinkTrigger],
     );
 
     const handleTextareaChange = useCallback(
@@ -167,12 +143,6 @@ export const MarkdownEditor = memo(
       [handleChange],
     );
 
-    const handleNoteSelect = useCallback((note: NoteSummary) => {
-      const link = `[${note.title}](/notes/${note.id})`;
-      const pos = cursorPosRef.current;
-      onChangeRef.current(`${valueRef.current.slice(0, pos)}${link}${valueRef.current.slice(pos)}`);
-    }, []);
-
     const colorMode = mounted && resolvedTheme === 'dark' ? 'dark' : 'light';
     const previewComponents = useMemo(() => ({ a: InternalLinkRenderer }), []);
 
@@ -180,7 +150,7 @@ export const MarkdownEditor = memo(
       <div
         ref={wrapperRef}
         data-color-mode={colorMode}
-        className={cn('w-full flex-1 min-h-0 relative', { 'ring-2 ring-primary': dragging })}
+        className={cn('w-full flex-1 min-h-0 flex flex-col relative', { 'ring-2 ring-primary': dragging })}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -188,6 +158,7 @@ export const MarkdownEditor = memo(
       >
         {isEditing ? (
           <Textarea
+            ref={textareaRef}
             value={value}
             onChange={handleTextareaChange}
             placeholder="Schreibe hier deine Notiz …"
@@ -212,6 +183,18 @@ export const MarkdownEditor = memo(
         )}
         {notes && (
           <NoteLinkPicker notes={notes} open={pickerOpen} onOpenChange={setPickerOpen} onSelect={handleNoteSelect} />
+        )}
+        {isEditing && (
+          <div className="flex md:hidden items-center gap-1 border-t px-2 py-1 shrink-0">
+            <Button size="icon-xs" variant="ghost" onClick={increaseHeading}>
+              <Heading />
+              <span className="sr-only">Überschrift</span>
+            </Button>
+            <Button size="icon-xs" variant="ghost" onClick={indentList}>
+              <IndentIncrease />
+              <span className="sr-only">Einrücken</span>
+            </Button>
+          </div>
         )}
       </div>
     );

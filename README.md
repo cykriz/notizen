@@ -7,8 +7,16 @@ Built with Next.js, shadcn/ui, and Bun. Designed for deployment on Synology NAS 
 ## Features
 
 - Markdown editing with live preview
-- File attachments (drag & drop upload)
-- Full-text search
+- Note linking — `[[` trigger or Cmd+L to insert links between notes
+- List continuation — Enter continues `- ` / `1.` lists, Tab indents, Shift+Tab dedents
+- File attachments (drag & drop or paste images)
+- Hierarchical tags (slash-separated, e.g. `dev/python/fastapi`) with folder-style tag browser
+- Note pinning for quick access
+- Eisenhower Matrix for task management (Do / Schedule / Delegate / Eliminate)
+- Drag & drop todos between quadrants
+- Quick-add input in each quadrant
+- Command palette (Cmd+P) — search notes by title or tag, jump to tasks
+- Installable as PWA — add to home screen on iOS/Android
 - Light/dark theme
 - Responsive design
 - Zero database — plain Markdown files with frontmatter
@@ -51,10 +59,10 @@ Notes persist in `./dev-notes/` on the host.
 Via SSH:
 
 ```bash
-mkdir -p /volume1/notes
+mkdir -p /volume1/docker/app/notes
 ```
 
-Or via **File Station**: create a shared folder called `notes` on Volume 1.
+Or via **File Station**: create the folder `docker/notizen/notes` on Volume 1.
 
 ### Step 2: Build the Image
 
@@ -65,11 +73,19 @@ cd /volume1/docker/app
 docker build -t notizen .
 ```
 
-Option B — Build locally, transfer to NAS:
+Option B — One-command deploy from local machine:
 
 ```bash
-# On your machine
-docker build -t notizen .
+bun run deploy
+```
+
+This builds for `linux/amd64`, transfers the image to the NAS via SCP, and restarts the container. See `scripts/deploy.sh` for details.
+
+Option C — Manual build & transfer:
+
+```bash
+# On your machine (cross-compile for amd64 if building on Apple Silicon)
+docker build --platform linux/amd64 -t notizen .
 docker save notizen | gzip > notizen.tar.gz
 
 # Copy to NAS
@@ -88,7 +104,7 @@ docker run -d \
   --name notizen \
   --restart always \
   -p 3000:3000 \
-  -v /volume1/notes:/app/data \
+  -v /volume1/docker/app/notes:/app/data \
   -e NOTES_ROOT=/app/data \
   notizen
 ```
@@ -98,7 +114,7 @@ Or via **Container Manager UI**:
 1. Go to **Image** → select `notizen`
 2. Click **Run** → name it `notizen`
 3. **Port Settings**: Local `3000` → Container `3000`
-4. **Volume**: `/volume1/notes` → `/app/data` (read/write)
+4. **Volume**: `/volume1/docker/app/notes` → `/app/data` (read/write)
 5. **Environment**: `NOTES_ROOT` = `/app/data`
 6. Enable **auto-restart**
 7. Click **Done**
@@ -118,7 +134,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - "/volume1/notes:/app/data"
+      - "/volume1/docker/app/notes:/app/data"
     environment:
       NOTES_ROOT: /app/data
     restart: always
@@ -140,12 +156,13 @@ In DSM → **Control Panel** → **Login Portal** → **Advanced** → **Reverse
 
 ### Backup
 
-Notes are plain files in `/volume1/notes/`. Back up with Hyper Backup or any file sync tool.
+Notes are plain files in `/volume1/docker/app/notes/`. Back up with Hyper Backup or any file sync tool.
 
 ## File Structure
 
 ```
 /app/data/                          # NOTES_ROOT
+├── todos.json                      # Eisenhower Matrix tasks
 └── notes/
     └── 2026-02-20-my-note-a1b2c3/  # {date}-{slug}-{uuid}
         ├── note.md                  # Frontmatter + Markdown content
@@ -160,6 +177,10 @@ Notes are plain files in `/volume1/notes/`. Back up with Hyper Backup or any fil
 ---
 id: 550e8400-e29b-41d4-a716-446655440000
 title: My Note
+tags:
+  - dev/python
+  - ideas
+pinned: false
 createdAt: 2026-02-20T10:30:00.000Z
 updatedAt: 2026-02-20T11:15:00.000Z
 ---
@@ -189,7 +210,9 @@ Response: `NoteSummary[]`
     "title": "My Note",
     "createdAt": "2026-02-20T10:30:00.000Z",
     "updatedAt": "2026-02-20T11:15:00.000Z",
-    "attachmentCount": 2
+    "attachmentCount": 2,
+    "tags": ["dev/python", "ideas"],
+    "pinned": false
   }
 ]
 ```
@@ -200,8 +223,10 @@ Response: `NoteSummary[]`
 POST /api/notes
 Content-Type: application/json
 
-{ "title": "New Note", "content": "# Hello" }
+{ "title": "New Note", "content": "# Hello", "tags": ["dev"] }
 ```
+
+`tags` is optional (defaults to `[]`).
 
 Response: `Note` (201)
 
@@ -219,10 +244,10 @@ Response: `Note` (includes `content` and `attachments[]`)
 PUT /api/notes/:id
 Content-Type: application/json
 
-{ "title": "Updated Title", "content": "# Updated" }
+{ "title": "Updated Title", "content": "# Updated", "tags": ["dev"], "pinned": true }
 ```
 
-Both fields optional. Response: `Note`
+All fields optional. Response: `Note`
 
 ### Delete Note
 
@@ -275,6 +300,65 @@ Response: Binary file stream with appropriate `Content-Type` and `Content-Dispos
 
 ```
 DELETE /api/notes/:id/attachments/:attId
+```
+
+Response: `{ "success": true }`
+
+### Todos
+
+Base URL: `/api/todos`
+
+#### List Todos
+
+```
+GET /api/todos
+```
+
+Response: `Todo[]`
+
+```json
+[
+  {
+    "id": "uuid",
+    "title": "Finish report",
+    "description": "Q1 summary",
+    "dueDate": "2026-03-01",
+    "quadrant": "do",
+    "completed": false,
+    "createdAt": "2026-02-20T10:30:00.000Z",
+    "updatedAt": "2026-02-20T10:30:00.000Z"
+  }
+]
+```
+
+Quadrant values: `do`, `schedule`, `delegate`, `eliminate`
+
+#### Create Todo
+
+```
+POST /api/todos
+Content-Type: application/json
+
+{ "title": "New task", "quadrant": "do", "description": "optional", "dueDate": "2026-03-01" }
+```
+
+`description` and `dueDate` are optional. Response: `Todo` (201)
+
+#### Update Todo
+
+```
+PUT /api/todos/:id
+Content-Type: application/json
+
+{ "title": "Updated", "completed": true, "quadrant": "schedule" }
+```
+
+All fields optional. Response: `Todo`
+
+#### Delete Todo
+
+```
+DELETE /api/todos/:id
 ```
 
 Response: `{ "success": true }`

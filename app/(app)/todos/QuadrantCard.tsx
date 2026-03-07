@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useRef, useState, useTransition } from 'react';
-import { Plus, Pencil } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -116,21 +116,10 @@ export const QuadrantCard = memo(function QuadrantCard({ meta, todos, onAdd, onE
       onDrop={handleDrop}
     >
       <CardHeader className={cn('flex-row items-center gap-2 py-2.5 px-3', meta.colorClass)}>
-        <div className="flex-1 min-w-0">
+        <div className="flex md:flex-col items-baseline gap-2 md:gap-0 min-w-0">
           <CardTitle className={cn('text-sm font-semibold', meta.headerClass)}>{meta.label}</CardTitle>
           <p className={cn('text-xs opacity-75', meta.headerClass)}>{meta.description}</p>
         </div>
-        <Button
-          size="icon-xs"
-          variant="ghost"
-          className={meta.headerClass}
-          onClick={() => {
-            onAdd(meta.key);
-          }}
-        >
-          <Plus />
-          <span className="sr-only">Aufgabe hinzufügen</span>
-        </Button>
       </CardHeader>
       <CardContent className="flex-1 overflow-y-auto mx-2 md:p-1.5 md:px-0">
         {open.length === 0 && done.length === 0 && (

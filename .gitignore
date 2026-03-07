@@ -40,5 +40,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# docker images
+*.tar
+*.tar.gz
+*.tgz
+
 # local data
 /dev-notes
