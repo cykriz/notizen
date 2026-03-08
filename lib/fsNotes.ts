@@ -1,25 +1,26 @@
-import fs from "fs/promises";
-import { v4 as uuidv4 } from "uuid";
-import matter from "gray-matter";
-import type { Note, NoteSummary } from "./types";
-import { listAttachments } from "./fsAttachments";
+import fs from 'fs/promises';
+import { v4 as uuidv4 } from 'uuid';
+import matter from 'gray-matter';
+import type { Note, NoteSummary } from './types';
+import { listAttachments } from './fsAttachments';
 import {
   notesDir,
   noteDir,
   noteMdPath,
   attachmentsDir,
   buildSlug,
+  rebuildSlug,
   ensureDir,
   readNoteFrontmatter,
   countAttachments,
   findSlugByNoteId,
-} from "./fsHelpers";
+} from './fsHelpers';
 
-export type { Note, NoteSummary, Attachment } from "./types";
-export { listAttachments, saveAttachment, deleteAttachment, getAttachmentFilePath } from "./fsAttachments";
+export type { Note, NoteSummary, Attachment } from './types';
+export { listAttachments, saveAttachment, deleteAttachment, getAttachmentFilePath } from './fsAttachments';
 
 function parseTags(raw: unknown): string[] {
-  return Array.isArray(raw) ? raw.filter((t): t is string => typeof t === "string") : [];
+  return Array.isArray(raw) ? raw.filter((t): t is string => typeof t === 'string') : [];
 }
 
 function parsePinned(raw: unknown): boolean {
@@ -52,9 +53,7 @@ export async function listNotes(): Promise<NoteSummary[]> {
     });
   }
 
-  summaries.sort(
-    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-  );
+  summaries.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   return summaries;
 }
 
@@ -84,11 +83,7 @@ export async function getNote(id: string): Promise<Note | null> {
   };
 }
 
-export async function createNote(input: {
-  title: string;
-  content: string;
-  tags?: string[];
-}): Promise<Note> {
+export async function createNote(input: { title: string; content: string; tags?: string[] }): Promise<Note> {
   const id = uuidv4();
   const slug = buildSlug(input.title);
   const now = new Date().toISOString();
@@ -106,7 +101,7 @@ export async function createNote(input: {
     updatedAt: now,
   });
 
-  await fs.writeFile(noteMdPath(slug), frontmatter, "utf-8");
+  await fs.writeFile(noteMdPath(slug), frontmatter, 'utf-8');
 
   return {
     id,
@@ -124,7 +119,7 @@ export async function createNote(input: {
 
 export async function updateNote(
   id: string,
-  input: { title?: string; content?: string; tags?: string[]; pinned?: boolean }
+  input: { title?: string; content?: string; tags?: string[]; pinned?: boolean },
 ): Promise<Note> {
   const existing = await getNote(id);
   if (!existing) {
@@ -137,6 +132,15 @@ export async function updateNote(
   const newPinned = input.pinned ?? existing.pinned;
   const now = new Date().toISOString();
 
+  let currentSlug = existing.slug;
+  const titleChanged = input.title !== undefined && input.title !== existing.title;
+
+  if (titleChanged) {
+    const newSlug = rebuildSlug(existing.slug, newTitle);
+    await fs.rename(noteDir(existing.slug), noteDir(newSlug));
+    currentSlug = newSlug;
+  }
+
   const frontmatter = matter.stringify(newContent, {
     id: existing.id,
     title: newTitle,
@@ -146,12 +150,12 @@ export async function updateNote(
     updatedAt: now,
   });
 
-  await fs.writeFile(noteMdPath(existing.slug), frontmatter, "utf-8");
+  await fs.writeFile(noteMdPath(currentSlug), frontmatter, 'utf-8');
 
   const attachments = await listAttachments(id);
   return {
     id: existing.id,
-    slug: existing.slug,
+    slug: currentSlug,
     title: newTitle,
     createdAt: existing.createdAt,
     updatedAt: now,

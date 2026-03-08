@@ -26,6 +26,12 @@ export function buildSlug(title: string): string {
   return `${date}-${slugify(title)}-${id}`;
 }
 
+export function rebuildSlug(oldSlug: string, newTitle: string): string {
+  const date = oldSlug.slice(0, 10);
+  const shortId = oldSlug.slice(-8);
+  return `${date}-${slugify(newTitle)}-${shortId}`;
+}
+
 export function noteDir(slug: string): string {
   return path.join(notesDir(), slug);
 }
