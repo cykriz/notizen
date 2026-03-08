@@ -6,7 +6,7 @@ services:
     ports:
       - '3000:3000'
     volumes:
-      - '/volume1/docker/app/notes:/app/data'
+      - '/volume1/docker/app/data:/app/data'
     environment:
       NOTES_ROOT: /app/data
     restart: always

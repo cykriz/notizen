@@ -91,7 +91,7 @@ In DSM → **Control Panel** → **Login Portal** → **Advanced** → **Reverse
 
 ### Backup
 
-Notes are plain files in `/volume1/docker/app/notes/`. Back up with Hyper Backup or any file sync tool.
+Notes are plain files in `/volume1/docker/app/data/`. Back up with Hyper Backup or any file sync tool.
 
 ## File Structure
 

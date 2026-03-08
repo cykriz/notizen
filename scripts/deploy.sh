@@ -23,7 +23,7 @@ echo "==> Image exportieren..."
 docker save "$IMAGE" | gzip > "$ARCHIVE"
 
 echo "==> Image auf NAS kopieren..."
-ssh "$NAS" "mkdir -p $REMOTE_DIR/notes"
+ssh "$NAS" "mkdir -p $REMOTE_DIR/data"
 scp -O "$ARCHIVE" "$NAS:/tmp/$ARCHIVE"
 
 echo "==> Auf NAS: Image laden & Container neu starten..."

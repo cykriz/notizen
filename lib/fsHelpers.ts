@@ -86,6 +86,21 @@ export async function countAttachments(slug: string): Promise<number> {
   }
 }
 
+const noteLocks = new Map<string, Promise<unknown>>();
+
+export async function withNoteLock<T>(noteId: string, fn: () => Promise<T>): Promise<T> {
+  const prev = noteLocks.get(noteId) ?? Promise.resolve();
+  const current = prev.then(fn, fn);
+  noteLocks.set(noteId, current);
+  try {
+    return await current;
+  } finally {
+    if (noteLocks.get(noteId) === current) {
+      noteLocks.delete(noteId);
+    }
+  }
+}
+
 export async function findSlugByNoteId(noteId: string): Promise<string | null> {
   await ensureDir(notesDir());
   const entries = await fs.readdir(notesDir(), { withFileTypes: true });

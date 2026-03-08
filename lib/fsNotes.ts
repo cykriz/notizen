@@ -14,6 +14,7 @@ import {
   readNoteFrontmatter,
   countAttachments,
   findSlugByNoteId,
+  withNoteLock,
 } from './fsHelpers';
 
 export type { Note, NoteSummary, Attachment } from './types';
@@ -121,59 +122,63 @@ export async function updateNote(
   id: string,
   input: { title?: string; content?: string; tags?: string[]; pinned?: boolean },
 ): Promise<Note> {
-  const existing = await getNote(id);
-  if (!existing) {
-    throw new Error(`Note not found: ${id}`);
-  }
+  return await withNoteLock(id, async () => {
+    const existing = await getNote(id);
+    if (!existing) {
+      throw new Error(`Note not found: ${id}`);
+    }
 
-  const newTitle = input.title ?? existing.title;
-  const newContent = input.content ?? existing.content;
-  const newTags = input.tags ?? existing.tags;
-  const newPinned = input.pinned ?? existing.pinned;
-  const now = new Date().toISOString();
+    const newTitle = input.title ?? existing.title;
+    const newContent = input.content ?? existing.content;
+    const newTags = input.tags ?? existing.tags;
+    const newPinned = input.pinned ?? existing.pinned;
+    const now = new Date().toISOString();
 
-  let currentSlug = existing.slug;
-  const titleChanged = input.title !== undefined && input.title !== existing.title;
+    let currentSlug = existing.slug;
+    const titleChanged = input.title !== undefined && input.title !== existing.title;
 
-  if (titleChanged) {
-    const newSlug = rebuildSlug(existing.slug, newTitle);
-    await fs.rename(noteDir(existing.slug), noteDir(newSlug));
-    currentSlug = newSlug;
-  }
+    if (titleChanged) {
+      const newSlug = rebuildSlug(existing.slug, newTitle);
+      await fs.rename(noteDir(existing.slug), noteDir(newSlug));
+      currentSlug = newSlug;
+    }
 
-  const frontmatter = matter.stringify(newContent, {
-    id: existing.id,
-    title: newTitle,
-    tags: newTags,
-    pinned: newPinned,
-    createdAt: existing.createdAt,
-    updatedAt: now,
+    const frontmatter = matter.stringify(newContent, {
+      id: existing.id,
+      title: newTitle,
+      tags: newTags,
+      pinned: newPinned,
+      createdAt: existing.createdAt,
+      updatedAt: now,
+    });
+
+    await fs.writeFile(noteMdPath(currentSlug), frontmatter, 'utf-8');
+
+    const attachments = await listAttachments(id);
+    return {
+      id: existing.id,
+      slug: currentSlug,
+      title: newTitle,
+      createdAt: existing.createdAt,
+      updatedAt: now,
+      attachmentCount: attachments.length,
+      tags: newTags,
+      pinned: newPinned,
+      content: newContent,
+      attachments,
+    };
   });
-
-  await fs.writeFile(noteMdPath(currentSlug), frontmatter, 'utf-8');
-
-  const attachments = await listAttachments(id);
-  return {
-    id: existing.id,
-    slug: currentSlug,
-    title: newTitle,
-    createdAt: existing.createdAt,
-    updatedAt: now,
-    attachmentCount: attachments.length,
-    tags: newTags,
-    pinned: newPinned,
-    content: newContent,
-    attachments,
-  };
 }
 
 export async function deleteNote(id: string): Promise<void> {
-  const existing = await getNote(id);
-  if (!existing) {
-    throw new Error(`Note not found: ${id}`);
-  }
+  await withNoteLock(id, async () => {
+    const existing = await getNote(id);
+    if (!existing) {
+      throw new Error(`Note not found: ${id}`);
+    }
 
-  await fs.rm(noteDir(existing.slug), { recursive: true, force: true });
+    await fs.rm(noteDir(existing.slug), { recursive: true, force: true });
+  });
 }
 
 export async function listAllTags(): Promise<string[]> {
