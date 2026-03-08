@@ -1,3 +1,4 @@
+import nextDynamic from 'next/dynamic';
 import { listNotes } from '@/lib/fsNotes';
 import { listTodos } from '@/lib/fsTodos';
 
@@ -5,8 +6,9 @@ export const dynamic = 'force-dynamic';
 
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
-import { CommandPalette } from './CommandPalette';
 import { MobileBottomNav } from './MobileBottomNav';
+
+const CommandPalette = nextDynamic(() => import('./CommandPalette').then(m => m.CommandPalette), { ssr: false });
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const [notes, todos] = await Promise.all([listNotes(), listTodos()]);
