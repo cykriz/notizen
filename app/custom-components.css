@@ -83,4 +83,10 @@
   list-style-type: square !important;
 }
 
+[data-color-mode] .wmde-markdown table {
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
 /* --- Markdown editor styles end --- */

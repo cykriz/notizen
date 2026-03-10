@@ -15,7 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <SidebarProvider>
       <AppSidebar notes={notes} todos={todos} />
       <CommandPaletteClient notes={notes} todos={todos} />
-      <SidebarInset className="max-h-svh">
+      <SidebarInset className="max-h-svh min-w-0">
         <div className="flex flex-1 flex-col min-h-0">{children}</div>
         <MobileBottomNav />
       </SidebarInset>

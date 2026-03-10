@@ -150,7 +150,7 @@ export const MarkdownEditor = memo(
       <div
         ref={wrapperRef}
         data-color-mode={colorMode}
-        className={cn('w-full flex-1 min-h-0 flex flex-col relative', { 'ring-2 ring-primary': dragging })}
+        className={cn('w-full flex-1 min-w-0 min-h-0 flex flex-col relative', { 'ring-2 ring-primary': dragging })}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
