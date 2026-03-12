@@ -40,17 +40,24 @@ export function TodoDialog({ open, onOpenChange, todo, defaultQuadrant, defaultT
     }
 
     startSaving(async () => {
-      const payload = {
+      const base = {
         title: title.trim(),
-        description: description.trim() !== '' ? description.trim() : undefined,
-        dueDate: dueDate !== '' ? dueDate : undefined,
-        linkedNoteIds: linkedNoteIds.length > 0 ? linkedNoteIds : undefined,
         quadrant,
       };
       if (isEdit) {
-        await updateTodoAction(todo.id, payload);
+        await updateTodoAction(todo.id, {
+          ...base,
+          description: description.trim() !== '' ? description.trim() : null,
+          dueDate: dueDate !== '' ? dueDate : null,
+          linkedNoteIds: linkedNoteIds.length > 0 ? linkedNoteIds : null,
+        });
       } else {
-        await createTodoAction(payload);
+        await createTodoAction({
+          ...base,
+          description: description.trim() !== '' ? description.trim() : undefined,
+          dueDate: dueDate !== '' ? dueDate : undefined,
+          linkedNoteIds: linkedNoteIds.length > 0 ? linkedNoteIds : undefined,
+        });
       }
 
       onOpenChange(false);
@@ -108,14 +115,27 @@ export function TodoDialog({ open, onOpenChange, todo, defaultQuadrant, defaultT
               <label className="mb-1.5 block text-sm font-medium" htmlFor="todo-due">
                 Fälligkeitsdatum
               </label>
-              <Input
-                id="todo-due"
-                type="date"
-                value={dueDate}
-                onChange={(e) => {
-                  setDueDate(e.target.value);
-                }}
-              />
+              <div className="relative">
+                <Input
+                  id="todo-due"
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => {
+                    setDueDate(e.target.value);
+                  }}
+                />
+                {dueDate !== '' && (
+                  <button
+                    type="button"
+                    className="absolute right-8 top-1/2 -translate-y-1/2 rounded-sm p-0.5 text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      setDueDate('');
+                    }}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
             <div className="flex-1">
               <label className="mb-1.5 block text-sm font-medium" htmlFor="todo-quadrant">

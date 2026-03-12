@@ -66,9 +66,9 @@ export async function createTodo(input: CreateTodoInput): Promise<Todo> {
 
 interface UpdateTodoInput {
   title?: string;
-  description?: string;
-  dueDate?: string;
-  linkedNoteIds?: string[];
+  description?: string | null;
+  dueDate?: string | null;
+  linkedNoteIds?: string[] | null;
   quadrant?: TodoQuadrant;
   completed?: boolean;
 }
@@ -81,11 +81,14 @@ export async function updateTodo(id: string, input: UpdateTodoInput): Promise<To
   }
 
   const existing = todos[idx];
-  const updated: Todo = {
+  const merged = {
     ...existing,
     ...input,
     updatedAt: new Date().toISOString(),
   };
+  const updated = Object.fromEntries(
+    Object.entries(merged).filter(([, v]) => v !== null),
+  ) as unknown as Todo;
   todos[idx] = updated;
   await writeTodos(todos);
   return updated;

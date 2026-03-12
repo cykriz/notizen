@@ -2,11 +2,12 @@
 
 import { memo, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, FileText } from 'lucide-react';
+import { Calendar, FileText, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { cn, formatDate } from '@/lib/utils';
-import { toggleTodoAction } from './actions';
+import { toggleTodoAction, deleteTodoAction } from './actions';
 import type { Todo } from '@/lib/fsTodos';
 import type { NoteSummary } from '@/lib/types';
 
@@ -22,6 +23,7 @@ function isOverdue(dueDate: string): boolean {
 
 export const TodoCard = memo(function TodoCard({ todo, onEdit, notes }: TodoCardProps) {
   const [, startToggle] = useTransition();
+  const [, startDelete] = useTransition();
   const router = useRouter();
   const [isDragging, setIsDragging] = useState(false);
 
@@ -85,20 +87,20 @@ export const TodoCard = memo(function TodoCard({ todo, onEdit, notes }: TodoCard
         />
       </div>
       <div className="flex-1 min-w-0">
-        <span className={cn('text-sm leading-tight', { 'line-through text-muted-foreground': todo.completed })}>
+        <span className={cn('text-sm leading-tight mr-2', { 'line-through text-muted-foreground': todo.completed })}>
           {todo.title}
         </span>
         {todo.dueDate !== undefined && (
           <Badge
             variant={!todo.completed && isOverdue(todo.dueDate) ? 'destructive' : 'secondary'}
-            className="ml-2 text-xs px-1.5 py-0"
+            className="mr-2 text-xs px-1.5 py-0"
           >
             <Calendar className="h-2.5 w-2.5 mr-0.5" />
             {formatDate(todo.dueDate)}
           </Badge>
         )}
         {linkedNotes.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-1">
+          <span className="inline-flex flex-wrap gap-1">
             {linkedNotes.map((n) => (
               <Badge
                 key={n.id}
@@ -113,9 +115,22 @@ export const TodoCard = memo(function TodoCard({ todo, onEdit, notes }: TodoCard
                 <span className="max-w-24 truncate">{n.title}</span>
               </Badge>
             ))}
-          </div>
+          </span>
         )}
       </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-6 w-6 shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity self-center"
+        onClick={(e) => {
+          e.stopPropagation();
+          startDelete(async () => {
+            await deleteTodoAction(todo.id);
+          });
+        }}
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </Button>
     </div>
   );
 });

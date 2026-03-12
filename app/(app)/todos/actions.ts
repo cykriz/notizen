@@ -18,9 +18,9 @@ export async function createTodoAction(input: CreateInput) {
 
 interface UpdateInput {
   title?: string;
-  description?: string;
-  dueDate?: string;
-  linkedNoteIds?: string[];
+  description?: string | null;
+  dueDate?: string | null;
+  linkedNoteIds?: string[] | null;
   quadrant?: TodoQuadrant;
   completed?: boolean;
 }
