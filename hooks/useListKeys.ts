@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, type RefObject } from 'react';
+import { flushSync } from 'react-dom';
 
 type PendingList = { marker: string } | 'exit' | null;
 
@@ -60,6 +61,7 @@ export function useListKeys(
         e.preventDefault();
         e.stopPropagation();
         const savedScroll = textarea.scrollTop;
+
         if (e.shiftKey) {
           const sp = /^( {1,2})/.exec(line);
           if (!sp) {
@@ -67,13 +69,22 @@ export function useListKeys(
           }
 
           const removed = sp[1].length;
-          onChangeRef.current(val.slice(0, lineStart) + line.slice(removed) + val.slice(lineEnd));
-          setCursor(textarea, Math.max(lineStart, selectionStart - removed), savedScroll);
+          const newPos = Math.max(lineStart, selectionStart - removed);
+          flushSync(() => {
+            onChangeRef.current(val.slice(0, lineStart) + line.slice(removed) + val.slice(lineEnd));
+          });
+          textarea.selectionStart = newPos;
+          textarea.selectionEnd = newPos;
         } else {
-          onChangeRef.current(`${val.slice(0, lineStart)}  ${line}${val.slice(lineEnd)}`);
-          setCursor(textarea, selectionStart + 2, savedScroll);
+          const newPos = selectionStart + 2;
+          flushSync(() => {
+            onChangeRef.current(`${val.slice(0, lineStart)}  ${line}${val.slice(lineEnd)}`);
+          });
+          textarea.selectionStart = newPos;
+          textarea.selectionEnd = newPos;
         }
 
+        textarea.scrollTop = savedScroll;
         return;
       }
 
@@ -94,41 +105,26 @@ export function useListKeys(
   }, [wrapperRef]);
 
   const applyPendingList = useCallback(
-    (next: string, pos: number, textarea: HTMLTextAreaElement | null): boolean => {
+    (next: string, pos: number): number | false => {
       const pending = pendingRef.current;
       if (pending === null) {
         return false;
       }
 
       pendingRef.current = null;
-      const savedScroll = textarea?.scrollTop ?? 0;
       const curLineStart = next.lastIndexOf('\n', pos - 1) + 1;
 
       if (pending === 'exit') {
         const prevLineStart = next.lastIndexOf('\n', curLineStart - 2) + 1;
         onChangeRef.current(next.slice(0, prevLineStart) + next.slice(pos));
-        setCursor(textarea, prevLineStart, savedScroll);
-        return true;
+        return prevLineStart;
       }
 
       onChangeRef.current(next.slice(0, curLineStart) + pending.marker + next.slice(pos));
-      setCursor(textarea, curLineStart + pending.marker.length, savedScroll);
-      return true;
+      return curLineStart + pending.marker.length;
     },
     [],
   );
 
   return { applyPendingList };
-}
-
-function setCursor(textarea: HTMLTextAreaElement | null, pos: number, scrollTop: number) {
-  requestAnimationFrame(() => {
-    if (!textarea) {
-      return;
-    }
-
-    textarea.selectionStart = pos;
-    textarea.selectionEnd = pos;
-    textarea.scrollTop = scrollTop;
-  });
 }
