@@ -1,22 +1,13 @@
 'use client';
 
-import { memo, useTransition, useSyncExternalStore } from 'react';
+import { memo, useTransition, useSyncExternalStore, useState } from 'react';
 import Link from 'next/link';
 import { Paperclip, Pin, Trash2, Loader2 } from 'lucide-react';
 import { cn, formatDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose,
-} from '@/components/ui/dialog';
 import { SidebarMenuItem, SidebarMenuButton, SidebarMenuBadge } from '@/components/ui/sidebar';
-import { updateNoteAction, deleteNoteAction } from './notes/actions';
+import { updateNoteAction } from './notes/actions';
+import { DeleteNoteDialog } from './DeleteNoteDialog';
 import type { NoteSummary } from '@/lib/types';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -31,7 +22,7 @@ interface NoteListItemProps {
 
 export const NoteListItem = memo(function NoteListItem({ note, isActive, onNavigate }: NoteListItemProps) {
   const [pinning, startPinning] = useTransition();
-  const [deleting, startDeleting] = useTransition();
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const mounted = useSyncExternalStore(
     emptySubscribe,
     () => true,
@@ -88,38 +79,24 @@ export const NoteListItem = memo(function NoteListItem({ note, isActive, onNavig
         </Button>
 
         {mounted ? (
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="icon-xs" disabled={deleting} className="h-5 w-5 [&>svg]:size-3">
-                {deleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Notiz löschen?</DialogTitle>
-                <DialogDescription>
-                  &quot;{note.title}&quot; und alle Anhänge werden unwiderruflich gelöscht.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant="outline">Abbrechen</Button>
-                </DialogClose>
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    startDeleting(async () => {
-                      await deleteNoteAction(note.id);
-                    });
-                  }}
-                  disabled={deleting}
-                >
-                  {deleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
-                  Endgültig löschen
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              className="h-5 w-5 [&>svg]:size-3"
+              onClick={() => {
+                setDeleteOpen(true);
+              }}
+            >
+              <Trash2 />
+            </Button>
+            <DeleteNoteDialog
+              noteId={note.id}
+              noteTitle={note.title}
+              open={deleteOpen}
+              onOpenChange={setDeleteOpen}
+            />
+          </>
         ) : (
           <Button variant="ghost" size="icon-xs" disabled className="h-5 w-5 [&>svg]:size-3">
             <Trash2 />

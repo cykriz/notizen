@@ -1,5 +1,7 @@
 import type { PreviewMode, TodoQuadrant, QuadrantMeta } from './types';
 
+export const DEFAULT_NOTE_TITLE = 'Unbenannt';
+
 export const PREVIEW_MODES: readonly PreviewMode[] = ['edit', 'preview'];
 export const PREVIEW_EDIT: PreviewMode = 'edit';
 export const PREVIEW_PREVIEW: PreviewMode = 'preview';

@@ -90,135 +90,144 @@ export function TodoDialog({ open, onOpenChange, todo, defaultQuadrant, defaultT
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{isEdit ? 'Aufgabe bearbeiten' : 'Neue Aufgabe'}</DialogTitle>
-        </DialogHeader>
+        {/* We need a form to handle the submission by pressing Enter */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSave();
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>{isEdit ? 'Aufgabe bearbeiten' : 'Neue Aufgabe'}</DialogTitle>
+          </DialogHeader>
 
-        <div className="flex flex-col gap-4">
-          <Input
-            placeholder="Titel…"
-            value={title}
-            onChange={(e) => {
-              setTitle(e.target.value);
-            }}
-          />
-          <Textarea
-            placeholder="Beschreibung (optional)…"
-            value={description}
-            onChange={(e) => {
-              setDescription(e.target.value);
-            }}
-            rows={3}
-          />
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <div className="flex-1">
-              <label className="mb-1.5 block text-sm font-medium" htmlFor="todo-due">
-                Fälligkeitsdatum
-              </label>
-              <div className="relative">
-                <Input
-                  id="todo-due"
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => {
-                    setDueDate(e.target.value);
+          <div className="flex flex-col gap-4">
+            <Input
+              placeholder="Titel…"
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value);
+              }}
+            />
+            <Textarea
+              placeholder="Beschreibung (optional)…"
+              value={description}
+              onChange={(e) => {
+                setDescription(e.target.value);
+              }}
+              rows={3}
+            />
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="flex-1">
+                <label className="mb-1.5 block text-sm font-medium" htmlFor="todo-due">
+                  Fälligkeitsdatum
+                </label>
+                <div className="relative">
+                  <Input
+                    id="todo-due"
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => {
+                      setDueDate(e.target.value);
+                    }}
+                  />
+                  {dueDate !== '' && (
+                    <button
+                      type="button"
+                      className="absolute right-8 top-1/2 -translate-y-1/2 rounded-sm p-0.5 text-muted-foreground hover:text-foreground"
+                      onClick={() => {
+                        setDueDate('');
+                      }}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="flex-1">
+                <label className="mb-1.5 block text-sm font-medium" htmlFor="todo-quadrant">
+                  Kategorie
+                </label>
+                <Select
+                  value={quadrant}
+                  onValueChange={(v) => {
+                    setQuadrant(v as TodoQuadrant);
                   }}
-                />
-                {dueDate !== '' && (
-                  <button
+                >
+                  <SelectTrigger id="todo-quadrant" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {QUADRANT_META.map((q) => (
+                      <SelectItem key={q.key} value={q.key}>
+                        {q.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Verknüpfte Notizen</label>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {linkedNoteIds.map((nid) => (
+                  <Badge key={nid} variant="secondary" className="gap-1 pr-1">
+                    <FileText className="h-3 w-3" />
+                    <span className="max-w-32 truncate">{resolveTitle(nid)}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleRemoveNote(nid);
+                      }}
+                      className="rounded-sm hover:bg-accent p-0.5"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+                {availableNotes.length > 0 && (
+                  <Button
                     type="button"
-                    className="absolute right-8 top-1/2 -translate-y-1/2 rounded-sm p-0.5 text-muted-foreground hover:text-foreground"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-3 text-xs"
                     onClick={() => {
-                      setDueDate('');
+                      setPickerOpen(true);
                     }}
                   >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
+                    <Plus className="h-3 w-3 mr-1" />
+                    Notiz verknüpfen
+                  </Button>
                 )}
               </div>
             </div>
-            <div className="flex-1">
-              <label className="mb-1.5 block text-sm font-medium" htmlFor="todo-quadrant">
-                Kategorie
-              </label>
-              <Select
-                value={quadrant}
-                onValueChange={(v) => {
-                  setQuadrant(v as TodoQuadrant);
-                }}
-              >
-                <SelectTrigger id="todo-quadrant" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {QUADRANT_META.map((q) => (
-                    <SelectItem key={q.key} value={q.key}>
-                      {q.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
-          <div>
-            <label className="mb-1.5 block text-sm font-medium">Verknüpfte Notizen</label>
-            <div className="flex flex-wrap items-center gap-1.5">
-              {linkedNoteIds.map((nid) => (
-                <Badge key={nid} variant="secondary" className="gap-1 pr-1">
-                  <FileText className="h-3 w-3" />
-                  <span className="max-w-32 truncate">{resolveTitle(nid)}</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      handleRemoveNote(nid);
-                    }}
-                    className="rounded-sm hover:bg-accent p-0.5"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-              {availableNotes.length > 0 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-3 text-xs"
-                  onClick={() => {
-                    setPickerOpen(true);
-                  }}
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Notiz verknüpfen
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <DialogFooter className="flex-row gap-2">
-          {isEdit && (
-            <Button variant="destructive" size="sm" onClick={handleDelete} disabled={deleting}>
-              {deleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
-              Löschen
+          <DialogFooter className="flex-row gap-2">
+            {isEdit && (
+              <Button type="button" variant="destructive" size="sm" onClick={handleDelete} disabled={deleting}>
+                {deleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
+                Löschen
+              </Button>
+            )}
+            <div className="flex-1" />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                onOpenChange(false);
+              }}
+            >
+              Abbrechen
             </Button>
-          )}
-          <div className="flex-1" />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              onOpenChange(false);
-            }}
-          >
-            Abbrechen
-          </Button>
-          <Button size="sm" onClick={handleSave} disabled={saving || title.trim() === ''}>
-            {saving && <Loader2 className="animate-spin" />}
-            {isEdit ? 'Speichern' : 'Erstellen'}
-          </Button>
-        </DialogFooter>
+            <Button type="submit" size="sm" disabled={saving || title.trim() === ''}>
+              {saving && <Loader2 className="animate-spin" />}
+              {isEdit ? 'Speichern' : 'Erstellen'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
       <NoteLinkPicker notes={availableNotes} open={pickerOpen} onOpenChange={setPickerOpen} onSelect={handleAddNote} />
     </Dialog>

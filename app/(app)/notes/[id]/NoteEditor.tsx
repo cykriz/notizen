@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useTransition, useCallback, useRef, useEffect, useMemo, useDeferredValue } from 'react';
-import { MarkdownEditor, type MarkdownEditorHandle } from '@/components/MarkdownEditor';
 import { AttachmentList } from '@/components/AttachmentList';
-import { updateNoteAction } from '../actions';
-import type { Note, Attachment } from '@/lib/fsNotes';
-import { PREVIEW_EDIT, PREVIEW_PREVIEW } from '@/lib/constants';
-import type { NoteSummary, PreviewMode } from '@/lib/types';
+import { MarkdownEditor, type MarkdownEditorHandle } from '@/components/MarkdownEditor';
 import { useAutoSave } from '@/hooks/useAutoSave';
+import { DEFAULT_NOTE_TITLE, PREVIEW_EDIT, PREVIEW_PREVIEW } from '@/lib/constants';
+import type { Attachment, Note } from '@/lib/fsNotes';
+import type { NoteSummary, PreviewMode } from '@/lib/types';
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { DeleteNoteDialog } from '../../DeleteNoteDialog';
+import { updateNoteAction } from '../actions';
 import { NoteHeader } from './NoteHeader';
 import { NoteOutline } from './NoteOutline';
 
@@ -29,6 +30,7 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
   const [preview, setPreview] = useState<PreviewMode>(note.content.trim() === '' ? PREVIEW_EDIT : PREVIEW_PREVIEW);
   const [tags, setTags] = useState<string[]>(note.tags);
   const [outlineVisible, setOutlineVisible] = useState(() => /^#{1,6}\s+.+$/m.test(note.content));
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const deferredContent = useDeferredValue(content);
   const nonImageAttachments = useMemo(() => attachments.filter((a) => !a.mimeType.startsWith('image/')), [attachments]);
@@ -44,6 +46,16 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !e.defaultPrevented) {
+        e.preventDefault();
+
+        if (title === DEFAULT_NOTE_TITLE) {
+          setDeleteDialogOpen(true);
+        }
+
+        return;
+      }
+
       if (e.key === 'o' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
         e.preventDefault();
         setOutlineVisible((v) => !v);
@@ -60,7 +72,7 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [note.id, title]);
 
   const handleTogglePreview = useCallback(() => {
     setPreview((p) => (p === PREVIEW_EDIT ? PREVIEW_PREVIEW : PREVIEW_EDIT));
@@ -152,6 +164,7 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
           className="shrink-0 max-h-48 overflow-y-auto mx-2 mb-2 z-10 shadow-panel"
         />
       )}
+      <DeleteNoteDialog noteId={note.id} noteTitle={title} open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} />
     </div>
   );
 }
