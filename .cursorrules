@@ -211,6 +211,7 @@ button, card, input, dialog, textarea, badge, sidebar, separator, sheet, tooltip
 shadcn/ui (via CLI)
 next-themes radix-ui lucide-react
 class-variance-authority clsx tailwind-merge tw-animate-css
+@uiw/react-codemirror @codemirror/lang-markdown @codemirror/search @codemirror/commands @codemirror/view @codemirror/state
 ```
 
 ### Never

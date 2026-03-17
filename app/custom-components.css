@@ -20,36 +20,37 @@
   --md-editor-padding-inline: max(24px, calc((100% - 42rem) / 2));
 }
 
-/* Edit mode: plain textarea (resets shadcn Textarea defaults) */
+/* Edit mode: CodeMirror editor */
 
-[data-color-mode] > textarea {
-  width: 100%;
+[data-color-mode] .cm-editor {
   height: 100%;
-  min-height: 0;
-  field-sizing: fixed;
-  resize: none;
-  background: transparent;
   outline: none;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-  color: var(--foreground);
+  background: transparent;
   font-family: var(--md-editor-font-family);
   font-size: var(--md-editor-font-size);
+}
+
+[data-color-mode] .cm-scroller {
   line-height: var(--md-editor-line-height);
-  letter-spacing: normal;
-  padding: var(--md-editor-padding-block) var(--md-editor-padding-inline);
+  font-family: inherit;
+  overflow: auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-[data-color-mode] > textarea:focus-visible {
-  border: none;
-  box-shadow: none;
+[data-color-mode] .cm-content {
+  padding: var(--md-editor-padding-block) var(--md-editor-padding-inline);
+  caret-color: var(--foreground);
 }
 
-[data-color-mode] > textarea::placeholder {
+[data-color-mode] .cm-line { padding: 0; }
+[data-color-mode] .cm-cursor { border-left-color: var(--foreground); }
+[data-color-mode] .cm-focused { outline: none; }
+[data-color-mode] .cm-editor.cm-focused { outline: none; }
+
+[data-color-mode] .cm-placeholder {
   color: var(--muted-foreground);
+  font-family: inherit;
 }
 
 /* Preview mode: rendered markdown */
@@ -90,3 +91,58 @@
 }
 
 /* --- Markdown editor styles end --- */
+
+/* --- CodeMirror search panel --- */
+
+.cm-panels {
+  background-color: var(--background);
+  border-top: 1px solid var(--border);
+}
+
+.cm-search {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 8px;
+  font-size: 0.75rem;
+  font-family: var(--font-sans);
+}
+
+.cm-search .cm-textfield {
+  height: 28px;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius-md) - 2px);
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 0.75rem;
+  outline: none;
+}
+
+.cm-search .cm-textfield:focus {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent);
+}
+
+.cm-search button {
+  height: 28px;
+  padding: 0 8px;
+  border-radius: calc(var(--radius-md) - 2px);
+  background: transparent;
+  color: var(--foreground);
+  font-size: 0.75rem;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.cm-search button:hover { background: var(--accent); }
+
+.cm-search label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}

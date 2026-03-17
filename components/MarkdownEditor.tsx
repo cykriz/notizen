@@ -1,46 +1,28 @@
 'use client';
-
-import {
-  useEffect,
-  useLayoutEffect,
-  useCallback,
-  useRef,
-  useImperativeHandle,
-  forwardRef,
-  useMemo,
-  memo,
-  useSyncExternalStore,
-} from 'react';
-import { flushSync } from 'react-dom';
-import dynamic from 'next/dynamic';
 import { useTheme } from 'next-themes';
-import { Loader2, Heading, IndentIncrease } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { Textarea } from '@/components/ui/textarea';
+import { forwardRef, memo, useCallback, useImperativeHandle, useMemo, useRef } from 'react';
+
+import { InternalLinkRenderer } from '@/components/InternalLink';
+import { MarkdownEditorToolbar } from '@/components/MarkdownEditorToolbar';
+import { MarkdownPreview } from '@/components/MarkdownPreview';
+import { NoteLinkPicker } from '@/components/NoteLinkPicker';
+import { editorBasicSetup, staticExtensions } from '@/components/markdownEditorSetup';
+import { useClientMounted } from '@/hooks/useClientMounted';
 import { useFileDrop } from '@/hooks/useFileDrop';
 import { useKeyboardToolbar } from '@/hooks/useKeyboardToolbar';
 import { useLineTransform } from '@/hooks/useLineTransform';
-import { useListKeys } from '@/hooks/useListKeys';
 import { useNoteLinkPicker } from '@/hooks/useNoteLinkPicker';
-import { InternalLinkRenderer } from '@/components/InternalLink';
-import { NoteLinkPicker } from '@/components/NoteLinkPicker';
 import { PREVIEW_EDIT } from '@/lib/constants';
+import { cn } from '@/lib/utils';
+import { indentMore } from '@codemirror/commands';
+import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
+import { openSearchPanel } from '@codemirror/search';
+import { EditorView } from '@codemirror/view';
+import CodeMirror, { type ReactCodeMirrorRef, type ViewUpdate } from '@uiw/react-codemirror';
+
 import type { Attachment } from '@/lib/fsNotes';
 import type { NoteSummary, PreviewMode } from '@/lib/types';
-
-// eslint-disable-next-line @typescript-eslint/no-empty-function
-const noop = () => {};
-const emptySubscribe = () => noop;
-
-const MarkdownPreview = dynamic(() => import('@uiw/react-markdown-preview'), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-full items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-    </div>
-  ),
-});
+import type { Extension } from '@codemirror/state';
 
 interface MarkdownEditorProps {
   value: string;
@@ -54,6 +36,7 @@ interface MarkdownEditorProps {
 export interface MarkdownEditorHandle {
   scrollToLine: (line: number) => void;
   focus: () => void;
+  openSearch: () => void;
 }
 
 export const MarkdownEditor = memo(
@@ -62,56 +45,50 @@ export const MarkdownEditor = memo(
     ref,
   ) {
     const { resolvedTheme } = useTheme();
-    const mounted = useSyncExternalStore(
-      emptySubscribe,
-      () => true,
-      () => false,
-    );
+    const mounted = useClientMounted();
     const wrapperRef = useRef<HTMLDivElement>(null);
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const valueRef = useRef(value);
-    const onChangeRef = useRef(onChange);
-
-    useEffect(() => {
-      valueRef.current = value;
-      onChangeRef.current = onChange;
-    });
+    const cmRef = useRef<ReactCodeMirrorRef>(null);
+    const viewRef = useRef<EditorView | null>(null);
+    const getView = () => cmRef.current?.view ?? null;
 
     const isEditing = preview === PREVIEW_EDIT;
 
-    useLayoutEffect(() => {
-      textareaRef.current?.style.setProperty('field-sizing', 'fixed');
-    }, [isEditing]);
-
-    const { dragging, uploading, handleDrop, handleDragOver, handleDragLeave, handlePaste } = useFileDrop({
+    const { dragging, uploading, fileDropExtension, handleDrop, handleDragOver, handleDragLeave } = useFileDrop({
       noteId,
-      value,
-      onChange,
+      viewRef,
       onFileUploaded,
       wrapperRef,
     });
-    const { applyPendingList } = useListKeys(wrapperRef, value, onChange);
-    const { increaseHeading, indentList } = useLineTransform(textareaRef, value, onChange);
+    const { increaseHeading } = useLineTransform(viewRef);
     const keyboardOffset = useKeyboardToolbar();
-    const { pickerOpen, setPickerOpen, handleNoteSelect, checkLinkTrigger } = useNoteLinkPicker({
-      textareaRef,
-      valueRef,
-      onChangeRef,
+    const { pickerOpen, setPickerOpen, handleNoteSelect, checkLinkTrigger, noteLinkExtension } = useNoteLinkPicker({
+      viewRef,
       notes,
     });
+
+    const handleCreateEditor = useCallback((view: EditorView) => {
+      viewRef.current = view;
+    }, []);
+
+    const markdownExtension = useMemo(() => markdown({ base: markdownLanguage }), []);
+    const extensions = useMemo<Extension[]>(
+      () => [...staticExtensions, markdownExtension, fileDropExtension, noteLinkExtension],
+      [markdownExtension, fileDropExtension, noteLinkExtension],
+    );
 
     useImperativeHandle(
       ref,
       () => ({
         scrollToLine(line: number) {
-          if (textareaRef.current) {
-            const lines = valueRef.current.split('\n');
-            let charPos = 0;
-            for (let i = 0; i < line && i < lines.length; i++) {
-              charPos += lines[i].length + 1;
-            }
-            textareaRef.current.focus();
-            textareaRef.current.setSelectionRange(charPos, charPos);
+          const view = getView();
+          if (view) {
+            const doc = view.state.doc;
+            const lineObj = doc.line(Math.min(line + 1, doc.lines));
+            view.dispatch({
+              selection: { anchor: lineObj.from },
+              effects: EditorView.scrollIntoView(lineObj.from, { y: 'center' }),
+            });
+            view.focus();
             return;
           }
 
@@ -120,7 +97,7 @@ export const MarkdownEditor = memo(
             return;
           }
 
-          const headingCount = valueRef.current
+          const headingCount = value
             .split('\n')
             .slice(0, line)
             .filter((l) => /^#{1,6}\s+/.test(l)).length;
@@ -130,49 +107,34 @@ export const MarkdownEditor = memo(
           }
         },
         focus() {
-          textareaRef.current?.focus();
+          getView()?.focus();
+        },
+        openSearch() {
+          const v = getView();
+          if (v) {
+            openSearchPanel(v);
+          }
         },
       }),
-      [],
+      [value],
     );
 
-    const pendingCursorRef = useRef<number | null>(null);
+    const handleIndentMore = useCallback(() => {
+      if (viewRef.current) {
+        indentMore(viewRef.current);
+      }
+    }, []);
 
-    const handleChange = useCallback(
-      (v: string | undefined) => {
-        const next = v ?? '';
-        const pos = textareaRef.current?.selectionStart ?? next.length;
-        const cursorPos = applyPendingList(next, pos);
-        if (cursorPos !== false) {
-          pendingCursorRef.current = cursorPos;
+    const handleCMChange = useCallback(
+      (val: string, viewUpdate: ViewUpdate) => {
+        const cursor = viewUpdate.state.selection.main.head;
+        if (checkLinkTrigger(val, cursor, viewUpdate.view)) {
           return;
         }
 
-        if (checkLinkTrigger(next, pos)) {
-          return;
-        }
-
-        onChangeRef.current(next);
+        onChange(val);
       },
-      [applyPendingList, checkLinkTrigger],
-    );
-
-    const handleTextareaChange = useCallback(
-      (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const scrollTop = e.target.scrollTop;
-        flushSync(() => {
-          handleChange(e.target.value);
-        });
-        if (textareaRef.current) {
-          textareaRef.current.scrollTop = scrollTop;
-          if (pendingCursorRef.current !== null) {
-            textareaRef.current.selectionStart = pendingCursorRef.current;
-            textareaRef.current.selectionEnd = pendingCursorRef.current;
-            pendingCursorRef.current = null;
-          }
-        }
-      },
-      [handleChange],
+      [checkLinkTrigger, onChange],
     );
 
     const colorMode = mounted && resolvedTheme === 'dark' ? 'dark' : 'light';
@@ -186,18 +148,18 @@ export const MarkdownEditor = memo(
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        onPaste={handlePaste}
       >
         {isEditing ? (
-          <Textarea
-            ref={textareaRef}
+          <CodeMirror
+            ref={cmRef}
             value={value}
-            onChange={handleTextareaChange}
+            onChange={handleCMChange}
+            onCreateEditor={handleCreateEditor}
+            extensions={extensions}
+            theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
+            basicSetup={editorBasicSetup}
+            className="flex-1 min-h-0"
             placeholder="Schreibe hier deine Notiz …"
-            autoCorrect="on"
-            autoCapitalize="sentences"
-            spellCheck
-            className="flex-1 min-h-0 resize-none"
           />
         ) : (
           <div className="h-full overflow-y-auto">
@@ -218,24 +180,11 @@ export const MarkdownEditor = memo(
           <NoteLinkPicker notes={notes} open={pickerOpen} onOpenChange={setPickerOpen} onSelect={handleNoteSelect} />
         )}
         {isEditing && (
-          <div
-            className={cn('flex md:hidden items-center gap-1 border-t px-2 py-1 shrink-0 bg-background', {
-              'fixed left-0 right-0 z-50 shadow-sm': keyboardOffset > 0,
-            })}
-            style={keyboardOffset > 0 ? { bottom: keyboardOffset } : undefined}
-            onMouseDown={(e) => {
-              e.preventDefault();
-            }}
-          >
-            <Button size="icon-xs" variant="ghost" onClick={increaseHeading}>
-              <Heading />
-              <span className="sr-only">Überschrift</span>
-            </Button>
-            <Button size="icon-xs" variant="ghost" onClick={indentList}>
-              <IndentIncrease />
-              <span className="sr-only">Einrücken</span>
-            </Button>
-          </div>
+          <MarkdownEditorToolbar
+            keyboardOffset={keyboardOffset}
+            onIncreaseHeading={increaseHeading}
+            onIndentMore={handleIndentMore}
+          />
         )}
       </div>
     );

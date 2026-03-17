@@ -1,73 +1,38 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
+import { useCallback, type RefObject } from 'react';
+import type { EditorView } from '@codemirror/view';
 
-type LineTransform = (line: string) => { newLine: string; cursorDelta: number };
-
-export function useLineTransform(
-  textareaRef: RefObject<HTMLTextAreaElement | null>,
-  value: string,
-  onChange: (v: string) => void,
-) {
-  const pendingCursorRef = useRef<number | null>(null);
-  const valueRef = useRef(value);
-  const onChangeRef = useRef(onChange);
-
-  useEffect(() => {
-    valueRef.current = value;
-    onChangeRef.current = onChange;
-  });
-
-  useLayoutEffect(() => {
-    if (pendingCursorRef.current !== null) {
-      const textarea = textareaRef.current;
-      if (textarea) {
-        textarea.focus();
-        textarea.selectionStart = pendingCursorRef.current;
-        textarea.selectionEnd = pendingCursorRef.current;
-      }
-
-      pendingCursorRef.current = null;
-    }
-  }, [value, textareaRef]);
-
-  const transformCurrentLine = useCallback(
-    (transform: LineTransform) => {
-      if (!textareaRef.current) {
-        return;
-      }
-
-      const { selectionStart } = textareaRef.current;
-      const val = valueRef.current;
-      const lineStart = val.lastIndexOf('\n', selectionStart - 1) + 1;
-      const lineEndIdx = val.indexOf('\n', selectionStart);
-      const lineEnd = lineEndIdx === -1 ? val.length : lineEndIdx;
-
-      const { newLine, cursorDelta } = transform(val.slice(lineStart, lineEnd));
-
-      onChangeRef.current(val.slice(0, lineStart) + newLine + val.slice(lineEnd));
-      pendingCursorRef.current = Math.max(lineStart, selectionStart + cursorDelta);
-    },
-    [textareaRef],
-  );
-
+export function useLineTransform(viewRef: RefObject<EditorView | null>) {
   // Cycles: plain text → h1 → h2 → … → h6 → plain text
   const increaseHeading = useCallback(() => {
-    transformCurrentLine((line) => {
-      const m = /^(#{1,6})\s/.exec(line);
-      if (!m) {
-        return { newLine: `# ${line}`, cursorDelta: 2 };
-      }
+    const view = viewRef.current;
+    if (!view) {
+      return;
+    }
 
-      if (m[1].length >= 6) {
-        return { newLine: line.slice(m[0].length), cursorDelta: -m[0].length };
-      }
+    const { from } = view.state.selection.main;
+    const line = view.state.doc.lineAt(from);
+    const headingMatch = /^(#{1,6})\s/.exec(line.text);
 
-      return { newLine: `#${line}`, cursorDelta: 1 };
+    let updatedLine: string;
+    let cursorOffset: number;
+
+    if (!headingMatch) {
+      updatedLine = `# ${line.text}`;
+      cursorOffset = 2;
+    } else if (headingMatch[1].length >= 6) {
+      updatedLine = line.text.slice(headingMatch[0].length);
+      cursorOffset = -headingMatch[0].length;
+    } else {
+      updatedLine = `#${line.text}`;
+      cursorOffset = 1;
+    }
+
+    view.dispatch({
+      changes: { from: line.from, to: line.to, insert: updatedLine },
+      selection: { anchor: Math.max(line.from, from + cursorOffset) },
     });
-  }, [transformCurrentLine]);
+    view.focus();
+  }, [viewRef]);
 
-  const indentList = useCallback(() => {
-    transformCurrentLine((line) => ({ newLine: `  ${line}`, cursorDelta: 2 }));
-  }, [transformCurrentLine]);
-
-  return { increaseHeading, indentList };
+  return { increaseHeading };
 }
