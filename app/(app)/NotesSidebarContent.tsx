@@ -1,6 +1,6 @@
 'use client';
 
-import { useTransition, useState, useMemo } from 'react';
+import { useTransition, useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { Plus, FileText, Pin, Tags, List } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -29,6 +29,7 @@ export function NotesSidebarContent({ notes }: NotesSidebarContentProps) {
     }
 
     const saved = localStorage.getItem(STORAGE_KEY);
+
     return saved === 'tags' || saved === 'all' ? saved : 'tags';
   });
 
@@ -37,11 +38,35 @@ export function NotesSidebarContent({ notes }: NotesSidebarContentProps) {
     localStorage.setItem(STORAGE_KEY, v);
   };
 
-  const handleCreate = () => {
+  const handleCreate = useCallback(() => {
     startTransition(async () => {
       await createNoteAction();
     });
-  };
+  }, [startTransition]);
+
+  const pendingRef = useRef(pending);
+
+  // Sync pending into a ref so the keydown handler reads the latest value
+  // without needing pending as a dependency (avoids listener re-registration).
+  useEffect(() => {
+    pendingRef.current = pending;
+  }, [pending]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'n' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        if (!pendingRef.current) {
+          handleCreate();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleCreate]);
 
   const onNavigate = () => {
     setOpenMobile(false);

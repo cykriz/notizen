@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { QuadrantCard, quadrants } from './QuadrantCard';
 import { TodoDialog } from './TodoDialog';
 import type { Todo, TodoQuadrant } from '@/lib/fsTodos';
@@ -53,6 +53,21 @@ export function EisenhowerMatrix({ todos, notes }: EisenhowerMatrixProps) {
       setEditingTodo(undefined);
     }
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'n' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        if (!dialogOpen) {
+          handleAdd('do');
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [dialogOpen, handleAdd]);
 
   return (
     <>
