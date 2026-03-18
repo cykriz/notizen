@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { QuadrantCard, quadrants } from './QuadrantCard';
 import { TodoDialog } from './TodoDialog';
+import { QUADRANT } from '@/lib/constants';
 import type { Todo, TodoQuadrant } from '@/lib/fsTodos';
 import type { NoteSummary } from '@/lib/types';
 
@@ -24,6 +25,7 @@ export function EisenhowerMatrix({ todos, notes }: EisenhowerMatrixProps) {
   const [defaultQuadrant, setDefaultQuadrant] = useState<TodoQuadrant>('do');
   const [defaultTitle, setDefaultTitle] = useState('');
   const [dialogKey, setDialogKey] = useState(0);
+  const [focusDueDate, setFocusDueDate] = useState(false);
 
   const todosByQuadrant = useMemo(() => {
     const map: Record<TodoQuadrant, Todo[]> = { do: [], schedule: [], delegate: [], planned: [] };
@@ -37,6 +39,7 @@ export function EisenhowerMatrix({ todos, notes }: EisenhowerMatrixProps) {
     setEditingTodo(undefined);
     setDefaultQuadrant(quadrant);
     setDefaultTitle(title ?? '');
+    setFocusDueDate(false);
     setDialogKey((k) => k + 1);
     setDialogOpen(true);
   }, []);
@@ -44,8 +47,25 @@ export function EisenhowerMatrix({ todos, notes }: EisenhowerMatrixProps) {
   const handleEdit = useCallback((todo: Todo) => {
     setEditingTodo(todo);
     setDefaultQuadrant(todo.quadrant);
+    setFocusDueDate(false);
     setDialogOpen(true);
   }, []);
+
+  const handleRequireDueDate = useCallback(
+    (todoId: string) => {
+      const todo = todos.find((t) => t.id === todoId);
+      if (!todo) {
+        return;
+      }
+
+      setEditingTodo({ ...todo, quadrant: QUADRANT.PLANNED });
+      setDefaultQuadrant(QUADRANT.PLANNED);
+      setFocusDueDate(true);
+      setDialogKey((k) => k + 1);
+      setDialogOpen(true);
+    },
+    [todos],
+  );
 
   const handleOpenChange = useCallback((open: boolean) => {
     setDialogOpen(open);
@@ -87,6 +107,7 @@ export function EisenhowerMatrix({ todos, notes }: EisenhowerMatrixProps) {
             todos={todosByQuadrant[meta.key]}
             onAdd={handleAdd}
             onEdit={handleEdit}
+            onRequireDueDate={handleRequireDueDate}
             notes={notes}
           />
         ))}
@@ -98,6 +119,7 @@ export function EisenhowerMatrix({ todos, notes }: EisenhowerMatrixProps) {
         todo={editingTodo}
         defaultQuadrant={defaultQuadrant}
         defaultTitle={defaultTitle}
+        autoFocusDueDate={focusDueDate}
         notes={notes}
       />
     </>

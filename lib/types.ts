@@ -24,7 +24,11 @@ export interface Note extends NoteSummary {
 
 export type PreviewMode = 'edit' | 'preview';
 
-export type TodoQuadrant = 'do' | 'schedule' | 'delegate' | 'planned';
+// TodoQuadrant is derived from the QUADRANT const via `typeof`, so the type
+// must live in constants.ts next to the runtime value. Re-exported here so
+// consumers can import all types from '@/lib/types'.
+import type { TodoQuadrant } from './constants';
+export type { TodoQuadrant };
 
 export interface QuadrantMeta {
   key: TodoQuadrant;

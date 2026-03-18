@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { TodoCard } from './TodoCard';
 import { createTodoAction, updateTodoAction } from './actions';
-import { QUADRANT_META } from '@/lib/constants';
+import { QUADRANT, QUADRANT_META } from '@/lib/constants';
 import type { QuadrantMeta, NoteSummary } from '@/lib/types';
 import type { Todo, TodoQuadrant } from '@/lib/fsTodos';
 
@@ -43,10 +43,18 @@ interface QuadrantCardProps {
   todos: Todo[];
   onAdd: (quadrant: TodoQuadrant, title?: string) => void;
   onEdit: (todo: Todo) => void;
+  onRequireDueDate?: (todoId: string) => void;
   notes: NoteSummary[];
 }
 
-export const QuadrantCard = memo(function QuadrantCard({ meta, todos, onAdd, onEdit, notes }: QuadrantCardProps) {
+export const QuadrantCard = memo(function QuadrantCard({
+  meta,
+  todos,
+  onAdd,
+  onEdit,
+  onRequireDueDate,
+  notes,
+}: QuadrantCardProps) {
   const open = todos.filter((t) => !t.completed);
   const done = todos.filter((t) => t.completed);
   const [inputValue, setInputValue] = useState('');
@@ -99,6 +107,16 @@ export const QuadrantCard = memo(function QuadrantCard({ meta, todos, onAdd, onE
     const todoId = e.dataTransfer.getData('application/x-todo-id');
     const fromQuadrant = e.dataTransfer.getData('application/x-todo-quadrant');
     if (todoId !== '' && fromQuadrant !== meta.key) {
+      const hasDue = e.dataTransfer.getData('application/x-todo-has-due') === '1';
+
+      if (meta.key === QUADRANT.PLANNED && !hasDue && onRequireDueDate) {
+        startTransition(async () => {
+          await updateTodoAction(todoId, { quadrant: meta.key });
+        });
+        onRequireDueDate(todoId);
+        return;
+      }
+
       startTransition(async () => {
         await updateTodoAction(todoId, { quadrant: meta.key });
       });

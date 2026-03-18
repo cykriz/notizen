@@ -52,6 +52,7 @@ export const TodoCard = memo(function TodoCard({ todo, onEdit, notes }: TodoCard
         setIsDragging(true);
         e.dataTransfer.setData('application/x-todo-id', todo.id);
         e.dataTransfer.setData('application/x-todo-quadrant', todo.quadrant);
+        e.dataTransfer.setData('application/x-todo-has-due', todo.dueDate !== undefined ? '1' : '');
         e.dataTransfer.effectAllowed = 'move';
       }}
       onDragEnd={() => {

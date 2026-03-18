@@ -31,6 +31,7 @@ interface Attachment {
 
 type PreviewMode = 'edit' | 'preview';
 
+// TodoQuadrant derived from QUADRANT const in constants.ts, re-exported from types.ts
 type TodoQuadrant = 'do' | 'schedule' | 'delegate' | 'planned';
 
 interface QuadrantMeta { key: TodoQuadrant; label: string; description: string; }
@@ -63,8 +64,10 @@ const PREVIEW_MODES: readonly PreviewMode[];
 const PREVIEW_EDIT: PreviewMode;
 const PREVIEW_PREVIEW: PreviewMode;
 
+const QUADRANT: { DO: 'do'; SCHEDULE: 'schedule'; DELEGATE: 'delegate'; PLANNED: 'planned' };
+type TodoQuadrant = (typeof QUADRANT)[keyof typeof QUADRANT];  // single source of truth
 const QUADRANT_KEYS: readonly TodoQuadrant[];
-const QUADRANT_META: readonly QuadrantMeta[];  // single source of truth for labels/descriptions
+const QUADRANT_META: readonly QuadrantMeta[];
 ```
 
 ### Core Functions (`lib/fsNotes.ts`)
