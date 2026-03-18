@@ -266,7 +266,7 @@ Response: `Todo[]`
 ]
 ```
 
-Quadrant values: `do`, `schedule`, `delegate`, `eliminate`
+Quadrant values: `do`, `schedule`, `delegate`, `planned`
 
 #### Create Todo
 

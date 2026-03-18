@@ -27,9 +27,9 @@ const colorMap: Record<TodoQuadrant, { colorClass: string; headerClass: string }
     colorClass: 'bg-quadrant-delegate text-quadrant-delegate-foreground',
     headerClass: 'text-quadrant-delegate-foreground',
   },
-  eliminate: {
-    colorClass: 'bg-quadrant-eliminate text-quadrant-eliminate-foreground',
-    headerClass: 'text-quadrant-eliminate-foreground',
+  planned: {
+    colorClass: 'bg-quadrant-planned text-quadrant-planned-foreground',
+    headerClass: 'text-quadrant-planned-foreground',
   },
 };
 

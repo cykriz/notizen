@@ -24,7 +24,7 @@ export interface Note extends NoteSummary {
 
 export type PreviewMode = 'edit' | 'preview';
 
-export type TodoQuadrant = 'do' | 'schedule' | 'delegate' | 'eliminate';
+export type TodoQuadrant = 'do' | 'schedule' | 'delegate' | 'planned';
 
 export interface QuadrantMeta {
   key: TodoQuadrant;

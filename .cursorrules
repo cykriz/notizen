@@ -31,7 +31,7 @@ interface Attachment {
 
 type PreviewMode = 'edit' | 'preview';
 
-type TodoQuadrant = 'do' | 'schedule' | 'delegate' | 'eliminate';
+type TodoQuadrant = 'do' | 'schedule' | 'delegate' | 'planned';
 
 interface QuadrantMeta { key: TodoQuadrant; label: string; description: string; }
 
@@ -191,7 +191,7 @@ button, card, input, dialog, textarea, badge, sidebar, separator, sheet, tooltip
 - ThemeProvider in `app/providers.tsx`, wraps app in `app/layout.tsx`
 - `cn()` helper in `lib/utils.ts` for conditional class merging
 
-**Color tokens:** `background`, `foreground`, `card`, `card-foreground`, `popover`, `popover-foreground`, `primary`, `primary-foreground`, `secondary`, `secondary-foreground`, `muted`, `muted-foreground`, `accent`, `accent-foreground`, `destructive`, `destructive-foreground`, `border`, `input`, `ring`, `--radius`, `quadrant-do`, `quadrant-do-foreground`, `quadrant-schedule`, `quadrant-schedule-foreground`, `quadrant-delegate`, `quadrant-delegate-foreground`, `quadrant-eliminate`, `quadrant-eliminate-foreground`
+**Color tokens:** `background`, `foreground`, `card`, `card-foreground`, `popover`, `popover-foreground`, `primary`, `primary-foreground`, `secondary`, `secondary-foreground`, `muted`, `muted-foreground`, `accent`, `accent-foreground`, `destructive`, `destructive-foreground`, `border`, `input`, `ring`, `--radius`, `quadrant-do`, `quadrant-do-foreground`, `quadrant-schedule`, `quadrant-schedule-foreground`, `quadrant-delegate`, `quadrant-delegate-foreground`, `quadrant-planned`, `quadrant-planned-foreground`
 
 **Component rules:**
 - Use shadcn/ui from `components/ui/` for all interactive elements (Button, Card, Input, Dialog, Textarea, Badge, Checkbox, Select)

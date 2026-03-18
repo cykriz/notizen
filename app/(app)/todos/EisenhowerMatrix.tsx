@@ -26,7 +26,7 @@ export function EisenhowerMatrix({ todos, notes }: EisenhowerMatrixProps) {
   const [dialogKey, setDialogKey] = useState(0);
 
   const todosByQuadrant = useMemo(() => {
-    const map: Record<TodoQuadrant, Todo[]> = { do: [], schedule: [], delegate: [], eliminate: [] };
+    const map: Record<TodoQuadrant, Todo[]> = { do: [], schedule: [], delegate: [], planned: [] };
     for (const t of todos) {
       map[t.quadrant].push(t);
     }
