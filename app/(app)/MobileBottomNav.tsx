@@ -24,7 +24,7 @@ export function MobileBottomNav() {
   }
 
   return (
-    <nav className="mx-2 mb-2 flex h-14 shrink-0 items-center rounded-xl border bg-sidebar shadow-sm pb-[env(safe-area-inset-bottom)] md:hidden z-10">
+    <nav className="card-base mx-2 mb-2 flex h-14 shrink-0 items-center bg-sidebar pb-[env(safe-area-inset-bottom)] md:hidden z-10">
       {tabs.map((tab) => {
         const isActive = tab.href === '/todos' ? pathname.startsWith('/todos') : !pathname.startsWith('/todos');
 

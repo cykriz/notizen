@@ -76,33 +76,6 @@ export function NotesSidebarContent({ notes }: NotesSidebarContentProps) {
 
   return (
     <>
-      <div className="flex items-center gap-1 px-4 pt-2">
-        <Button size="sm" variant="ghost" onClick={handleCreate} disabled={pending} className="flex-1 justify-start">
-          <Plus />
-          Neue Notiz
-        </Button>
-        <Button
-          size="icon-xs"
-          variant="ghost"
-          onClick={() => {
-            toggleView('tags');
-          }}
-          className={cn({ 'bg-accent': view === 'tags' })}
-        >
-          <Tags />
-        </Button>
-        <Button
-          size="icon-xs"
-          variant="ghost"
-          onClick={() => {
-            toggleView('all');
-          }}
-          className={cn({ 'bg-accent': view === 'all' })}
-        >
-          <List />
-        </Button>
-      </div>
-
       {notes.length === 0 && (
         <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
           <FileText className="h-8 w-8" />
@@ -154,6 +127,33 @@ export function NotesSidebarContent({ notes }: NotesSidebarContentProps) {
           </SidebarGroupContent>
         </SidebarGroup>
       )}
+
+      <div className="flex items-center gap-1 mt-auto">
+        <Button size="sm" variant="ghost" onClick={handleCreate} disabled={pending} className="flex-1 justify-start">
+          <Plus />
+          Neue Notiz
+        </Button>
+        <Button
+          size="icon-xs"
+          variant="ghost"
+          onClick={() => {
+            toggleView('tags');
+          }}
+          className={cn({ 'bg-accent': view === 'tags' })}
+        >
+          <Tags />
+        </Button>
+        <Button
+          size="icon-xs"
+          variant="ghost"
+          onClick={() => {
+            toggleView('all');
+          }}
+          className={cn({ 'bg-accent': view === 'all' })}
+        >
+          <List />
+        </Button>
+      </div>
     </>
   );
 }

@@ -56,7 +56,7 @@ export function AppSidebar({ notes, todos }: AppSidebarProps) {
 
   return (
     <Sidebar variant="floating">
-      <SidebarHeader className="gap-3 p-4">
+      <SidebarHeader className="gap-3">
         <div className="flex items-center gap-3">
           <SidebarMenu className="flex-row gap-1">
             {tabs.map((tab) => (

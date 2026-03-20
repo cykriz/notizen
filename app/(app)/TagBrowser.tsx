@@ -91,7 +91,7 @@ export function TagBrowser({ notes }: TagBrowserProps) {
                 onClick={() => {
                   setCurrentPath(node.fullPath);
                 }}
-                className="h-auto py-1.5"
+                className="h-auto"
               >
                 {node.children.length > 0 ? <Folder className="shrink-0" /> : <Tag className="shrink-0" />}
                 <span className="truncate">{node.segment}</span>

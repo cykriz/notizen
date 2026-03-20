@@ -139,6 +139,7 @@ app/api/todos/[id]/route.ts         → GET, PUT, DELETE
 | QuadrantCard | `app/(app)/todos/QuadrantCard.tsx` | `"use client"`, single quadrant |
 | TodoCard | `app/(app)/todos/TodoCard.tsx` | `"use client"`, Checkbox + title + linked note badges |
 | TodoDialog | `app/(app)/todos/TodoDialog.tsx` | `"use client"`, create/edit Dialog + note linking |
+| MobileBottomNav | `app/(app)/MobileBottomNav.tsx` | `"use client"`, bottom tab bar on mobile (`md:hidden`), uses `.card-base` |
 | MobileSidebarFab | `app/(app)/MobileSidebarFab.tsx` | `"use client"`, floating button to open sidebar on mobile (`md:hidden`) |
 | CommandPalette | `app/(app)/CommandPalette.tsx` | `"use client"`, Cmd+P search overlay, searches tags |
 | TagInput | `app/(app)/notes/[id]/TagInput.tsx` | `"use client"`, tag editing with autocomplete |
@@ -196,6 +197,17 @@ button, card, input, dialog, textarea, badge, sidebar, separator, sheet, tooltip
 
 **Color tokens:** `background`, `foreground`, `card`, `card-foreground`, `popover`, `popover-foreground`, `primary`, `primary-foreground`, `secondary`, `secondary-foreground`, `muted`, `muted-foreground`, `accent`, `accent-foreground`, `destructive`, `destructive-foreground`, `border`, `input`, `ring`, `--radius`, `quadrant-do`, `quadrant-do-foreground`, `quadrant-schedule`, `quadrant-schedule-foreground`, `quadrant-delegate`, `quadrant-delegate-foreground`, `quadrant-planned`, `quadrant-planned-foreground`
 
+**Shared CSS classes (`app/custom-components.css`):**
+
+Global component classes live here so visual adjustments apply everywhere at once. Use plain CSS values — avoid `@apply` for anything beyond well-known Tailwind v4 utilities, as Turbopack's CSS pipeline can fail on unresolved utilities.
+
+| Class | Used on | Controls |
+|---|---|---|
+| `.card-base` | `Card`, `MobileBottomNav` | `rounded-xl shadow-sm` — shared panel look (no border) |
+| `.sidebar-inner` | Desktop `sidebar-inner` div, mobile `SheetContent` wrapper | `flex h-full w-full flex-col p-2 gap-2` |
+| `.sidebar-panel` | Desktop `sidebar-inner` div, mobile `SheetContent` | `border-0 gap-2` — controls sidebar border |
+| `.note-section-padding` | Note section elements | `px-4 py-2` |
+
 **Component rules:**
 - Use shadcn/ui from `components/ui/` for all interactive elements (Button, Card, Input, Dialog, Textarea, Badge, Checkbox, Select)
 - Import with `@/components/ui/...`
@@ -206,6 +218,7 @@ button, card, input, dialog, textarea, badge, sidebar, separator, sheet, tooltip
 - Never use `dark:` prefix — CSS variables handle light/dark automatically
 - To add a color: define in `:root` + `.dark` in `globals.css`, register in `@theme inline`
 - To add a shadcn component: `npx shadcn@latest add <component-name>`
+- When adjusting visual style shared across multiple components (borders, shadows, rounding), add/update a class in `custom-components.css` rather than editing each component individually
 
 ### Approved Packages
 
