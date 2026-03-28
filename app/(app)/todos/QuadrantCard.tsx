@@ -1,13 +1,13 @@
 'use client';
 
-import { memo, useRef, useState, useTransition } from 'react';
+import { memo, useRef, useState } from 'react';
 import { Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { TodoCard } from './TodoCard';
-import { createTodoAction, updateTodoAction } from './actions';
+import { useData } from '../DataProvider';
 import { QUADRANT, QUADRANT_META } from '@/lib/constants';
 import type { QuadrantMeta, NoteSummary } from '@/lib/types';
 import type { Todo, TodoQuadrant } from '@/lib/fsTodos';
@@ -55,10 +55,10 @@ export const QuadrantCard = memo(function QuadrantCard({
   onRequireDueDate,
   notes,
 }: QuadrantCardProps) {
-  const open = todos.filter((t) => !t.completed);
+  const { createTodo, updateTodo } = useData();
+  const openTodos = todos.filter((t) => !t.completed);
   const done = todos.filter((t) => t.completed);
   const [inputValue, setInputValue] = useState('');
-  const [, startTransition] = useTransition();
 
   const handleQuickAdd = () => {
     const trimmed = inputValue.trim();
@@ -67,9 +67,7 @@ export const QuadrantCard = memo(function QuadrantCard({
     }
 
     setInputValue('');
-    startTransition(async () => {
-      await createTodoAction({ title: trimmed, quadrant: meta.key });
-    });
+    void createTodo({ title: trimmed, quadrant: meta.key }).catch(console.error);
   };
 
   const handleEditClick = () => {
@@ -79,7 +77,6 @@ export const QuadrantCard = memo(function QuadrantCard({
   };
 
   const [isDragTarget, setIsDragTarget] = useState(false);
-  // Tracks nested dragEnter/dragLeave pairs to avoid flicker from child elements
   const dragCounter = useRef(0);
 
   const handleDragEnter = (e: React.DragEvent) => {
@@ -110,16 +107,12 @@ export const QuadrantCard = memo(function QuadrantCard({
       const hasDue = e.dataTransfer.getData('application/x-todo-has-due') === '1';
 
       if (meta.key === QUADRANT.PLANNED && !hasDue && onRequireDueDate) {
-        startTransition(async () => {
-          await updateTodoAction(todoId, { quadrant: meta.key });
-        });
+        void updateTodo(todoId, { quadrant: meta.key }).catch(console.error);
         onRequireDueDate(todoId);
         return;
       }
 
-      startTransition(async () => {
-        await updateTodoAction(todoId, { quadrant: meta.key });
-      });
+      void updateTodo(todoId, { quadrant: meta.key }).catch(console.error);
     }
   };
 
@@ -140,13 +133,13 @@ export const QuadrantCard = memo(function QuadrantCard({
         </div>
       </CardHeader>
       <CardContent className="flex-1 overflow-y-auto mx-2 md:p-1.5 md:px-0">
-        {open.length === 0 && done.length === 0 && (
+        {openTodos.length === 0 && done.length === 0 && (
           <p className="py-4 text-center text-xs text-muted-foreground">Keine Aufgaben</p>
         )}
-        {open.map((t) => (
+        {openTodos.map((t) => (
           <TodoCard key={t.id} todo={t} onEdit={onEdit} notes={notes} />
         ))}
-        {done.length > 0 && open.length > 0 && <div className="my-1 border-t" />}
+        {done.length > 0 && openTodos.length > 0 && <div className="my-1 border-t" />}
         {done.map((t) => (
           <TodoCard key={t.id} todo={t} onEdit={onEdit} notes={notes} />
         ))}

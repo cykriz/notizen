@@ -1,7 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { listTodos, createTodo } from "@/lib/fsTodos";
 import { QUADRANT_KEYS } from "@/lib/constants";
+import { errorResponse, formatZodError } from "@/lib/apiHelpers";
 
 const QuadrantEnum = z.enum(QUADRANT_KEYS);
 
@@ -11,6 +13,7 @@ const CreateTodoSchema = z.object({
   description: z.string().optional(),
   dueDate: z.string().optional(),
   linkedNoteIds: z.array(z.string()).optional(),
+  id: z.uuid().optional(),
 });
 
 export async function GET() {
@@ -18,8 +21,7 @@ export async function GET() {
     const todos = await listTodos();
     return NextResponse.json(todos);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return errorResponse(err);
   }
 }
 
@@ -30,15 +32,15 @@ export async function POST(request: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: parsed.error.issues.map((i) => i.message).join(", ") },
+        { error: formatZodError(parsed.error) },
         { status: 400 }
       );
     }
 
     const todo = await createTodo(parsed.data);
+    revalidatePath("/todos");
     return NextResponse.json(todo, { status: 201 });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return errorResponse(err);
   }
 }

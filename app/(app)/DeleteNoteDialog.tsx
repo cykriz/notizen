@@ -1,6 +1,7 @@
 'use client';
 
-import { useTransition } from 'react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { deleteNoteAction } from './notes/actions';
+import { useData } from './DataProvider';
 
 interface DeleteNoteDialogProps {
   noteId: string;
@@ -22,7 +23,9 @@ interface DeleteNoteDialogProps {
 }
 
 export function DeleteNoteDialog({ noteId, noteTitle, open, onOpenChange }: DeleteNoteDialogProps) {
-  const [deleting, startDeleting] = useTransition();
+  const { deleteNote } = useData();
+  const router = useRouter();
+  const [deleting, setDeleting] = useState(false);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -40,9 +43,15 @@ export function DeleteNoteDialog({ noteId, noteTitle, open, onOpenChange }: Dele
           <Button
             variant="destructive"
             onClick={() => {
-              startDeleting(async () => {
-                await deleteNoteAction(noteId);
-              });
+              setDeleting(true);
+              void deleteNote(noteId)
+                .then(() => {
+                  router.push('/notes');
+                })
+                .catch(console.error)
+                .finally(() => {
+                  setDeleting(false);
+                });
             }}
             disabled={deleting}
             autoFocus

@@ -1,6 +1,5 @@
 import { getNote, listNotes } from '@/lib/fsNotes';
-import { notFound } from 'next/navigation';
-import { NoteEditor } from './NoteEditor';
+import { NotePageClient } from './NotePageClient';
 
 function extractTags(notes: { tags: string[] }[]): string[] {
   const tagSet = new Set<string>();
@@ -18,14 +17,26 @@ interface PageProps {
 
 export default async function NoteDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const [note, allNotes] = await Promise.all([getNote(id), listNotes()]);
 
-  if (!note) {
-    notFound();
+  let note = null;
+  let allNotes: Awaited<ReturnType<typeof listNotes>> = [];
+  let allTags: string[] = [];
+  let otherNotes: Awaited<ReturnType<typeof listNotes>> = [];
+
+  try {
+    [note, allNotes] = await Promise.all([getNote(id), listNotes()]);
+    allTags = extractTags(allNotes);
+    otherNotes = allNotes.filter((n) => n.id !== id);
+  } catch {
+    // Offline — NotePageClient will load from localStorage
   }
 
-  const allTags = extractTags(allNotes);
-  const otherNotes = allNotes.filter((n) => n.id !== note.id);
-
-  return <NoteEditor key={note.id} note={note} allTags={allTags} notes={otherNotes} />;
+  return (
+    <NotePageClient
+      note={note}
+      allTags={allTags}
+      otherNotes={otherNotes}
+      noteId={id}
+    />
+  );
 }

@@ -84,8 +84,17 @@ export async function getNote(id: string): Promise<Note | null> {
   };
 }
 
-export async function createNote(input: { title: string; content: string; tags?: string[] }): Promise<Note> {
-  const id = uuidv4();
+export async function createNote(input: { title: string; content: string; tags?: string[]; id?: string }): Promise<Note> {
+  const id = input.id ?? uuidv4();
+
+  // If a client-provided id already exists, return the existing note (idempotent replay).
+  if (input.id !== undefined) {
+    const existing = await getNote(id);
+    if (existing !== null) {
+      return existing;
+    }
+  }
+
   const slug = buildSlug(input.title);
   const now = new Date().toISOString();
   const tags = input.tags ?? [];

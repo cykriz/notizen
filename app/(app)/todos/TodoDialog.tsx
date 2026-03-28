@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useTransition } from 'react';
+import { useRef, useState } from 'react';
 import { Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ClearableDateInput } from './ClearableDateInput';
 import { LinkedNotesField } from './LinkedNotesField';
-import { createTodoAction, updateTodoAction, deleteTodoAction } from './actions';
+import { useData } from '../DataProvider';
 import { QUADRANT_META } from '@/lib/constants';
 import type { Todo, TodoQuadrant } from '@/lib/fsTodos';
 import type { NoteSummary } from '@/lib/types';
@@ -33,6 +33,7 @@ export function TodoDialog({
   autoFocusDueDate,
   notes,
 }: TodoDialogProps) {
+  const { createTodo, updateTodo, deleteTodo } = useData();
   const isEdit = todo !== undefined;
   const [title, setTitle] = useState(todo?.title ?? defaultTitle ?? '');
   const [description, setDescription] = useState(todo?.description ?? '');
@@ -40,37 +41,29 @@ export function TodoDialog({
   const [quadrant, setQuadrant] = useState<TodoQuadrant>(todo?.quadrant ?? defaultQuadrant ?? 'do');
   const [linkedNoteIds, setLinkedNoteIds] = useState<string[]>(todo?.linkedNoteIds ?? []);
   const dueDateRef = useRef<HTMLInputElement>(null);
-  const [saving, startSaving] = useTransition();
-  const [deleting, startDeleting] = useTransition();
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const handleSave = () => {
     if (title.trim() === '') {
       return;
     }
 
-    startSaving(async () => {
-      const base = {
-        title: title.trim(),
-        quadrant,
-      };
-      if (isEdit) {
-        await updateTodoAction(todo.id, {
-          ...base,
-          description: description.trim() !== '' ? description.trim() : null,
-          dueDate: dueDate !== '' ? dueDate : null,
-          linkedNoteIds: linkedNoteIds.length > 0 ? linkedNoteIds : null,
-        });
-      } else {
-        await createTodoAction({
-          ...base,
-          description: description.trim() !== '' ? description.trim() : undefined,
-          dueDate: dueDate !== '' ? dueDate : undefined,
-          linkedNoteIds: linkedNoteIds.length > 0 ? linkedNoteIds : undefined,
-        });
-      }
-
-      onOpenChange(false);
-    });
+    setSaving(true);
+    const desc = description.trim() !== '' ? description.trim() : undefined;
+    const due = dueDate !== '' ? dueDate : undefined;
+    const linked = linkedNoteIds.length > 0 ? linkedNoteIds : undefined;
+    const base = { title: title.trim(), quadrant };
+    const action = isEdit
+      ? updateTodo(todo.id, { ...base, description: desc ?? null, dueDate: due ?? null, linkedNoteIds: linked ?? null })
+      : createTodo({ ...base, description: desc, dueDate: due, linkedNoteIds: linked });
+    void action
+      .then(() => {
+        onOpenChange(false);
+      })
+      .finally(() => {
+        setSaving(false);
+      });
   };
 
   const handleDelete = () => {
@@ -78,10 +71,14 @@ export function TodoDialog({
       return;
     }
 
-    startDeleting(async () => {
-      await deleteTodoAction(todo.id);
-      onOpenChange(false);
-    });
+    setDeleting(true);
+    void deleteTodo(todo.id)
+      .then(() => {
+        onOpenChange(false);
+      })
+      .finally(() => {
+        setDeleting(false);
+      });
   };
 
   return (

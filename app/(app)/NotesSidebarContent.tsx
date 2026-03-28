@@ -1,13 +1,14 @@
 'use client';
 
-import { useTransition, useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { usePathname } from 'next/navigation';
+import { useState, useMemo, useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { Plus, FileText, Pin, Tags, List } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenu, useSidebar } from '@/components/ui/sidebar';
-import { createNoteAction } from './notes/actions';
+import { DEFAULT_NOTE_TITLE } from '@/lib/constants';
+import { useData } from './DataProvider';
 import { TagBrowser } from './TagBrowser';
 import { NoteListItem } from './NoteListItem';
 import type { NoteSummary } from '@/lib/types';
@@ -15,39 +16,79 @@ import type { NoteSummary } from '@/lib/types';
 type SidebarView = 'tags' | 'all';
 const STORAGE_KEY = 'notes-sidebar-view';
 
+const viewStore = (() => {
+  const listeners = new Set<() => void>();
+  let snapshot: SidebarView = 'tags';
+
+  const subscribe = (cb: () => void) => {
+    listeners.add(cb);
+
+    return () => {
+      listeners.delete(cb);
+    };
+  };
+
+  const getSnapshot = (): SidebarView => {
+    if (typeof window !== 'undefined' && snapshot === 'tags') {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved === 'all') {
+        snapshot = 'all';
+      }
+    }
+
+    return snapshot;
+  };
+
+  const getServerSnapshot = (): SidebarView => 'tags';
+
+  const set = (v: SidebarView) => {
+    snapshot = v;
+    localStorage.setItem(STORAGE_KEY, v);
+    for (const cb of listeners) {
+      cb();
+    }
+  };
+
+  return { subscribe, getSnapshot, getServerSnapshot, set };
+})();
+
 interface NotesSidebarContentProps {
   notes: NoteSummary[];
 }
 
 export function NotesSidebarContent({ notes }: NotesSidebarContentProps) {
-  const [pending, startTransition] = useTransition();
+  const { createNote } = useData();
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
-  const [view, setView] = useState<SidebarView>(() => {
-    if (typeof window === 'undefined') {
-      return 'tags';
-    }
-
-    const saved = localStorage.getItem(STORAGE_KEY);
-
-    return saved === 'tags' || saved === 'all' ? saved : 'tags';
-  });
+  const view = useSyncExternalStore(
+    viewStore.subscribe,
+    viewStore.getSnapshot,
+    viewStore.getServerSnapshot,
+  );
 
   const toggleView = (v: SidebarView) => {
-    setView(v);
-    localStorage.setItem(STORAGE_KEY, v);
+    viewStore.set(v);
   };
 
   const handleCreate = useCallback(() => {
-    startTransition(async () => {
-      await createNoteAction();
-    });
-  }, [startTransition]);
+    setPending(true);
+    void createNote({ title: DEFAULT_NOTE_TITLE, content: '' })
+      .then((note) => {
+        // Only navigate if server confirmed creation (non-empty slug).
+        // Offline-created notes have slug="" and can't be server-rendered.
+        if (note.slug !== '') {
+          router.push(`/notes/${note.id}`);
+        }
+      })
+      .finally(() => {
+        setPending(false);
+      });
+  }, [createNote, router]);
 
   const pendingRef = useRef(pending);
 
-  // Sync pending into a ref so the keydown handler reads the latest value
-  // without needing pending as a dependency (avoids listener re-registration).
   useEffect(() => {
     pendingRef.current = pending;
   }, [pending]);

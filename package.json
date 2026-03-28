@@ -16,6 +16,7 @@
     "@codemirror/search": "^6.6.0",
     "@codemirror/state": "^6.6.0",
     "@codemirror/view": "^6.40.0",
+    "@serwist/turbopack": "^9.5.7",
     "@uiw/react-codemirror": "^4.25.8",
     "@uiw/react-md-editor": "^4.0.11",
     "class-variance-authority": "^0.7.1",
@@ -28,6 +29,7 @@
     "radix-ui": "^1.4.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "serwist": "^9.5.7",
     "tailwind-merge": "^3.5.0",
     "uuid": "^13.0.0",
     "zod": "^4.3.6"
@@ -39,6 +41,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/uuid": "^10.0.0",
+    "esbuild-wasm": "^0.27.4",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "shadcn": "^3.8.5",

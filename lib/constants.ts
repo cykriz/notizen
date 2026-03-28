@@ -1,10 +1,21 @@
-import type { PreviewMode, QuadrantMeta } from './types';
+import type { PreviewMode, QuadrantMeta, SyncAction, SyncEntityType } from './types';
 
 export const DEFAULT_NOTE_TITLE = 'Unbenannt';
 
 export const PREVIEW_MODES: readonly PreviewMode[] = ['edit', 'preview'];
 export const PREVIEW_EDIT: PreviewMode = 'edit';
 export const PREVIEW_PREVIEW: PreviewMode = 'preview';
+
+export const SYNC_ENTITY = {
+  NOTE: 'note',
+  TODO: 'todo',
+} as const satisfies Record<string, SyncEntityType>;
+
+export const SYNC_ACTION = {
+  CREATE: 'create',
+  UPDATE: 'update',
+  DELETE: 'delete',
+} as const satisfies Record<string, SyncAction>;
 
 export const QUADRANT = {
   DO: 'do',

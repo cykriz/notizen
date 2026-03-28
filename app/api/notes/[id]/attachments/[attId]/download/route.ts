@@ -3,6 +3,7 @@ import fs from "fs/promises";
 import { createReadStream } from "fs";
 import { Readable } from "stream";
 import { getAttachmentFilePath } from "@/lib/fsNotes";
+import { errorResponse } from "@/lib/apiHelpers";
 
 interface RouteParams { params: Promise<{ id: string; attId: string }> }
 
@@ -23,8 +24,6 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    const status = message.includes("not found") ? 404 : 500;
-    return NextResponse.json({ error: message }, { status });
+    return errorResponse(err, { notFoundAs404: true });
   }
 }

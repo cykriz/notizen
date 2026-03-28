@@ -1,13 +1,13 @@
 'use client';
 
-import { memo, useMemo, useState, useTransition } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar, FileText, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { cn, formatDate } from '@/lib/utils';
-import { toggleTodoAction, deleteTodoAction } from './actions';
+import { useData } from '../DataProvider';
 import type { Todo } from '@/lib/fsTodos';
 import type { NoteSummary } from '@/lib/types';
 
@@ -22,15 +22,12 @@ function isOverdue(dueDate: string): boolean {
 }
 
 export const TodoCard = memo(function TodoCard({ todo, onEdit, notes }: TodoCardProps) {
-  const [, startToggle] = useTransition();
-  const [, startDelete] = useTransition();
+  const { updateTodo, deleteTodo } = useData();
   const router = useRouter();
   const [isDragging, setIsDragging] = useState(false);
 
   const handleToggle = (checked: boolean) => {
-    startToggle(async () => {
-      await toggleTodoAction(todo.id, checked);
-    });
+    void updateTodo(todo.id, { completed: checked }).catch(console.error);
   };
 
   const linkedNotes = useMemo(
@@ -125,9 +122,7 @@ export const TodoCard = memo(function TodoCard({ todo, onEdit, notes }: TodoCard
         className="h-6 w-6 shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity self-center"
         onClick={(e) => {
           e.stopPropagation();
-          startDelete(async () => {
-            await deleteTodoAction(todo.id);
-          });
+          void deleteTodo(todo.id).catch(console.error);
         }}
       >
         <Trash2 className="h-3.5 w-3.5" />

@@ -13,22 +13,18 @@ import {
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { SyncStatusIndicator } from "@/components/SyncStatusIndicator";
 import { NotesSidebarContent } from "./NotesSidebarContent";
 import { TodosSidebarContent } from "./TodosSidebarContent";
-import type { NoteSummary } from "@/lib/fsNotes";
-import type { Todo } from "@/lib/fsTodos";
-
-interface AppSidebarProps {
-  notes: NoteSummary[];
-  todos: Todo[];
-}
+import { useData } from "./DataProvider";
 
 const tabs = [
   { href: "/notes", label: "Notizen", icon: FileText },
   { href: "/todos", label: "Aufgaben", icon: ListChecks },
 ] as const;
 
-export function AppSidebar({ notes, todos }: AppSidebarProps) {
+export function AppSidebar() {
+  const { notes, todos } = useData();
   const pathname = usePathname();
   const router = useRouter();
   const isTodos = pathname.startsWith("/todos");
@@ -77,6 +73,7 @@ export function AppSidebar({ notes, todos }: AppSidebarProps) {
             ))}
           </SidebarMenu>
           <div className="ml-auto flex shrink-0 items-center gap-1">
+            <SyncStatusIndicator />
             <ThemeToggle size="icon-xs" />
           </div>
         </div>

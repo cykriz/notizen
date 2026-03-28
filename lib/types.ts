@@ -30,6 +30,9 @@ export type PreviewMode = 'edit' | 'preview';
 import type { TodoQuadrant } from './constants';
 export type { TodoQuadrant };
 
+export type SyncEntityType = 'note' | 'todo';
+export type SyncAction = 'create' | 'update' | 'delete';
+
 export interface QuadrantMeta {
   key: TodoQuadrant;
   label: string;

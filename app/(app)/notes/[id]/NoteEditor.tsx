@@ -6,9 +6,9 @@ import { useAutoSave } from '@/hooks/useAutoSave';
 import { DEFAULT_NOTE_TITLE, PREVIEW_EDIT, PREVIEW_PREVIEW } from '@/lib/constants';
 import type { Attachment, Note } from '@/lib/fsNotes';
 import type { NoteSummary, PreviewMode } from '@/lib/types';
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { DeleteNoteDialog } from '../../DeleteNoteDialog';
-import { updateNoteAction } from '../actions';
+import { useData } from '../../DataProvider';
 import { NoteHeader } from './NoteHeader';
 import { NoteOutline } from './NoteOutline';
 
@@ -18,15 +18,11 @@ interface NoteEditorProps {
   notes: NoteSummary[];
 }
 
-const saveContent = async (id: string, data: { title: string; content: string }) => {
-  await updateNoteAction(id, data);
-};
-
 export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
+  const { updateNote } = useData();
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content);
   const [attachments, setAttachments] = useState<Attachment[]>(note.attachments);
-  const [, startSaving] = useTransition();
   const [preview, setPreview] = useState<PreviewMode>(note.content.trim() === '' ? PREVIEW_EDIT : PREVIEW_PREVIEW);
   const [tags, setTags] = useState<string[]>(note.tags);
   const [outlineVisible, setOutlineVisible] = useState(() => /^#{1,6}\s+.+$/m.test(note.content));
@@ -34,6 +30,13 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
 
   const deferredContent = useDeferredValue(content);
   const nonImageAttachments = useMemo(() => attachments.filter((a) => !a.mimeType.startsWith('image/')), [attachments]);
+
+  const saveContent = useCallback(
+    async (id: string, data: { title: string; content: string }) => {
+      await updateNote(id, data);
+    },
+    [updateNote],
+  );
 
   const { saving, saved, isDirty, handleSave, handleSavedReset } = useAutoSave({
     noteId: note.id,
@@ -115,11 +118,9 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
   const handleTagsChange = useCallback(
     (newTags: string[]) => {
       setTags(newTags);
-      startSaving(async () => {
-        await updateNoteAction(note.id, { tags: newTags });
-      });
+      void updateNote(note.id, { tags: newTags }).catch(console.error);
     },
-    [note.id],
+    [note.id, updateNote],
   );
 
   return (

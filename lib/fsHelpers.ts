@@ -101,6 +101,23 @@ export async function withNoteLock<T>(noteId: string, fn: () => Promise<T>): Pro
   }
 }
 
+// All todos share one file (todos.json). This lock ensures writes run one at a time,
+// so a second write can't overwrite changes from the first.
+let todosLock: Promise<unknown> = Promise.resolve();
+
+export async function withTodosLock<T>(fn: () => Promise<T>): Promise<T> {
+  const prev = todosLock;
+  const current = prev.then(fn, fn);
+  todosLock = current;
+  try {
+    return await current;
+  } finally {
+    if (todosLock === current) {
+      todosLock = Promise.resolve();
+    }
+  }
+}
+
 export async function findSlugByNoteId(noteId: string): Promise<string | null> {
   await ensureDir(notesDir());
   const entries = await fs.readdir(notesDir(), { withFileTypes: true });
