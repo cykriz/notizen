@@ -66,8 +66,12 @@ export const MarkdownEditor = memo(
       notes,
     });
 
+    // Called once when CodeMirror mounts; stores the editor ref and places cursor at the end
     const handleCreateEditor = useCallback((view: EditorView) => {
       viewRef.current = view;
+      // Place cursor at end of document so the user continues where they left off
+      const end = view.state.doc.length;
+      view.dispatch({ selection: { anchor: end }, scrollIntoView: true });
     }, []);
 
     const markdownExtension = useMemo(() => markdown({ base: markdownLanguage }), []);
