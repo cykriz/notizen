@@ -1,5 +1,7 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
+
 export default function OfflinePage() {
   return (
     <div className="flex flex-1 items-center justify-center">
@@ -8,14 +10,14 @@ export default function OfflinePage() {
         <p className="text-sm text-muted-foreground">
           Diese Seite wurde noch nicht für die Offline-Nutzung zwischengespeichert.
         </p>
-        <button
+        <Button
+          variant="outline"
           onClick={() => {
             location.reload();
           }}
-          className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm hover:bg-accent"
         >
           Erneut versuchen
-        </button>
+        </Button>
       </div>
     </div>
   );

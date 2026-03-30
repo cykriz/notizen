@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { FileText, X, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { NoteLinkPicker } from '@/components/NoteLinkPicker';
 import type { NoteSummary } from '@/lib/types';
 
@@ -24,21 +25,22 @@ export function LinkedNotesField({ linkedNoteIds, onAdd, onRemove, notes }: Link
   return (
     <>
       <div>
-        <label className="mb-1.5 block text-sm font-medium">Verknüpfte Notizen</label>
+        <Label className="mb-1.5">Verknüpfte Notizen</Label>
         <div className="flex flex-wrap items-center gap-1.5">
           {linkedNoteIds.map((nid) => (
             <Badge key={nid} variant="secondary" className="gap-1 pr-1">
               <FileText className="h-3 w-3" />
               <span className="max-w-32 truncate">{resolveTitle(nid)}</span>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon-xs"
                 onClick={() => {
                   onRemove(nid);
                 }}
-                className="rounded-sm hover:bg-accent p-0.5"
               >
                 <X className="h-3 w-3" />
-              </button>
+              </Button>
             </Badge>
           ))}
           {availableNotes.length > 0 && (

@@ -1,6 +1,7 @@
 'use client';
 
 import { useContext, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 import { DataContext } from './dataContext';
 
 export default function AppError({ error, reset }: { error: Error; reset: () => void }) {
@@ -24,12 +25,9 @@ export default function AppError({ error, reset }: { error: Error; reset: () => 
             ? 'Diese Seite wurde noch nicht für die Offline-Nutzung zwischengespeichert.'
             : 'Ein unerwarteter Fehler ist aufgetreten.'}
         </p>
-        <button
-          onClick={reset}
-          className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm hover:bg-accent"
-        >
+        <Button variant="outline" onClick={reset}>
           Erneut versuchen
-        </button>
+        </Button>
       </div>
     </div>
   );

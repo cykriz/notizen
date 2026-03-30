@@ -70,14 +70,16 @@ export function TagBrowser({ notes }: TagBrowserProps) {
           {pathSegments.map((seg, i) => (
             <span key={i} className="flex items-center gap-0.5">
               {i > 0 && <span>/</span>}
-              <button
+              <Button
+                variant="link"
+                size="xs"
                 onClick={() => {
                   setCurrentPath(pathSegments.slice(0, i + 1).join('/'));
                 }}
-                className="hover:underline truncate max-w-24"
+                className="truncate max-w-24 p-0 h-auto"
               >
                 {seg}
-              </button>
+              </Button>
             </span>
           ))}
         </div>

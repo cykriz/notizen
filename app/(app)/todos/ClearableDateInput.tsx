@@ -2,6 +2,7 @@
 
 import { forwardRef } from 'react';
 import { X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 interface ClearableDateInputProps {
@@ -24,15 +25,17 @@ export const ClearableDateInput = forwardRef<HTMLInputElement, ClearableDateInpu
           }}
         />
         {value !== '' && (
-          <button
+          <Button
             type="button"
-            className="absolute right-8 top-1/2 -translate-y-1/2 rounded-sm p-0.5 text-muted-foreground hover:text-foreground"
+            variant="ghost"
+            size="icon-xs"
+            className="absolute right-8 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             onClick={() => {
               onChange('');
             }}
           >
             <X className="h-3.5 w-3.5" />
-          </button>
+          </Button>
         )}
       </div>
     );

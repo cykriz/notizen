@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -93,6 +94,7 @@ export function TodoDialog({
         }}
       >
         <form
+          className="flex flex-col gap-4"
           onSubmit={(e) => {
             e.preventDefault();
             handleSave();
@@ -118,22 +120,17 @@ export function TodoDialog({
               }}
               rows={3}
             />
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="flex flex-col gap-4 sm:flex-row">
               <div className="flex-1">
-                <label className="mb-1.5 block text-sm font-medium" htmlFor="todo-due">
+                <Label className="mb-1.5" htmlFor="todo-due">
                   Fälligkeitsdatum
-                </label>
-                <ClearableDateInput
-                  ref={dueDateRef}
-                  id="todo-due"
-                  value={dueDate}
-                  onChange={setDueDate}
-                />
+                </Label>
+                <ClearableDateInput ref={dueDateRef} id="todo-due" value={dueDate} onChange={setDueDate} />
               </div>
               <div className="flex-1">
-                <label className="mb-1.5 block text-sm font-medium" htmlFor="todo-quadrant">
+                <Label className="mb-1.5" htmlFor="todo-quadrant">
                   Kategorie
-                </label>
+                </Label>
                 <Select
                   value={quadrant}
                   onValueChange={(v) => {

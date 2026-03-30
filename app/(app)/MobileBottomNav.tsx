@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { FileText, ListChecks } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 
@@ -29,20 +30,21 @@ export function MobileBottomNav() {
         const isActive = tab.href === '/todos' ? pathname.startsWith('/todos') : !pathname.startsWith('/todos');
 
         return (
-          <button
+          <Button
             key={tab.href}
             type="button"
+            variant="ghost"
             onClick={() => {
               handleTap(tab.href, isActive);
             }}
-            className={cn('flex flex-1 flex-col items-center justify-center gap-0.5 text-xs transition-colors', {
+            className={cn('flex-1 flex-col h-full gap-0.5 text-xs rounded-none', {
               'text-primary': isActive,
               'text-muted-foreground': !isActive,
             })}
           >
             <tab.icon className="h-5 w-5" />
             <span>{tab.label}</span>
-          </button>
+          </Button>
         );
       })}
     </nav>

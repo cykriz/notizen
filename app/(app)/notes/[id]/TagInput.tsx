@@ -4,7 +4,7 @@ import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Tag } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { TagBadge } from './TagBadge';
 
 interface TagInputProps {
@@ -15,13 +15,14 @@ interface TagInputProps {
   compact?: boolean;
 }
 
+const noop = () => undefined;
+
 export function TagInput({ tags, allTags, onChange, className, compact }: TagInputProps) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => { setIsMounted(true); }, []);
+  const isMounted = useSyncExternalStore(() => noop, () => true, () => false);
 
   const tagsLower = useMemo(() => tags.map((t) => t.toLowerCase()), [tags]);
 
