@@ -190,15 +190,3 @@ export async function deleteNote(id: string): Promise<void> {
   });
 }
 
-export async function listAllTags(): Promise<string[]> {
-  const notes = await listNotes();
-  const tagSet = new Set<string>();
-  for (const note of notes) {
-    for (const tag of note.tags) {
-      tagSet.add(tag);
-    }
-  }
-  return [...tagSet].sort();
-}
-
-// Inline tests: run with `bun run lib/fsNotes.test.ts`

@@ -1,11 +1,11 @@
 import type { Note, NoteSummary } from "@/lib/types";
 import {
-  addTombstone,
   getCachedNote,
   removeCachedNote,
   setCachedNote,
   setCachedNotesList,
 } from "@/lib/localCache";
+import { addTombstone } from "@/lib/localCacheMerge";
 import { SYNC_ACTION, SYNC_ENTITY } from "@/lib/constants";
 import { enqueueMutation, hasPendingForEntity, hasPendingCreate, clearPendingForEntity } from "@/lib/syncQueue";
 import { tryFetch } from "@/lib/tryFetch";

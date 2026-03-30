@@ -4,10 +4,8 @@ import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Tag } from 'lucide-react';
-import { useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { TagBadge } from './TagBadge';
-
-const subscribe = () => subscribe;
 
 interface TagInputProps {
   tags: string[];
@@ -22,7 +20,8 @@ export function TagInput({ tags, allTags, onChange, className, compact }: TagInp
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const isMounted = useSyncExternalStore(subscribe, () => true, () => false);
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => { setIsMounted(true); }, []);
 
   const tagsLower = useMemo(() => tags.map((t) => t.toLowerCase()), [tags]);
 

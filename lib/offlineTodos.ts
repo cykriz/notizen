@@ -1,5 +1,6 @@
 import type { Todo, TodoQuadrant } from "@/lib/types";
-import { addTombstone, setCachedTodos } from "@/lib/localCache";
+import { setCachedTodos } from "@/lib/localCache";
+import { addTombstone } from "@/lib/localCacheMerge";
 import { SYNC_ACTION, SYNC_ENTITY } from "@/lib/constants";
 import { enqueueMutation, hasPendingForEntity, hasPendingCreate, clearPendingForEntity } from "@/lib/syncQueue";
 import { tryFetch } from "@/lib/tryFetch";

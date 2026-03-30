@@ -77,3 +77,13 @@ export function getNotesUnderPath(notes: NoteSummary[], path: string): NoteSumma
     n.tags.some((t) => t === path || t.startsWith(prefix))
   );
 }
+
+export function listAllTags(notes: NoteSummary[]): string[] {
+  const tagSet = new Set<string>();
+  for (const note of notes) {
+    for (const tag of note.tags) {
+      tagSet.add(tag);
+    }
+  }
+  return [...tagSet].sort();
+}

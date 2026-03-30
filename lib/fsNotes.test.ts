@@ -6,11 +6,11 @@ import {
   getNote,
   updateNote,
   deleteNote,
-  listAllTags,
   listAttachments,
   saveAttachment,
   deleteAttachment,
 } from "./fsNotes";
+import { listAllTags } from "./tagTree";
 
 /* eslint-disable no-console */
 async function runTests() {
@@ -71,7 +71,7 @@ async function runTests() {
 
     console.log("✓ updateNote — title, content, tags, pinned updated");
 
-    const allTags = await listAllTags();
+    const allTags = listAllTags(await listNotes());
     if (allTags[0] !== "a/b") {
       throw new Error("listAllTags failed");
     }
