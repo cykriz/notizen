@@ -50,3 +50,6 @@ next-env.d.ts
 
 # local data
 /dev-notes
+
+# claude code local settings
+.claude/settings.local.json

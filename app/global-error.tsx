@@ -8,27 +8,20 @@ export default function GlobalError({ reset }: { error: Error; reset: () => void
 
   return (
     <html lang="de">
-      <body style={{ margin: 0, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100svh' }}>
-          <div style={{ textAlign: 'center', padding: '2rem', maxWidth: '420px' }}>
-            <h2 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>
+      <body className="m-0 font-sans antialiased">
+        <div className="flex items-center justify-center min-h-svh">
+          <div className="text-center p-8 max-w-105">
+            <h2 className="text-xl mb-2">
               {isOffline ? 'Keine Verbindung' : 'Etwas ist schiefgelaufen'}
             </h2>
-            <p style={{ fontSize: '0.875rem', color: '#888', marginBottom: '1.5rem' }}>
+            <p className="text-sm text-[#888] mb-6">
               {isOffline
                 ? 'Diese Seite wurde noch nicht für die Offline-Nutzung zwischengespeichert.'
                 : 'Ein unerwarteter Fehler ist aufgetreten.'}
             </p>
             <button
               onClick={reset}
-              style={{
-                padding: '0.5rem 1.25rem',
-                border: '1px solid #ddd',
-                borderRadius: '0.375rem',
-                background: 'transparent',
-                cursor: 'pointer',
-                fontSize: '0.875rem',
-              }}
+              className="px-5 py-2 border border-[#ddd] rounded-md bg-transparent cursor-pointer text-sm"
             >
               Erneut versuchen
             </button>

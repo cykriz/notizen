@@ -141,7 +141,7 @@ export const MarkdownEditor = memo(
       [checkLinkTrigger, onChange],
     );
 
-    const colorMode = mounted && resolvedTheme === 'dark' ? 'dark' : 'light';
+    const colorMode = (mounted ? resolvedTheme : undefined) ?? 'dark';
     const previewComponents = useMemo(() => ({ a: InternalLinkRenderer }), []);
 
     return (

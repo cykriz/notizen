@@ -4,8 +4,10 @@ import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Tag } from 'lucide-react';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { TagBadge } from './TagBadge';
+
+const subscribe = () => subscribe;
 
 interface TagInputProps {
   tags: string[];
@@ -19,6 +21,8 @@ export function TagInput({ tags, allTags, onChange, className, compact }: TagInp
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const isMounted = useSyncExternalStore(subscribe, () => true, () => false);
 
   const tagsLower = useMemo(() => tags.map((t) => t.toLowerCase()), [tags]);
 
@@ -103,53 +107,62 @@ export function TagInput({ tags, allTags, onChange, className, compact }: TagInp
           }}
         />
       ))}
-      <Command
-        shouldFilter={false}
-        loop
-        className="relative flex-1 min-w-[120px] overflow-visible bg-transparent h-auto rounded-none text-inherit"
-      >
+      {isMounted ? (
+        <Command
+          shouldFilter={false}
+          loop
+          className="relative flex-1 min-w-30 overflow-visible bg-transparent h-auto rounded-none text-inherit"
+        >
+          <Input
+            ref={inputRef}
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setOpen(true);
+            }}
+            onFocus={() => {
+              setOpen(true);
+            }}
+            onBlur={() => {
+              setTimeout(() => {
+                setOpen(false);
+              }, 150);
+            }}
+            onKeyDown={handleKeyDown}
+            placeholder="Tag hinzufügen…"
+            rounded={false}
+            className="h-7 md:h-6 border-none bg-transparent px-1 text-sm md:text-xs shadow-none focus-visible:ring-0"
+          />
+          {showSuggestions && (
+            <div className="absolute left-0 top-full mt-1 z-50 w-56 rounded-md border bg-popover shadow-md">
+              <CommandList>
+                <CommandGroup>
+                  {suggestions.slice(0, 8).map((tag) => (
+                    <CommandItem
+                      key={tag}
+                      value={tag}
+                      onSelect={() => {
+                        addTag(tag);
+                      }}
+                    >
+                      <Tag className="h-3 w-3" />
+                      {tag}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+                <CommandEmpty className="hidden" />
+              </CommandList>
+            </div>
+          )}
+        </Command>
+      ) : (
         <Input
-          ref={inputRef}
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setOpen(true);
-          }}
-          onFocus={() => {
-            setOpen(true);
-          }}
-          onBlur={() => {
-            setTimeout(() => {
-              setOpen(false);
-            }, 150);
-          }}
-          onKeyDown={handleKeyDown}
           placeholder="Tag hinzufügen…"
           rounded={false}
-          className="h-7 md:h-6 border-none bg-transparent px-1 text-sm md:text-xs shadow-none focus-visible:ring-0"
+          className="relative flex-1 min-w-30 h-7 md:h-6 border-none bg-transparent px-1 text-sm md:text-xs shadow-none focus-visible:ring-0"
+          readOnly
         />
-        {showSuggestions && (
-          <div className="absolute left-0 top-full mt-1 z-50 w-56 rounded-md border bg-popover shadow-md">
-            <CommandList>
-              <CommandGroup>
-                {suggestions.slice(0, 8).map((tag) => (
-                  <CommandItem
-                    key={tag}
-                    value={tag}
-                    onSelect={() => {
-                      addTag(tag);
-                    }}
-                  >
-                    <Tag className="h-3 w-3" />
-                    {tag}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-              <CommandEmpty className="hidden" />
-            </CommandList>
-          </div>
-        )}
-      </Command>
+      )}
     </div>
   );
 }
