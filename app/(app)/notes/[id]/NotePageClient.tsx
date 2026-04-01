@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useReducer } from "react";
 import { useData } from "@/app/(app)/DataProvider";
 import { setCachedNote } from "@/lib/localCache";
 import type { Note, NoteSummary } from "@/lib/types";
@@ -13,6 +13,15 @@ interface NotePageClientProps {
   noteId: string;
 }
 
+function cacheReducer(state: Note | null, cached: Note): Note | null {
+  // Only swap when the cached version is genuinely newer (offline edits).
+  if (state !== null && new Date(cached.updatedAt).getTime() <= new Date(state.updatedAt).getTime()) {
+    return state;
+  }
+
+  return cached;
+}
+
 export function NotePageClient({
   note,
   allTags,
@@ -21,23 +30,20 @@ export function NotePageClient({
 }: NotePageClientProps) {
   const { getCachedNoteContent, notes } = useData();
 
-  const cached = getCachedNoteContent(noteId);
+  // First render uses the server `note` so SSR and hydration always match.
+  // After mount, the effect checks localStorage for a newer version (offline
+  // edits saved while the SW served stale HTML) and swaps it in via dispatch.
+  const [resolvedNote, applyCache] = useReducer(cacheReducer, note);
 
-  const resolvedNote = (() => {
-    if (note === null) {
-      return cached;
+  useEffect(() => {
+    const cached = getCachedNoteContent(noteId);
+    if (cached !== null) {
+      applyCache(cached);
     }
+  }, [noteId, getCachedNoteContent]);
 
-    if (cached === null) {
-      return note;
-    }
-
-    // Prefer whichever was updated more recently
-    return new Date(cached.updatedAt).getTime() > new Date(note.updatedAt).getTime() ? cached : note;
-  })();
-
-  // Cache server-provided note, but never overwrite a newer local version
-  // (offline edits have a later updatedAt than stale SW-cached server HTML)
+  // Cache the server-provided note for offline access, but never overwrite a
+  // newer local version (offline edits have a later updatedAt).
   useEffect(() => {
     if (note === null) {
       return;

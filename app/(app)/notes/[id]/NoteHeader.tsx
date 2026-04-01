@@ -1,7 +1,7 @@
 'use client';
 
-import { memo } from 'react';
-import { Save, Loader2, Eye, Pencil, List } from 'lucide-react';
+import { memo, useState } from 'react';
+import { Save, Loader2, Eye, Pencil, List, Tag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,9 +43,11 @@ export const NoteHeader = memo(function NoteHeader({
   allTags,
   onTagsChange,
 }: NoteHeaderProps) {
+  const [tagsExpanded, setTagsExpanded] = useState(false);
+
   return (
     <Card className="shrink-0 gap-0 py-0 shadow-panel z-10 mx-2 mt-2">
-      <CardContent className="note-section-padding flex items-center gap-3">
+      <CardContent className="note-section-padding relative flex items-center gap-2">
         <Input
           id="note-title"
           name="note-title"
@@ -58,14 +60,35 @@ export const NoteHeader = memo(function NoteHeader({
           rounded={false}
           className="flex-1 text-lg p-0 font-semibold h-auto border-none shadow-none focus-visible:ring-0 placeholder:text-xl md:placeholder:text-2xl bg-transparent"
         />
-        <TagInput
-          tags={tags}
-          allTags={allTags}
-          onChange={onTagsChange}
-          compact
-          className="hidden md:flex flex-1 min-w-0"
-        />
-        <div className="flex shrink-0 items-center gap-2 md:gap-1">
+
+        <TagInput tags={tags} allTags={allTags} onChange={onTagsChange} compact className="hidden md:flex min-w-0" />
+
+        {tagsExpanded && (
+          <div className="absolute inset-y-0 left-0 right-12 z-10 flex items-center rounded-xl bg-card note-section-padding md:hidden">
+            <TagInput
+              tags={tags}
+              allTags={allTags}
+              onChange={onTagsChange}
+              onCollapse={() => {
+                setTagsExpanded(false);
+              }}
+              compact
+              className="flex-1 min-w-0"
+            />
+          </div>
+        )}
+
+        <div className="relative z-20 flex shrink-0 items-center gap-2 md:gap-1">
+          <Button
+            onClick={() => {
+              setTagsExpanded((v) => !v);
+            }}
+            size="icon-xs"
+            variant="ghost"
+            className={cn('md:hidden', { 'bg-accent': tagsExpanded })}
+          >
+            <Tag />
+          </Button>
           <Button
             onClick={onToggleOutline}
             size="icon-xs"
@@ -82,9 +105,6 @@ export const NoteHeader = memo(function NoteHeader({
           </Button>
         </div>
       </CardContent>
-      <div className="md:hidden border-t border-border">
-        <TagInput tags={tags} allTags={allTags} onChange={onTagsChange} />
-      </div>
     </Card>
   );
 });

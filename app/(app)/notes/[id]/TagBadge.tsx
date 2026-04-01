@@ -49,7 +49,8 @@ export function TagBadge({ tag, onReplace, onRemove }: TagBadgeProps) {
         }}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
-            e.preventDefault(); confirm();
+            e.preventDefault();
+            confirm();
           }
 
           if (e.key === 'Escape') {

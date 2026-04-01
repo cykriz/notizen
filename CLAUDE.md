@@ -21,6 +21,7 @@ Next.js 16 + React 19 + Bun + TypeScript (strict) + Tailwind v4 + shadcn/ui. Fil
 - `revalidatePath()` after mutations
 - No database, no experimental Next.js features, no new packages without updating this file
 - Tags are hierarchical, slash-separated (e.g. `dev/python/fastapi`)
+- All features must work offline — the app is a PWA with a service worker; never assume server data is fresh or available
 
 ## Style Rules
 
