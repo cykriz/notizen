@@ -29,9 +29,11 @@ function formatSize(bytes: number): string {
 
 export function AttachmentList({ noteId, attachments, onDeleted, className }: AttachmentListProps) {
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleDelete = async (attId: string) => {
     setDeleting(attId);
+    setError(null);
     try {
       const res = await fetch(`/api/notes/${noteId}/attachments/${attId}`, {
         method: 'DELETE',
@@ -39,6 +41,8 @@ export function AttachmentList({ noteId, attachments, onDeleted, className }: At
       if (res.ok) {
         onDeleted?.(attId);
       }
+    } catch {
+      setError("Löschen fehlgeschlagen");
     } finally {
       setDeleting(null);
     }
@@ -51,6 +55,7 @@ export function AttachmentList({ noteId, attachments, onDeleted, className }: At
   return (
     <Card className={cn('py-0', className)}>
       <CardContent className="note-section-padding flex flex-col">
+        {error !== null && <p className="text-sm text-destructive py-1">{error}</p>}
         {attachments.map((att, i) => (
           <div key={att.id} className={cn('flex items-center gap-3', { 'border-t border-border': i > 0 })}>
             <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />

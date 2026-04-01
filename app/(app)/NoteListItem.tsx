@@ -6,7 +6,7 @@ import { Paperclip, Pin, Trash2, Loader2 } from 'lucide-react';
 import { cn, formatDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { SidebarMenuItem, SidebarMenuButton, SidebarMenuBadge } from '@/components/ui/sidebar';
-import { updateNoteAction } from './notes/actions';
+import { useData } from './dataContext';
 import { DeleteNoteDialog } from './DeleteNoteDialog';
 import type { NoteSummary } from '@/lib/types';
 
@@ -21,6 +21,7 @@ interface NoteListItemProps {
 }
 
 export const NoteListItem = memo(function NoteListItem({ note, isActive, onNavigate }: NoteListItemProps) {
+  const { updateNote } = useData();
   const [pinning, startPinning] = useTransition();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const mounted = useSyncExternalStore(
@@ -33,7 +34,11 @@ export const NoteListItem = memo(function NoteListItem({ note, isActive, onNavig
     e.stopPropagation();
     e.preventDefault();
     startPinning(async () => {
-      await updateNoteAction(note.id, { pinned: !note.pinned });
+      try {
+        await updateNote(note.id, { pinned: !note.pinned });
+      } catch {
+        // Netzwerkfehler — wird beim nächsten Sync erneut versucht
+      }
     });
   };
 

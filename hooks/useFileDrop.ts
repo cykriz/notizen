@@ -79,6 +79,9 @@ export function useFileDrop({ noteId, viewRef, onFileUploaded, wrapperRef }: Use
             .then((links) => {
               insertLinks(view, links);
             })
+            .catch(() => {
+              // Netzwerkfehler — Einfügen ignoriert
+            })
             .finally(() => {
               setUploading(false);
             });
@@ -107,6 +110,8 @@ export function useFileDrop({ noteId, viewRef, onFileUploaded, wrapperRef }: Use
       try {
         const links = await uploadFiles(Array.from(e.dataTransfer.files), id, onFileUploadedRef);
         insertLinks(view, links);
+      } catch {
+        // Netzwerkfehler — Upload ignoriert
       } finally {
         setUploading(false);
       }

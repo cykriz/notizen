@@ -15,11 +15,13 @@ interface FileUploadProps {
 export function FileUpload({ noteId, onUploaded }: FileUploadProps) {
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const upload = useCallback(
     async (files: FileList | File[]) => {
       setUploading(true);
+      setError(null);
       try {
         for (const file of Array.from(files)) {
           const form = new FormData();
@@ -35,6 +37,8 @@ export function FileUpload({ noteId, onUploaded }: FileUploadProps) {
             onUploaded?.(att);
           }
         }
+      } catch {
+        setError("Upload fehlgeschlagen");
       } finally {
         setUploading(false);
       }
@@ -85,6 +89,7 @@ export function FileUpload({ noteId, onUploaded }: FileUploadProps) {
         <p className="text-sm text-muted-foreground">
           {uploading ? "Wird hochgeladen…" : "Dateien hierher ziehen oder klicken"}
         </p>
+        {error !== null && <p className="text-sm text-destructive">{error}</p>}
         <Button variant="secondary" size="sm" type="button" disabled={uploading}>
           Dateien auswählen
         </Button>
