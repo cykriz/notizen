@@ -13,6 +13,8 @@ import { useKeyboardToolbar } from '@/hooks/useKeyboardToolbar';
 import { useLineTransform } from '@/hooks/useLineTransform';
 import { useNoteLinkPicker } from '@/hooks/useNoteLinkPicker';
 import { PREVIEW_EDIT } from '@/lib/constants';
+import { getSourceOffsetFromClick } from '@/lib/previewClickToOffset';
+import { remarkSourceOffset } from '@/lib/remarkSourceOffset';
 import { cn } from '@/lib/utils';
 import { indentMore } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
@@ -31,6 +33,7 @@ interface MarkdownEditorProps {
   onFileUploaded?: (attachment: Attachment) => void;
   preview?: PreviewMode;
   notes?: NoteSummary[];
+  onSwitchToEdit?: () => void;
 }
 
 export interface MarkdownEditorHandle {
@@ -41,7 +44,7 @@ export interface MarkdownEditorHandle {
 
 export const MarkdownEditor = memo(
   forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(function MarkdownEditor(
-    { value, onChange, noteId, onFileUploaded, preview = 'edit', notes },
+    { value, onChange, noteId, onFileUploaded, preview = 'edit', notes, onSwitchToEdit },
     ref,
   ) {
     const { resolvedTheme } = useTheme();
@@ -52,6 +55,7 @@ export const MarkdownEditor = memo(
     const getView = () => cmRef.current?.view ?? null;
 
     const isEditing = preview === PREVIEW_EDIT;
+    const pendingCursorPosRef = useRef<number | null>(null);
 
     const { dragging, uploading, fileDropExtension, handleDrop, handleDragOver, handleDragLeave } = useFileDrop({
       noteId,
@@ -66,13 +70,45 @@ export const MarkdownEditor = memo(
       notes,
     });
 
-    // Called once when CodeMirror mounts; stores the editor ref and places cursor at the end
+    // Called once when CodeMirror mounts; stores the editor ref and places cursor
     const handleCreateEditor = useCallback((view: EditorView) => {
       viewRef.current = view;
-      // Place cursor at end of document so the user continues where they left off
-      const end = view.state.doc.length;
-      view.dispatch({ selection: { anchor: end }, scrollIntoView: true });
+      const pending = pendingCursorPosRef.current;
+      pendingCursorPosRef.current = null;
+
+      if (pending !== null && pending >= 0 && pending <= view.state.doc.length) {
+        view.dispatch({
+          selection: { anchor: pending },
+          effects: EditorView.scrollIntoView(pending, { y: 'center' }),
+        });
+      } else {
+        const end = view.state.doc.length;
+        view.dispatch({ selection: { anchor: end }, scrollIntoView: true });
+      }
     }, []);
+
+    const handlePreviewClick = useCallback(
+      (e: React.MouseEvent<HTMLDivElement>) => {
+        const target = e.target;
+
+        if (!(target instanceof HTMLElement)) {
+          return;
+        }
+
+        if (target.closest('a')) {
+          return;
+        }
+
+        const offset: number | null = getSourceOffsetFromClick(target);
+        if (offset === null) {
+          return;
+        }
+
+        pendingCursorPosRef.current = offset;
+        onSwitchToEdit?.();
+      },
+      [onSwitchToEdit],
+    );
 
     const markdownExtension = useMemo(() => markdown({ base: markdownLanguage }), []);
     const extensions = useMemo<Extension[]>(
@@ -143,6 +179,7 @@ export const MarkdownEditor = memo(
 
     const colorMode = (mounted ? resolvedTheme : undefined) ?? 'dark';
     const previewComponents = useMemo(() => ({ a: InternalLinkRenderer }), []);
+    const previewRemarkPlugins = useMemo(() => [remarkSourceOffset], []);
 
     return (
       <div
@@ -166,8 +203,8 @@ export const MarkdownEditor = memo(
             placeholder="Schreibe hier deine Notiz …"
           />
         ) : (
-          <div className="h-full overflow-y-auto">
-            <MarkdownPreview source={value} components={previewComponents} />
+          <div className="h-full overflow-y-auto cursor-text" onClick={handlePreviewClick}>
+            <MarkdownPreview source={value} components={previewComponents} remarkPlugins={previewRemarkPlugins} />
           </div>
         )}
         {dragging && (

@@ -81,6 +81,10 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
     setPreview((p) => (p === PREVIEW_EDIT ? PREVIEW_PREVIEW : PREVIEW_EDIT));
   }, []);
 
+  const handleSwitchToEdit = useCallback(() => {
+    setPreview(PREVIEW_EDIT);
+  }, []);
+
   const handleToggleOutline = useCallback(() => {
     setOutlineVisible((v) => !v);
   }, []);
@@ -155,6 +159,7 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
           onFileUploaded={handleUploaded}
           preview={preview}
           notes={notes}
+          onSwitchToEdit={handleSwitchToEdit}
         />
       </div>
       {nonImageAttachments.length > 0 && (
