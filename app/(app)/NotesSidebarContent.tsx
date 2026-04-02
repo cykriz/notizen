@@ -172,7 +172,7 @@ export function NotesSidebarContent({ notes }: NotesSidebarContentProps) {
         </SidebarGroup>
       )}
 
-      <div className="flex items-center gap-1 mt-auto">
+      <div className="sticky bottom-0 z-10 flex items-center gap-1 mt-auto bg-sidebar">
         <Button size="sm" variant="ghost" onClick={handleCreate} disabled={pending} className="flex-1 justify-start">
           <Plus />
           Neue Notiz

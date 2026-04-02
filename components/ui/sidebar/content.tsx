@@ -11,7 +11,7 @@ export function SidebarContent({ className, ...props }: React.ComponentProps<'di
       data-slot="sidebar-content"
       data-sidebar="content"
       className={cn(
-        'flex h-full min-h-0 flex-1 flex-col gap-2 overflow-visible group-data-[collapsible=icon]:overflow-hidden',
+        'flex h-full min-h-0 flex-1 flex-col gap-2 overflow-y-auto group-data-[collapsible=icon]:overflow-hidden',
         className,
       )}
       {...props}

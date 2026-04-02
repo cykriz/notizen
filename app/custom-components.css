@@ -7,7 +7,7 @@
 }
 
 .sidebar-panel {
-  @apply border-0 gap-2;
+  @apply border-0 gap-2 overflow-hidden;
 }
 
 .card-base {

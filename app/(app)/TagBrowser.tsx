@@ -62,49 +62,51 @@ export function TagBrowser({ notes, currentPath, setCurrentPath }: TagBrowserPro
 
   return (
     <div className="flex flex-col gap-1">
-      {currentPath !== '' && (
-        <div className="flex items-center gap-1 px-2 text-xs text-sidebar-foreground/70">
-          <Button variant="ghost" size="icon-xs" onClick={handleBack} className="shrink-0">
-            <ChevronLeft />
-          </Button>
-          {pathSegments.map((seg, i) => (
-            <span key={i} className="flex items-center gap-0.5">
-              {i > 0 && <span>/</span>}
-              <Button
-                variant="link"
-                size="xs"
-                onClick={() => {
-                  setCurrentPath(pathSegments.slice(0, i + 1).join('/'));
-                }}
-                className="truncate max-w-24 p-0 h-auto"
-              >
-                {seg}
-              </Button>
-            </span>
-          ))}
-        </div>
-      )}
+      <div className="sticky top-0 z-10 flex flex-col gap-1 bg-sidebar">
+        {currentPath !== '' && (
+          <div className="flex items-center gap-1 px-2 text-xs text-sidebar-foreground/70">
+            <Button variant="ghost" size="icon-xs" onClick={handleBack} className="shrink-0">
+              <ChevronLeft />
+            </Button>
+            {pathSegments.map((seg, i) => (
+              <span key={i} className="flex items-center gap-0.5">
+                {i > 0 && <span>/</span>}
+                <Button
+                  variant="link"
+                  size="xs"
+                  onClick={() => {
+                    setCurrentPath(pathSegments.slice(0, i + 1).join('/'));
+                  }}
+                  className="truncate max-w-24 py-2 h-auto"
+                >
+                  {seg}
+                </Button>
+              </span>
+            ))}
+          </div>
+        )}
 
-      {children.length > 0 && (
-        <SidebarMenu>
-          {children.map((node) => (
-            <SidebarMenuItem key={node.fullPath}>
-              <SidebarMenuButton
-                onClick={() => {
-                  setCurrentPath(node.fullPath);
-                }}
-                className="h-auto"
-              >
-                {node.children.length > 0 ? <Folder className="shrink-0" /> : <Tag className="shrink-0" />}
-                <span className="truncate">{node.segment}</span>
-              </SidebarMenuButton>
-              <SidebarMenuBadge>{node.noteCount}</SidebarMenuBadge>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-      )}
+        {children.length > 0 && (
+          <SidebarMenu>
+            {children.map((node) => (
+              <SidebarMenuItem key={node.fullPath}>
+                <SidebarMenuButton
+                  onClick={() => {
+                    setCurrentPath(node.fullPath);
+                  }}
+                  className="h-auto"
+                >
+                  {node.children.length > 0 ? <Folder className="shrink-0" /> : <Tag className="shrink-0" />}
+                  <span className="truncate">{node.segment}</span>
+                </SidebarMenuButton>
+                <SidebarMenuBadge>{node.noteCount}</SidebarMenuBadge>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        )}
 
-      {notesAtLevel.length > 0 && children.length > 0 && <Separator className="mx-2" />}
+        {notesAtLevel.length > 0 && children.length > 0 && <Separator className="mx-2" />}
+      </div>
 
       {notesAtLevel.length > 0 && (
         <SidebarMenu>
