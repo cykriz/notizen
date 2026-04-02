@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { ChevronLeft, Folder, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ function extractNoteId(pathname: string): string | null {
   return /^\/notes\/([^/]+)$/.exec(pathname)?.[1] ?? null;
 }
 
-function getNoteTagPath(notes: NoteSummary[], pathname: string): string {
+export function getNoteTagPath(notes: NoteSummary[], pathname: string): string {
   const id = extractNoteId(pathname);
   if (id === null) {
     return '';
@@ -31,15 +31,15 @@ function getNoteTagPath(notes: NoteSummary[], pathname: string): string {
 
 interface TagBrowserProps {
   notes: NoteSummary[];
+  currentPath: string;
+  setCurrentPath: (path: string) => void;
 }
 
-export function TagBrowser({ notes }: TagBrowserProps) {
+export function TagBrowser({ notes, currentPath, setCurrentPath }: TagBrowserProps) {
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
 
   const noteId = extractNoteId(pathname);
-
-  const [currentPath, setCurrentPath] = useState(() => getNoteTagPath(notes, pathname));
 
   const [prevNoteId, setPrevNoteId] = useState(noteId);
 

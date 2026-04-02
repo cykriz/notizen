@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenu, useSidebar } from '@/components/ui/sidebar';
 import { DEFAULT_NOTE_TITLE } from '@/lib/constants';
 import { useData } from './DataProvider';
-import { TagBrowser } from './TagBrowser';
+import { TagBrowser, getNoteTagPath } from './TagBrowser';
 import { NoteListItem } from './NoteListItem';
 import type { NoteSummary } from '@/lib/types';
 
@@ -62,6 +62,8 @@ export function NotesSidebarContent({ notes }: NotesSidebarContentProps) {
   const [pending, setPending] = useState(false);
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
+  const [currentTagPath, setCurrentTagPath] = useState(() => getNoteTagPath(notes, pathname));
+
   const view = useSyncExternalStore(
     viewStore.subscribe,
     viewStore.getSnapshot,
@@ -74,7 +76,8 @@ export function NotesSidebarContent({ notes }: NotesSidebarContentProps) {
 
   const handleCreate = useCallback(() => {
     setPending(true);
-    void createNote({ title: DEFAULT_NOTE_TITLE, content: '' })
+    const tags = currentTagPath !== '' ? [currentTagPath] : [];
+    void createNote({ title: DEFAULT_NOTE_TITLE, content: '', tags })
       .then((note) => {
         // Only navigate if server confirmed creation (non-empty slug).
         // Offline-created notes have slug="" and can't be server-rendered.
@@ -85,7 +88,7 @@ export function NotesSidebarContent({ notes }: NotesSidebarContentProps) {
       .finally(() => {
         setPending(false);
       });
-  }, [createNote, router]);
+  }, [createNote, router, currentTagPath]);
 
   const pendingRef = useRef(pending);
 
@@ -152,7 +155,7 @@ export function NotesSidebarContent({ notes }: NotesSidebarContentProps) {
       {notes.length > 0 && (
         <SidebarGroup>
           <SidebarGroupContent>
-            {view === 'tags' && <TagBrowser notes={notes} />}
+            {view === 'tags' && <TagBrowser notes={notes} currentPath={currentTagPath} setCurrentPath={setCurrentTagPath} />}
             {view === 'all' && (
               <SidebarMenu>
                 {notes.map((note) => (
