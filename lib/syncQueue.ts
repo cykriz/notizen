@@ -119,10 +119,18 @@ async function replayMutation(entry: SyncQueueEntry): Promise<void> {
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     console.error(`Sync replay ${action} ${entityType}/${entityId}: ${res.status.toString()}`, body);
+    if (res.status === 401) {
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+
+      throw new Error("Session expired");
+    }
+
     if (res.status >= 500 || !navigator.onLine) {
       throw new Error(`Sync failed: ${res.status.toString()}`);
     }
 
-    // 4xx (except 409) = discard (bad data, retrying won't help)
+    // 4xx (except 401, 409) = discard (bad data, retrying won't help)
   }
 }

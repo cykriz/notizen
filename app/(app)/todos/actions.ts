@@ -1,6 +1,7 @@
 "use server";
 
 import { createTodo, updateTodo, deleteTodo, type TodoQuadrant } from "@/lib/fsTodos";
+import { requireAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
 interface CreateInput {
@@ -12,7 +13,8 @@ interface CreateInput {
 }
 
 export async function createTodoAction(input: CreateInput) {
-  await createTodo(input);
+  const root = await requireAuth();
+  await createTodo(input, root);
   revalidatePath("/todos");
 }
 
@@ -26,16 +28,19 @@ interface UpdateInput {
 }
 
 export async function updateTodoAction(id: string, input: UpdateInput) {
-  await updateTodo(id, input);
+  const root = await requireAuth();
+  await updateTodo(id, input, root);
   revalidatePath("/todos");
 }
 
 export async function deleteTodoAction(id: string) {
-  await deleteTodo(id);
+  const root = await requireAuth();
+  await deleteTodo(id, root);
   revalidatePath("/todos");
 }
 
 export async function toggleTodoAction(id: string, completed: boolean) {
-  await updateTodo(id, { completed });
+  const root = await requireAuth();
+  await updateTodo(id, { completed }, root);
   revalidatePath("/todos");
 }

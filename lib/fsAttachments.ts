@@ -9,13 +9,13 @@ import {
   guessMimeType,
 } from "./fsHelpers";
 
-export async function listAttachments(noteId: string): Promise<Attachment[]> {
-  const slug = await findSlugByNoteId(noteId);
+export async function listAttachments(noteId: string, root: string): Promise<Attachment[]> {
+  const slug = await findSlugByNoteId(noteId, root);
   if (slug === null) {
     return [];
   }
 
-  const attDir = attachmentsDir(slug);
+  const attDir = attachmentsDir(slug, root);
   try {
     const files = await fs.readdir(attDir);
     const attachments: Attachment[] = [];
@@ -44,16 +44,17 @@ export async function listAttachments(noteId: string): Promise<Attachment[]> {
 
 export async function saveAttachment(
   noteId: string,
-  file: File
+  file: File,
+  root: string,
 ): Promise<Attachment> {
-  const slug = await findSlugByNoteId(noteId);
+  const slug = await findSlugByNoteId(noteId, root);
   if (slug === null) {
     throw new Error(`Note not found: ${noteId}`);
   }
 
   const attId = uuidv4().split("-")[0];
   const storedName = `${attId}_${file.name}`;
-  const attDir = attachmentsDir(slug);
+  const attDir = attachmentsDir(slug, root);
   await ensureDir(attDir);
 
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -70,14 +71,15 @@ export async function saveAttachment(
 
 export async function getAttachmentFilePath(
   noteId: string,
-  attId: string
+  attId: string,
+  root: string,
 ): Promise<{ filePath: string; fileName: string; mimeType: string }> {
-  const slug = await findSlugByNoteId(noteId);
+  const slug = await findSlugByNoteId(noteId, root);
   if (slug === null) {
     throw new Error(`Note not found: ${noteId}`);
   }
 
-  const attDir = attachmentsDir(slug);
+  const attDir = attachmentsDir(slug, root);
   let files: string[];
   try {
     files = await fs.readdir(attDir);
@@ -101,14 +103,15 @@ export async function getAttachmentFilePath(
 
 export async function deleteAttachment(
   noteId: string,
-  attId: string
+  attId: string,
+  root: string,
 ): Promise<void> {
-  const slug = await findSlugByNoteId(noteId);
+  const slug = await findSlugByNoteId(noteId, root);
   if (slug === null) {
     throw new Error(`Note not found: ${noteId}`);
   }
 
-  const attDir = attachmentsDir(slug);
+  const attDir = attachmentsDir(slug, root);
   let files: string[];
   try {
     files = await fs.readdir(attDir);

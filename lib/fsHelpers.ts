@@ -8,8 +8,8 @@ export function getNotesRoot(): string {
   return root !== undefined && root !== "" ? root : path.join(process.cwd(), "dev-notes");
 }
 
-export function notesDir(): string {
-  return path.join(getNotesRoot(), "notes");
+export function notesDir(root: string): string {
+  return path.join(root, "notes");
 }
 
 export function slugify(title: string): string {
@@ -32,16 +32,16 @@ export function rebuildSlug(oldSlug: string, newTitle: string): string {
   return `${date}-${slugify(newTitle)}-${shortId}`;
 }
 
-export function noteDir(slug: string): string {
-  return path.join(notesDir(), slug);
+export function noteDir(slug: string, root: string): string {
+  return path.join(notesDir(root), slug);
 }
 
-export function noteMdPath(slug: string): string {
-  return path.join(noteDir(slug), "note.md");
+export function noteMdPath(slug: string, root: string): string {
+  return path.join(noteDir(slug, root), "note.md");
 }
 
-export function attachmentsDir(slug: string): string {
-  return path.join(noteDir(slug), "attachments");
+export function attachmentsDir(slug: string, root: string): string {
+  return path.join(noteDir(slug, root), "attachments");
 }
 
 export function guessMimeType(filename: string): string {
@@ -66,10 +66,11 @@ export async function ensureDir(dir: string): Promise<void> {
 }
 
 export async function readNoteFrontmatter(
-  slug: string
+  slug: string,
+  root: string,
 ): Promise<{ data: Record<string, unknown>; content: string } | null> {
   try {
-    const raw = await fs.readFile(noteMdPath(slug), "utf-8");
+    const raw = await fs.readFile(noteMdPath(slug, root), "utf-8");
     const parsed = matter(raw);
     return { data: parsed.data as Record<string, unknown>, content: parsed.content };
   } catch {
@@ -77,9 +78,9 @@ export async function readNoteFrontmatter(
   }
 }
 
-export async function countAttachments(slug: string): Promise<number> {
+export async function countAttachments(slug: string, root: string): Promise<number> {
   try {
-    const entries = await fs.readdir(attachmentsDir(slug));
+    const entries = await fs.readdir(attachmentsDir(slug, root));
     return entries.length;
   } catch {
     return 0;
@@ -101,30 +102,30 @@ export async function withNoteLock<T>(noteId: string, fn: () => Promise<T>): Pro
   }
 }
 
-// All todos share one file (todos.json). This lock ensures writes run one at a time,
-// so a second write can't overwrite changes from the first.
-let todosLock: Promise<unknown> = Promise.resolve();
+// Per-user todos lock keyed by root path. Ensures writes to the same todos.json
+// run one at a time, without blocking other users.
+const todosLocks = new Map<string, Promise<unknown>>();
 
-export async function withTodosLock<T>(fn: () => Promise<T>): Promise<T> {
-  const prev = todosLock;
+export async function withTodosLock<T>(root: string, fn: () => Promise<T>): Promise<T> {
+  const prev = todosLocks.get(root) ?? Promise.resolve();
   const current = prev.then(fn, fn);
-  todosLock = current;
+  todosLocks.set(root, current);
   try {
     return await current;
   } finally {
-    if (todosLock === current) {
-      todosLock = Promise.resolve();
+    if (todosLocks.get(root) === current) {
+      todosLocks.delete(root);
     }
   }
 }
 
-export async function findSlugByNoteId(noteId: string): Promise<string | null> {
-  await ensureDir(notesDir());
-  const entries = await fs.readdir(notesDir(), { withFileTypes: true });
+export async function findSlugByNoteId(noteId: string, root: string): Promise<string | null> {
+  await ensureDir(notesDir(root));
+  const entries = await fs.readdir(notesDir(root), { withFileTypes: true });
   const dirs = entries.filter((e) => e.isDirectory());
 
   for (const dir of dirs) {
-    const parsed = await readNoteFrontmatter(dir.name);
+    const parsed = await readNoteFrontmatter(dir.name, root);
     if (parsed?.data.id === noteId) {
       return dir.name;
     }

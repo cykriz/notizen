@@ -16,7 +16,7 @@ self.addEventListener("install", (event) => {
   // Pre-cache app shell routes + offline fallback
   event.waitUntil(
     caches.open(CACHE.pages).then((cache) =>
-      cache.addAll([OFFLINE_FALLBACK, "/notes", "/todos"]),
+      cache.addAll([OFFLINE_FALLBACK, "/login"]),
     ),
   );
 });
@@ -29,6 +29,16 @@ self.addEventListener("activate", (event) => {
       return Promise.all(names.filter((n) => !valid.has(n)).map((n) => caches.delete(n)));
     }).then(() => self.clients.claim()),
   );
+});
+
+// ── Auth Cache Clearing ─────────────────────────────────────────────
+self.addEventListener("message", (event) => {
+  const msgEvent = event as ExtendableMessageEvent;
+  if (msgEvent.data?.type === "CLEAR_AUTH_CACHES") {
+    msgEvent.waitUntil(
+      Promise.all([caches.delete(CACHE.api), caches.delete(CACHE.pages)]),
+    );
+  }
 });
 
 // ── Fetch ────────────────────────────────────────────────────────────
@@ -72,7 +82,7 @@ async function trimCache(cacheName: string, maxEntries: number): Promise<void> {
 async function networkFirstWithFallback(request: Request, cacheName: string): Promise<Response> {
   try {
     const response = await fetch(request);
-    if (response.ok) {
+    if (response.ok && !response.redirected) {
       const cache = await caches.open(cacheName);
       cache.put(request, response.clone());
     }
@@ -86,7 +96,7 @@ async function networkFirstWithFallback(request: Request, cacheName: string): Pr
   }
 }
 
-/** API / data: network-first, fall back to cache. */
+/** API / data: network-first, fall back to cache. Never cache 401s. */
 async function networkFirst(request: Request, cacheName: string): Promise<Response> {
   try {
     const response = await fetch(request);

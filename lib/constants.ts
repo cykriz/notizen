@@ -1,5 +1,12 @@
 import type { PreviewMode, QuadrantMeta, SyncAction, SyncEntityType } from './types';
 
+export const AUTH_COOKIE_NAME = 'notizen-session';
+export const AUTH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
+export const AUTH_DIR = '.auth';
+export const USERS_FILE = 'users.json';
+export const AUTH_SECRET_FILE = 'secret.key';
+export const USERS_DATA_DIR = 'users';
+
 export const DEFAULT_NOTE_TITLE = 'Unbenannt';
 
 export const PREVIEW_MODES: readonly PreviewMode[] = ['edit', 'preview'];

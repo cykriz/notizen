@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { getTodo, updateTodo, deleteTodo } from '@/lib/fsTodos';
+import { getUserDataDir } from '@/lib/auth';
 import { QUADRANT_KEYS } from '@/lib/constants';
 import { checkConflict, errorResponse, formatZodError, idempotentDelete } from '@/lib/apiHelpers';
 
@@ -22,8 +23,9 @@ interface RouteParams {
 
 export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
+    const root = await getUserDataDir();
     const { id } = await params;
-    const todo = await getTodo(id);
+    const todo = await getTodo(id, root);
 
     if (!todo) {
       return NextResponse.json({ error: 'Todo not found' }, { status: 404 });
@@ -37,6 +39,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
+    const root = await getUserDataDir();
     const { id } = await params;
     const body: unknown = await request.json();
     const parsed = UpdateTodoSchema.safeParse(body);
@@ -45,13 +48,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: formatZodError(parsed.error) }, { status: 400 });
     }
 
-    const conflict = await checkConflict(request, () => getTodo(id));
+    const conflict = await checkConflict(request, () => getTodo(id, root));
 
     if (conflict) {
       return conflict;
     }
 
-    const todo = await updateTodo(id, parsed.data);
+    const todo = await updateTodo(id, parsed.data, root);
     revalidatePath('/todos');
     return NextResponse.json(todo);
   } catch (err) {
@@ -60,8 +63,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 }
 
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
-  const { id } = await params;
-  const response = await idempotentDelete(() => deleteTodo(id));
-  revalidatePath('/todos');
-  return response;
+  try {
+    const root = await getUserDataDir();
+    const { id } = await params;
+    const response = await idempotentDelete(() => deleteTodo(id, root));
+    revalidatePath('/todos');
+    return response;
+  } catch (err) {
+    return errorResponse(err);
+  }
 }

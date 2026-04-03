@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FileText, ListChecks } from "lucide-react";
+import { FileText, ListChecks, LogOut } from "lucide-react";
 import {
   Sidebar,
   SidebarHeader,
@@ -12,8 +12,10 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SyncStatusIndicator } from "@/components/SyncStatusIndicator";
+import { logoutAction } from "@/app/login/actions";
 import { NotesSidebarContent } from "./NotesSidebarContent";
 import { TodosSidebarContent } from "./TodosSidebarContent";
 import { useData } from "./DataProvider";
@@ -23,7 +25,11 @@ const tabs = [
   { href: "/todos", label: "Aufgaben", icon: ListChecks },
 ] as const;
 
-export function AppSidebar() {
+interface AppSidebarProps {
+  authEnabled: boolean;
+}
+
+export function AppSidebar({ authEnabled }: AppSidebarProps) {
   const { notes, todos } = useData();
   const pathname = usePathname();
   const router = useRouter();
@@ -75,6 +81,18 @@ export function AppSidebar() {
           <div className="ml-auto flex shrink-0 items-center gap-1">
             <SyncStatusIndicator />
             <ThemeToggle size="icon-xs" />
+            {authEnabled && (
+              <form action={logoutAction}>
+                <Button
+                  type="submit"
+                  variant="ghost"
+                  size="icon-xs"
+                  title="Abmelden"
+                >
+                  <LogOut />
+                </Button>
+              </form>
+            )}
           </div>
         </div>
       </SidebarHeader>

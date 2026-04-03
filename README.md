@@ -19,6 +19,7 @@ Built with Next.js, shadcn/ui, and Bun. Designed for deployment on Synology NAS 
 - Installable as PWA — add to home screen on iOS/Android
 - Light/dark theme
 - Responsive design
+- Multi-user authentication (scrypt + HMAC session cookies)
 - Zero database — plain Markdown files with frontmatter
 
 ## Quick Start (Development)
@@ -28,7 +29,23 @@ bun install
 bun run dev
 ```
 
-App runs at `http://localhost:3000`. Notes are stored in `./dev-notes/notes/`.
+On first visit you'll be redirected to `/setup`. Create a user via the CLI:
+
+```bash
+bun run user add myuser
+```
+
+Then log in at `http://localhost:3000/login`. Notes are stored in `$NOTES_ROOT/users/<username>/notes/`.
+
+### User Management
+
+```bash
+bun run user add <username> [password]   # create user (prompts if no password)
+bun run user list                        # list all users
+bun run user remove <username>           # remove user (data stays on disk)
+bun run user passwd <username>           # change password
+bun run user migrate <username>          # move legacy root-level data into user dir
+```
 
 ### Environment Variables
 
@@ -91,19 +108,30 @@ In DSM → **Control Panel** → **Login Portal** → **Advanced** → **Reverse
 
 ### Backup
 
+After the container starts, create a user:
+
+```bash
+docker exec -it notizen bun run user add myuser
+```
+
 Notes are plain files in `/volume1/docker/app/data/`. Back up with Hyper Backup or any file sync tool.
 
 ## File Structure
 
 ```
-/app/data/                          # NOTES_ROOT
-├── todos.json                      # Eisenhower Matrix tasks
-└── notes/
-    └── 2026-02-20-my-note-a1b2c3/  # {date}-{slug}-{uuid}
-        ├── note.md                  # Frontmatter + Markdown content
-        └── attachments/
-            ├── f4e5d6_photo.png     # {attId}_{originalName}
-            └── a7b8c9_doc.pdf
+/app/data/                              # NOTES_ROOT
+├── .auth/
+│   ├── users.json                      # User accounts (scrypt hashes)
+│   └── secret.key                      # HMAC signing key (auto-generated)
+└── users/
+    └── <username>/
+        ├── todos.json                  # Eisenhower Matrix tasks
+        └── notes/
+            └── 2026-02-20-my-note-a1b2c3/  # {date}-{slug}-{uuid}
+                ├── note.md                  # Frontmatter + Markdown content
+                └── attachments/
+                    ├── f4e5d6_photo.png     # {attId}_{originalName}
+                    └── a7b8c9_doc.pdf
 ```
 
 ### note.md Format
@@ -298,6 +326,10 @@ DELETE /api/todos/:id
 
 Response: `{ "success": true }`
 
+### Authentication
+
+All API routes require a valid session cookie. Unauthenticated requests return `401`.
+
 ### Error Responses
 
 All errors return:
@@ -309,6 +341,7 @@ All errors return:
 | Status | Meaning           |
 | ------ | ----------------- |
 | 400    | Validation error  |
+| 401    | Unauthorized      |
 | 404    | Not found         |
 | 500    | Internal error    |
 

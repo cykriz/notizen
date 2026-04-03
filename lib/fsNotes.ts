@@ -28,20 +28,20 @@ function parsePinned(raw: unknown): boolean {
   return raw === true;
 }
 
-export async function listNotes(): Promise<NoteSummary[]> {
-  await ensureDir(notesDir());
-  const entries = await fs.readdir(notesDir(), { withFileTypes: true });
+export async function listNotes(root: string): Promise<NoteSummary[]> {
+  await ensureDir(notesDir(root));
+  const entries = await fs.readdir(notesDir(root), { withFileTypes: true });
   const dirs = entries.filter((e) => e.isDirectory());
 
   const summaries: NoteSummary[] = [];
   for (const dir of dirs) {
     const slug = dir.name;
-    const parsed = await readNoteFrontmatter(slug);
+    const parsed = await readNoteFrontmatter(slug, root);
     if (!parsed) {
       continue;
     }
 
-    const attCount = await countAttachments(slug);
+    const attCount = await countAttachments(slug, root);
     summaries.push({
       id: String(parsed.data.id),
       slug,
@@ -58,18 +58,18 @@ export async function listNotes(): Promise<NoteSummary[]> {
   return summaries;
 }
 
-export async function getNote(id: string): Promise<Note | null> {
-  const slug = await findSlugByNoteId(id);
+export async function getNote(id: string, root: string): Promise<Note | null> {
+  const slug = await findSlugByNoteId(id, root);
   if (slug === null) {
     return null;
   }
 
-  const parsed = await readNoteFrontmatter(slug);
+  const parsed = await readNoteFrontmatter(slug, root);
   if (parsed === null) {
     return null;
   }
 
-  const attachments = await listAttachments(id);
+  const attachments = await listAttachments(id, root);
   return {
     id: String(parsed.data.id),
     slug,
@@ -84,12 +84,15 @@ export async function getNote(id: string): Promise<Note | null> {
   };
 }
 
-export async function createNote(input: { title: string; content: string; tags?: string[]; id?: string }): Promise<Note> {
+export async function createNote(
+  input: { title: string; content: string; tags?: string[]; id?: string },
+  root: string,
+): Promise<Note> {
   const id = input.id ?? uuidv4();
 
   // If a client-provided id already exists, return the existing note (idempotent replay).
   if (input.id !== undefined) {
-    const existing = await getNote(id);
+    const existing = await getNote(id, root);
     if (existing !== null) {
       return existing;
     }
@@ -99,8 +102,8 @@ export async function createNote(input: { title: string; content: string; tags?:
   const now = new Date().toISOString();
   const tags = input.tags ?? [];
 
-  await ensureDir(noteDir(slug));
-  await ensureDir(attachmentsDir(slug));
+  await ensureDir(noteDir(slug, root));
+  await ensureDir(attachmentsDir(slug, root));
 
   const frontmatter = matter.stringify(input.content, {
     id,
@@ -111,7 +114,7 @@ export async function createNote(input: { title: string; content: string; tags?:
     updatedAt: now,
   });
 
-  await fs.writeFile(noteMdPath(slug), frontmatter, 'utf-8');
+  await fs.writeFile(noteMdPath(slug, root), frontmatter, 'utf-8');
 
   return {
     id,
@@ -130,9 +133,10 @@ export async function createNote(input: { title: string; content: string; tags?:
 export async function updateNote(
   id: string,
   input: { title?: string; content?: string; tags?: string[]; pinned?: boolean },
+  root: string,
 ): Promise<Note> {
   return await withNoteLock(id, async () => {
-    const existing = await getNote(id);
+    const existing = await getNote(id, root);
     if (!existing) {
       throw new Error(`Note not found: ${id}`);
     }
@@ -148,7 +152,7 @@ export async function updateNote(
 
     if (titleChanged) {
       const newSlug = rebuildSlug(existing.slug, newTitle);
-      await fs.rename(noteDir(existing.slug), noteDir(newSlug));
+      await fs.rename(noteDir(existing.slug, root), noteDir(newSlug, root));
       currentSlug = newSlug;
     }
 
@@ -161,9 +165,9 @@ export async function updateNote(
       updatedAt: now,
     });
 
-    await fs.writeFile(noteMdPath(currentSlug), frontmatter, 'utf-8');
+    await fs.writeFile(noteMdPath(currentSlug, root), frontmatter, 'utf-8');
 
-    const attachments = await listAttachments(id);
+    const attachments = await listAttachments(id, root);
     return {
       id: existing.id,
       slug: currentSlug,
@@ -179,14 +183,14 @@ export async function updateNote(
   });
 }
 
-export async function deleteNote(id: string): Promise<void> {
+export async function deleteNote(id: string, root: string): Promise<void> {
   await withNoteLock(id, async () => {
-    const existing = await getNote(id);
+    const existing = await getNote(id, root);
     if (!existing) {
       throw new Error(`Note not found: ${id}`);
     }
 
-    await fs.rm(noteDir(existing.slug), { recursive: true, force: true });
+    await fs.rm(noteDir(existing.slug, root), { recursive: true, force: true });
   });
 }
 

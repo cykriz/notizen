@@ -9,7 +9,13 @@ export function errorMessage(err: unknown): string {
 /** Return a JSON error response, mapping "not found" messages to 404. */
 export function errorResponse(err: unknown, { notFoundAs404 = false } = {}): NextResponse {
   const message = errorMessage(err);
-  const status = notFoundAs404 && message.includes("not found") ? 404 : 500;
+  let status = 500;
+  if (message.includes("Unauthorized")) {
+    status = 401;
+  } else if (notFoundAs404 && message.includes("not found")) {
+    status = 404;
+  }
+
   return NextResponse.json({ error: message }, { status });
 }
 

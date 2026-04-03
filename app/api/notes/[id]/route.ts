@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { getNote, updateNote, deleteNote } from '@/lib/fsNotes';
+import { getUserDataDir } from '@/lib/auth';
 import { checkConflict, errorResponse, formatZodError, idempotentDelete } from '@/lib/apiHelpers';
 
 const UpdateNoteSchema = z.object({
@@ -17,8 +18,9 @@ interface RouteParams {
 
 export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
+    const root = await getUserDataDir();
     const { id } = await params;
-    const note = await getNote(id);
+    const note = await getNote(id, root);
 
     if (!note) {
       return NextResponse.json({ error: 'Note not found' }, { status: 404 });
@@ -32,6 +34,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
+    const root = await getUserDataDir();
     const { id } = await params;
     const body: unknown = await request.json();
     const parsed = UpdateNoteSchema.safeParse(body);
@@ -40,13 +43,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: formatZodError(parsed.error) }, { status: 400 });
     }
 
-    const conflict = await checkConflict(request, () => getNote(id));
+    const conflict = await checkConflict(request, () => getNote(id, root));
 
     if (conflict) {
       return conflict;
     }
 
-    const note = await updateNote(id, parsed.data);
+    const note = await updateNote(id, parsed.data, root);
     revalidatePath('/notes');
     revalidatePath(`/notes/${id}`);
     return NextResponse.json(note);
@@ -56,8 +59,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 }
 
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
-  const { id } = await params;
-  const response = await idempotentDelete(() => deleteNote(id));
-  revalidatePath('/notes');
-  return response;
+  try {
+    const root = await getUserDataDir();
+    const { id } = await params;
+    const response = await idempotentDelete(() => deleteNote(id, root));
+    revalidatePath('/notes');
+    return response;
+  } catch (err) {
+    return errorResponse(err);
+  }
 }

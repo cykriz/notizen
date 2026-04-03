@@ -2,36 +2,36 @@ import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import type { Todo, TodoQuadrant } from './types';
-import { getNotesRoot, ensureDir, withTodosLock } from './fsHelpers';
+import { ensureDir, withTodosLock } from './fsHelpers';
 
 export type { Todo, TodoQuadrant } from './types';
 
-function todosPath(): string {
-  return path.join(getNotesRoot(), 'todos.json');
+function todosPath(root: string): string {
+  return path.join(root, 'todos.json');
 }
 
-async function readTodos(): Promise<Todo[]> {
+async function readTodos(root: string): Promise<Todo[]> {
   try {
-    const raw = await fs.readFile(todosPath(), 'utf-8');
+    const raw = await fs.readFile(todosPath(root), 'utf-8');
     return JSON.parse(raw) as Todo[];
   } catch {
     return [];
   }
 }
 
-async function writeTodos(todos: Todo[]): Promise<void> {
-  await ensureDir(getNotesRoot());
-  await fs.writeFile(todosPath(), JSON.stringify(todos, null, 2), 'utf-8');
+async function writeTodos(todos: Todo[], root: string): Promise<void> {
+  await ensureDir(root);
+  await fs.writeFile(todosPath(root), JSON.stringify(todos, null, 2), 'utf-8');
 }
 
-export async function listTodos(): Promise<Todo[]> {
-  const todos = await readTodos();
+export async function listTodos(root: string): Promise<Todo[]> {
+  const todos = await readTodos(root);
   todos.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   return todos;
 }
 
-export async function getTodo(id: string): Promise<Todo | null> {
-  const todos = await readTodos();
+export async function getTodo(id: string, root: string): Promise<Todo | null> {
+  const todos = await readTodos(root);
   return todos.find((t) => t.id === id) ?? null;
 }
 
@@ -44,9 +44,9 @@ interface CreateTodoInput {
   id?: string;
 }
 
-export async function createTodo(input: CreateTodoInput): Promise<Todo> {
-  return await withTodosLock(async () => {
-    const todos = await readTodos();
+export async function createTodo(input: CreateTodoInput, root: string): Promise<Todo> {
+  return await withTodosLock(root, async () => {
+    const todos = await readTodos(root);
     const now = new Date().toISOString();
     const id = input.id ?? uuidv4();
     const existing = todos.find((t) => t.id === id);
@@ -66,7 +66,7 @@ export async function createTodo(input: CreateTodoInput): Promise<Todo> {
       ...(input.linkedNoteIds !== undefined && { linkedNoteIds: input.linkedNoteIds }),
     };
     todos.push(todo);
-    await writeTodos(todos);
+    await writeTodos(todos, root);
     return todo;
   });
 }
@@ -80,9 +80,9 @@ interface UpdateTodoInput {
   completed?: boolean;
 }
 
-export async function updateTodo(id: string, input: UpdateTodoInput): Promise<Todo> {
-  return await withTodosLock(async () => {
-    const todos = await readTodos();
+export async function updateTodo(id: string, input: UpdateTodoInput, root: string): Promise<Todo> {
+  return await withTodosLock(root, async () => {
+    const todos = await readTodos(root);
     const idx = todos.findIndex((t) => t.id === id);
     if (idx === -1) {
       throw new Error(`Todo not found: ${id}`);
@@ -96,20 +96,20 @@ export async function updateTodo(id: string, input: UpdateTodoInput): Promise<To
     };
     const updated = Object.fromEntries(Object.entries(merged).filter(([, v]) => v !== null)) as unknown as Todo;
     todos[idx] = updated;
-    await writeTodos(todos);
+    await writeTodos(todos, root);
     return updated;
   });
 }
 
-export async function deleteTodo(id: string): Promise<void> {
-  await withTodosLock(async () => {
-    const todos = await readTodos();
+export async function deleteTodo(id: string, root: string): Promise<void> {
+  await withTodosLock(root, async () => {
+    const todos = await readTodos(root);
     const idx = todos.findIndex((t) => t.id === id);
     if (idx === -1) {
       throw new Error(`Todo not found: ${id}`);
     }
 
     todos.splice(idx, 1);
-    await writeTodos(todos);
+    await writeTodos(todos, root);
   });
 }

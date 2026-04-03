@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { listTodos, createTodo } from "@/lib/fsTodos";
+import { getUserDataDir } from "@/lib/auth";
 import { QUADRANT_KEYS } from "@/lib/constants";
 import { errorResponse, formatZodError } from "@/lib/apiHelpers";
 
@@ -18,7 +19,8 @@ const CreateTodoSchema = z.object({
 
 export async function GET() {
   try {
-    const todos = await listTodos();
+    const root = await getUserDataDir();
+    const todos = await listTodos(root);
     return NextResponse.json(todos);
   } catch (err) {
     return errorResponse(err);
@@ -27,6 +29,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const root = await getUserDataDir();
     const body: unknown = await request.json();
     const parsed = CreateTodoSchema.safeParse(body);
 
@@ -37,7 +40,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const todo = await createTodo(parsed.data);
+    const todo = await createTodo(parsed.data, root);
     revalidatePath("/todos");
     return NextResponse.json(todo, { status: 201 });
   } catch (err) {
