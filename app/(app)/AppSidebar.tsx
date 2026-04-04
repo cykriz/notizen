@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { FileText, ListChecks, LogOut } from 'lucide-react';
@@ -14,10 +14,15 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { SyncStatusIndicator } from '@/components/SyncStatusIndicator';
+import { DEFAULT_NOTE_TITLE } from '@/lib/constants';
 import { logoutAction } from '@/app/login/actions';
+import { viewStore } from './viewStore';
 import { NotesSidebarContent } from './NotesSidebarContent';
+import { NotesSidebarFooter } from './NotesSidebarFooter';
+import { TagNavigation } from './TagNavigation';
 import { TodosSidebarContent } from './TodosSidebarContent';
 import { useData } from './DataProvider';
+import { extractNoteId, getNoteTagPath } from '@/lib/noteUtils';
 
 const tabs = [
   { href: '/notes', label: 'Notizen', icon: FileText },
@@ -29,10 +34,42 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ authEnabled }: AppSidebarProps) {
-  const { notes, todos } = useData();
+  const { notes, todos, createNote } = useData();
   const pathname = usePathname();
   const router = useRouter();
   const isTodos = pathname.startsWith('/todos');
+
+  const noteId = extractNoteId(pathname);
+  const [tagState, setTagState] = useState(() => ({
+    noteId,
+    path: getNoteTagPath(notes, pathname),
+  }));
+  const view = useSyncExternalStore(viewStore.subscribe, viewStore.getSnapshot, viewStore.getServerSnapshot);
+  const [pending, setPending] = useState(false);
+
+  // When the user opens a different note, jump to that note's tag folder
+  if (noteId !== tagState.noteId) {
+    setTagState({ noteId, path: getNoteTagPath(notes, pathname) });
+  }
+
+  const currentTagPath = tagState.path;
+  const setCurrentTagPath = useCallback((path: string) => {
+    setTagState((prev) => ({ ...prev, path }));
+  }, []);
+
+  const handleCreate = useCallback(() => {
+    setPending(true);
+    const tags = currentTagPath !== '' ? [currentTagPath] : [];
+    void createNote({ title: DEFAULT_NOTE_TITLE, content: '', tags })
+      .then((note) => {
+        if (note.slug !== '') {
+          router.push(`/notes/${note.id}`);
+        }
+      })
+      .finally(() => {
+        setPending(false);
+      });
+  }, [createNote, router, currentTagPath]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -84,9 +121,19 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
         </div>
       </SidebarHeader>
 
+      {!isTodos && view === 'tags' && (
+        <TagNavigation notes={notes} currentPath={currentTagPath} setCurrentPath={setCurrentTagPath} />
+      )}
+
       <SidebarContent>
-        {isTodos ? <TodosSidebarContent todos={todos} /> : <NotesSidebarContent notes={notes} />}
+        {isTodos ? (
+          <TodosSidebarContent todos={todos} />
+        ) : (
+          <NotesSidebarContent notes={notes} currentTagPath={currentTagPath} view={view} handleCreate={handleCreate} pending={pending} />
+        )}
       </SidebarContent>
+
+      {!isTodos && <NotesSidebarFooter view={view} handleCreate={handleCreate} pending={pending} />}
     </Sidebar>
   );
 }

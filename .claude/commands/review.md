@@ -43,3 +43,7 @@ Review the current unstaged and untracked changes in the Next.js codebase. Look 
 4. **Minor** — style, naming, cleanup
 
 Quote the problematic code and show the fix inline.
+
+## TODO Summary
+
+At the very end, add a short numbered list of all findings as actionable TODOs (one line each) so the user can quickly pick which ones to implement — or say "all".
