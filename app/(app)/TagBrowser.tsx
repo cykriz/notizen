@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { ChevronLeft, Folder, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -41,13 +41,15 @@ export function TagBrowser({ notes, currentPath, setCurrentPath }: TagBrowserPro
 
   const noteId = extractNoteId(pathname);
 
-  const [prevNoteId, setPrevNoteId] = useState(noteId);
+  const prevNoteIdRef = useRef(noteId);
 
   // When the user opens a different note, jump to that note's tag folder
-  if (noteId !== prevNoteId) {
-    setPrevNoteId(noteId);
-    setCurrentPath(getNoteTagPath(notes, pathname));
-  }
+  useEffect(() => {
+    if (noteId !== prevNoteIdRef.current) {
+      prevNoteIdRef.current = noteId;
+      setCurrentPath(getNoteTagPath(notes, pathname));
+    }
+  }, [noteId, notes, pathname, setCurrentPath]);
 
   const tree = useMemo(() => buildTagTree(notes), [notes]);
   const children = useMemo(() => getChildNodes(tree, currentPath), [tree, currentPath]);

@@ -1,3 +1,4 @@
+// Kept for potential future use — currently not rendered anywhere.
 "use client";
 
 import { useEffect, useState } from "react";
