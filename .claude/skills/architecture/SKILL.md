@@ -23,7 +23,7 @@ See `lib/types.ts` for full definitions. Key types:
 - `lib/fsNotes.ts` — CRUD for notes (listNotes, getNote, createNote, updateNote, deleteNote); re-exports attachment helpers
 - `lib/fsAttachments.ts` — attachment CRUD (listAttachments, saveAttachment, deleteAttachment, getAttachmentFilePath)
 - `lib/fsTodos.ts` — CRUD for todos (listTodos, getTodo, createTodo, updateTodo, deleteTodo)
-- `lib/tagTree.ts` — hierarchical tag tree (buildTagTree, getChildNodes, getNotesAtPath, getNotesUnderPath, listAllTags)
+- `lib/tagTree.ts` — hierarchical tag tree (buildTagTree, getChildNodes, getNotesAtPath, getNotesUnderPath, listAllTags, listAllTagPaths)
 - `lib/fsHelpers.ts` — shared filesystem helpers
 - `lib/schemas.ts` — Zod validation schemas
 - `lib/apiHelpers.ts` — API utility helpers
@@ -81,7 +81,8 @@ app/api/serwist/[...path]/route.ts   → service worker
 | DeleteNoteDialog | `app/(app)/DeleteNoteDialog.tsx` — note deletion confirmation |
 | NoteListItem | `app/(app)/NoteListItem.tsx` — note list entry |
 | MobileBottomNav | `app/(app)/MobileBottomNav.tsx` — bottom tab bar (`md:hidden`) |
-| CommandPalette | `app/(app)/CommandPalette.tsx` — Cmd+P search |
+| CommandPalette | `app/(app)/CommandPalette.tsx` — Cmd+P search (@ prefix for tag navigation) |
+| tagNavigationStore | `app/(app)/tagNavigationStore.ts` — cross-component tag path navigation |
 | CommandPaletteClient | `app/(app)/CommandPaletteClient.tsx` — client-side command palette |
 | NoteEditor | `app/(app)/notes/[id]/NoteEditor.tsx` — note editing logic |
 | NoteHeader | `app/(app)/notes/[id]/NoteHeader.tsx` — note header component |

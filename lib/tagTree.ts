@@ -87,3 +87,28 @@ export function listAllTags(notes: NoteSummary[]): string[] {
   }
   return [...tagSet].sort();
 }
+
+export interface TagPathEntry {
+  path: string;
+  noteCount: number;
+  isLeaf: boolean;
+}
+
+export function listAllTagPaths(notes: NoteSummary[]): TagPathEntry[] {
+  const tree = buildTagTree(notes);
+  const result: TagPathEntry[] = [];
+
+  function walk(nodes: TagNode[]) {
+    for (const node of nodes) {
+      result.push({
+        path: node.fullPath,
+        noteCount: node.noteCount,
+        isLeaf: node.children.length === 0,
+      });
+      walk(node.children);
+    }
+  }
+
+  walk(tree);
+  return result;
+}

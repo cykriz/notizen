@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { FileText, ListChecks, LogOut } from 'lucide-react';
@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { SyncStatusIndicator } from '@/components/SyncStatusIndicator';
 import { DEFAULT_NOTE_TITLE } from '@/lib/constants';
 import { logoutAction } from '@/app/login/actions';
+import { tagNavigationStore } from './tagNavigationStore';
 import { viewStore } from './viewStore';
 import { NotesSidebarContent } from './NotesSidebarContent';
 import { NotesSidebarFooter } from './NotesSidebarFooter';
@@ -42,16 +43,23 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
   const noteId = extractNoteId(pathname);
   const [tagState, setTagState] = useState(() => ({
     noteId,
+    tagNavVersion: 0,
     path: getNoteTagPath(notes, pathname),
   }));
   const view = useSyncExternalStore(viewStore.subscribe, viewStore.getSnapshot, viewStore.getServerSnapshot);
+  const tagNav = useSyncExternalStore(tagNavigationStore.subscribe, tagNavigationStore.getSnapshot, tagNavigationStore.getServerSnapshot);
   const [pending, setPending] = useState(false);
+  const pendingRef = useRef(false);
 
-  // When the user opens a different note, jump to that note's tag folder.
-  // When navigating away (noteId becomes null, e.g. after deletion), keep the current path.
+  // Render-time sync: when a different note is opened, jump to its tag folder.
   if (noteId !== tagState.noteId) {
     const path = noteId !== null ? getNoteTagPath(notes, pathname) : tagState.path;
-    setTagState({ noteId, path });
+    setTagState({ noteId, tagNavVersion: tagState.tagNavVersion, path });
+  }
+
+  // Render-time sync: when a tag is selected from the command palette, navigate sidebar to that path.
+  if (tagNav.version > tagState.tagNavVersion) {
+    setTagState({ noteId: tagState.noteId, tagNavVersion: tagNav.version, path: tagNav.path });
   }
 
   const currentTagPath = tagState.path;
@@ -60,6 +68,11 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
   }, []);
 
   const handleCreate = useCallback(() => {
+    if (pendingRef.current) {
+      return;
+    }
+
+    pendingRef.current = true;
     setPending(true);
     const tags = currentTagPath !== '' ? [currentTagPath] : [];
     void createNote({ title: DEFAULT_NOTE_TITLE, content: '', tags })
@@ -69,6 +82,7 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
         }
       })
       .finally(() => {
+        pendingRef.current = false;
         setPending(false);
       });
   }, [createNote, router, currentTagPath]);

@@ -15,7 +15,7 @@ Built with Next.js, shadcn/ui, and Bun. Designed for deployment on Synology NAS 
 - Eisenhower Matrix for task management (Do / Schedule / Delegate / Eliminate)
 - Drag & drop todos between quadrants
 - Quick-add input in each quadrant
-- Command palette (Cmd+P) — search notes by title or tag, jump to tasks
+- Command palette (Cmd+P) — search notes by title or tag, jump to tasks; type `@` to search tags and jump to a folder in the sidebar
 - Installable as PWA — add to home screen on iOS/Android
 - Light/dark theme
 - Responsive design

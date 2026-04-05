@@ -2,7 +2,11 @@
 description: Review Next.js code for bugs, performance, and best practices
 ---
 
-Review the current unstaged and untracked changes in the Next.js codebase. Look for:
+Review the current unstaged and untracked changes in the Next.js codebase.
+
+## Step 0 — Discover Applicable Skills
+
+Scan `.claude/skills/**/SKILL.md` and read the `description` field from each file's frontmatter. For every changed file, determine which skill(s) apply based on the description and the file's location/purpose. Then read the full SKILL.md only for skills that matched at least one changed file.
 
 ## Checklist
 
@@ -21,6 +25,10 @@ Review the current unstaged and untracked changes in the Next.js codebase. Look 
 - Dynamic routes: check `params` typing and `generateStaticParams` if applicable
 - Metadata: `export const metadata` or `generateMetadata` present on page-level files?
 
+### Skill Compliance
+
+For each changed file, verify it follows the rules defined in its matching skill(s). Flag any code that violates a convention from a SKILL.md. Tag each finding with the skill name (e.g. `[styling]`, `[architecture]`).
+
 ### Performance
 
 - Unnecessary `"use client"` pushing logic to the browser
@@ -38,9 +46,10 @@ Review the current unstaged and untracked changes in the Next.js codebase. Look 
 ## Output Format
 
 1. **Critical** — bugs or broken behavior
-2. **Next.js issues** — wrong patterns for the framework
-3. **Performance** — quick wins
-4. **Minor** — style, naming, cleanup
+2. **Skill violations** — code that breaks a rule from a SKILL.md (cite the rule)
+3. **Next.js issues** — wrong patterns for the framework
+4. **Performance** — quick wins
+5. **Minor** — style, naming, cleanup
 
 Quote the problematic code and show the fix inline.
 
