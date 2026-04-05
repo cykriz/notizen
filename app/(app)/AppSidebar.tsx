@@ -47,9 +47,11 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
   const view = useSyncExternalStore(viewStore.subscribe, viewStore.getSnapshot, viewStore.getServerSnapshot);
   const [pending, setPending] = useState(false);
 
-  // When the user opens a different note, jump to that note's tag folder
+  // When the user opens a different note, jump to that note's tag folder.
+  // When navigating away (noteId becomes null, e.g. after deletion), keep the current path.
   if (noteId !== tagState.noteId) {
-    setTagState({ noteId, path: getNoteTagPath(notes, pathname) });
+    const path = noteId !== null ? getNoteTagPath(notes, pathname) : tagState.path;
+    setTagState({ noteId, path });
   }
 
   const currentTagPath = tagState.path;
