@@ -37,7 +37,8 @@ export function NoteLinkPicker({ notes, open, onOpenChange, onSelect }: NoteLink
             {notes.map((note) => (
               <CommandItem
                 key={note.id}
-                value={[note.title, ...note.tags.map((t) => `#${t}`)].join(' ')}
+                value={note.id}
+                keywords={[note.title, ...note.tags.map((t) => `#${t}`)]}
                 onSelect={() => {
                   onSelect(note);
                   onOpenChange(false);

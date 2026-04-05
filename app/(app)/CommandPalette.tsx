@@ -64,7 +64,8 @@ export function CommandPalette({ notes, todos }: CommandPaletteProps) {
             {notes.map((note) => (
               <CommandItem
                 key={note.id}
-                value={[note.title, ...note.tags.map((t) => `#${t}`)].join(" ")}
+                value={note.id}
+                keywords={[note.title, ...note.tags.map((t) => `#${t}`)]}
                 onSelect={() => {
                   navigate(`/notes/${note.id}`);
                 }}
@@ -86,7 +87,8 @@ export function CommandPalette({ notes, todos }: CommandPaletteProps) {
             {todos.map((todo) => (
               <CommandItem
                 key={todo.id}
-                value={todo.title}
+                value={todo.id}
+                keywords={[todo.title]}
                 onSelect={() => {
                   navigate("/todos");
                 }}
