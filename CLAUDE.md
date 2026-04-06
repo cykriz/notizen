@@ -20,6 +20,7 @@ Next.js 16 + React 19 + Bun + TypeScript (strict) + Tailwind v4 + shadcn/ui. Fil
 - `NOTES_ROOT` env var points to data directory
 - `revalidatePath()` after mutations
 - No database, no experimental Next.js features, no new packages without updating this file
+- When a missing type definition or API is needed, propose installing a proper package — never write manual shims or workarounds when a package exists. Update this file when adding a package.
 - Every imported package must be a **direct dependency** in `package.json` — never rely on transitive deps (they break in clean Docker installs)
 - Tags are hierarchical, slash-separated (e.g. `dev/python/fastapi`)
 - All features must work offline — the app is a PWA with a service worker; never assume server data is fresh or available
@@ -43,4 +44,5 @@ class-variance-authority clsx tailwind-merge tw-animate-css
 @uiw/react-codemirror @uiw/react-markdown-preview @codemirror/lang-markdown @codemirror/search @codemirror/commands @codemirror/view @codemirror/state
 unist-util-visit
 @serwist/turbopack serwist
+@types/bun
 ```

@@ -1,15 +1,10 @@
-import type { Note, NoteSummary } from "@/lib/types";
-import {
-  getCachedNote,
-  removeCachedNote,
-  setCachedNote,
-  setCachedNotesList,
-} from "@/lib/localCache";
-import { addTombstone } from "@/lib/localCacheMerge";
-import { SYNC_ACTION, SYNC_ENTITY } from "@/lib/constants";
-import { enqueueMutation, hasPendingForEntity, hasPendingCreate, clearPendingForEntity } from "@/lib/syncQueue";
-import { tryFetch } from "@/lib/tryFetch";
-import { NoteResponseSchema } from "@/lib/schemas";
+import { SYNC_ACTION, SYNC_ENTITY } from '@/lib/constants';
+import { getCachedNote, removeCachedNote, setCachedNote, setCachedNotesList } from '@/lib/localCache';
+import { addTombstone } from '@/lib/localCacheMerge';
+import { ConflictResponseSchema, NoteResponseSchema } from '@/lib/schemas';
+import { clearPendingForEntity, enqueueMutation, hasPendingCreate, hasPendingForEntity } from '@/lib/syncQueue';
+import { tryFetch } from '@/lib/tryFetch';
+import type { Note, NoteSummary } from '@/lib/types';
 
 function noteToSummary(note: Note): NoteSummary {
   return {
@@ -39,9 +34,16 @@ export async function createNoteOffline(
   const now = new Date().toISOString();
 
   const note: Note = {
-    id, slug: "", title: input.title, content: input.content,
-    tags: input.tags ?? [], pinned: false, createdAt: now, updatedAt: now,
-    attachmentCount: 0, attachments: [],
+    id,
+    slug: '',
+    title: input.title,
+    content: input.content,
+    tags: input.tags ?? [],
+    pinned: false,
+    createdAt: now,
+    updatedAt: now,
+    attachmentCount: 0,
+    attachments: [],
   };
 
   setCachedNote(note);
@@ -54,11 +56,12 @@ export async function createNoteOffline(
   // If online and no pending queue entries for this entity, try direct API call.
   // Only enqueue on network failure (null response). Server errors (4xx/5xx) are not retryable.
   if (isOnline && !hasPendingForEntity(id)) {
-    const res = await tryFetch("/api/notes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    const res = await tryFetch('/api/notes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
+
     if (res === null) {
       enqueueMutation(entry);
     } else if (!res.ok) {
@@ -66,7 +69,7 @@ export async function createNoteOffline(
     } else {
       const serverNote = NoteResponseSchema.parse(await res.json());
       setCachedNote(serverNote);
-      const serverList = updatedList.map((n) => n.id === id ? noteToSummary(serverNote) : n);
+      const serverList = updatedList.map((n) => (n.id === id ? noteToSummary(serverNote) : n));
       setCachedNotesList(serverList);
       return { note: serverNote, updatedList: serverList };
     }
@@ -97,7 +100,7 @@ export async function updateNoteOffline(
     setCachedNote({ ...existing, ...input, updatedAt: now });
   }
 
-  const updatedList = currentNotes.map((n) => n.id === id ? { ...n, ...input, updatedAt: now } : n);
+  const updatedList = currentNotes.map((n) => (n.id === id ? { ...n, ...input, updatedAt: now } : n));
   setCachedNotesList(updatedList);
 
   const payload = { ...input };
@@ -106,17 +109,46 @@ export async function updateNoteOffline(
   // Skip direct API if queue has pending mutations for this entity (preserves ordering)
   if (isOnline && !hasPendingForEntity(id)) {
     const expectedUpdatedAt = existing?.updatedAt ?? currentNotes.find((n) => n.id === id)?.updatedAt;
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (expectedUpdatedAt !== undefined) {
-      headers["X-Expected-UpdatedAt"] = expectedUpdatedAt;
+      headers['X-Expected-UpdatedAt'] = expectedUpdatedAt;
     }
 
-    const res = await tryFetch(`/api/notes/${id}`, {
-      method: "PUT",
+    let res = await tryFetch(`/api/notes/${id}`, {
+      method: 'PUT',
       headers,
       body: JSON.stringify(payload),
     });
+
+    // On 409 conflict (stale cache), retry once with the server's actual updatedAt
+    if (res !== null && res.status === 409) {
+      let body: unknown;
+      try {
+        body = await res.json(); 
+      } catch {
+        body = null; 
+      }
+      const parsed = body !== null ? ConflictResponseSchema.safeParse(body) : { success: false as const };
+      if (parsed.success) {
+        headers['X-Expected-UpdatedAt'] = parsed.data.serverVersion.updatedAt;
+        res = await tryFetch(`/api/notes/${id}`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify(payload),
+        });
+      }
+    }
+
     if (res === null) {
+      enqueueMutation(entry);
+    } else if (res.ok) {
+      const serverNote = NoteResponseSchema.parse(await res.json());
+      setCachedNote(serverNote);
+      const serverList = updatedList.map((n) => (n.id === id ? noteToSummary(serverNote) : n));
+      setCachedNotesList(serverList);
+      return serverList;
+    } else {
+      console.error(`updateNoteOffline: server returned ${res.status.toString()}`);
       enqueueMutation(entry);
     }
   } else {
@@ -147,7 +179,7 @@ export async function deleteNoteOffline(
   const entry = { entityType: SYNC_ENTITY.NOTE, entityId: id, action: SYNC_ACTION.DELETE, payload: {}, timestamp: now };
 
   if (isOnline && !hasPendingForEntity(id)) {
-    const res = await tryFetch(`/api/notes/${id}`, { method: "DELETE" });
+    const res = await tryFetch(`/api/notes/${id}`, { method: 'DELETE' });
     if (res === null) {
       enqueueMutation(entry);
     }

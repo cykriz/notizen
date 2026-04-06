@@ -2,10 +2,12 @@
 import { useTheme } from 'next-themes';
 import { forwardRef, memo, useCallback, useImperativeHandle, useMemo, useRef } from 'react';
 
-import { InternalLinkRenderer } from '@/components/InternalLink';
+import { usePreviewCheckbox } from '@/hooks/usePreviewCheckbox';
+
 import { MarkdownEditorToolbar } from '@/components/MarkdownEditorToolbar';
 import { MarkdownPreview } from '@/components/MarkdownPreview';
 import { NoteLinkPicker } from '@/components/NoteLinkPicker';
+import { PreviewCheckboxContext } from '@/components/PreviewCheckbox';
 import { editorBasicSetup, staticExtensions } from '@/components/markdownEditorSetup';
 import { useClientMounted } from '@/hooks/useClientMounted';
 import { useFileDrop } from '@/hooks/useFileDrop';
@@ -95,7 +97,7 @@ export const MarkdownEditor = memo(
           return;
         }
 
-        if (target.closest('a')) {
+        if (target.closest('a') || target.closest('[data-slot="checkbox"]')) {
           return;
         }
 
@@ -178,7 +180,7 @@ export const MarkdownEditor = memo(
     );
 
     const colorMode = (mounted ? resolvedTheme : undefined) ?? 'dark';
-    const previewComponents = useMemo(() => ({ a: InternalLinkRenderer }), []);
+    const { checkboxCtx, previewComponents } = usePreviewCheckbox(value, onChange);
     const previewRemarkPlugins = useMemo(() => [remarkSourceOffset], []);
 
     return (
@@ -203,9 +205,11 @@ export const MarkdownEditor = memo(
             placeholder="Schreibe hier deine Notiz …"
           />
         ) : (
-          <div className="h-full overflow-y-auto cursor-text" onClick={handlePreviewClick}>
-            <MarkdownPreview source={value} components={previewComponents} remarkPlugins={previewRemarkPlugins} />
-          </div>
+          <PreviewCheckboxContext.Provider value={checkboxCtx}>
+            <div className="h-full overflow-y-auto cursor-text" onClick={handlePreviewClick}>
+              <MarkdownPreview source={value} components={previewComponents} remarkPlugins={previewRemarkPlugins} />
+            </div>
+          </PreviewCheckboxContext.Provider>
         )}
         {dragging && (
           <div className="absolute inset-0 flex items-center justify-center bg-accent/80 pointer-events-none z-10">

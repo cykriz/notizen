@@ -110,6 +110,15 @@
   max-width: 100%;
 }
 
+/* Task list checkboxes – hide native input before JS component override mounts */
+[data-color-mode] .wmde-markdown .contains-task-list input[type='checkbox'] {
+  display: none;
+}
+
+[data-color-mode] .wmde-markdown .preview-checkbox {
+  margin-right: 0.375rem;
+}
+
 /* --- Markdown editor styles end --- */
 
 /* --- CodeMirror search panel --- */

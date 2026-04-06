@@ -40,5 +40,9 @@ const TodoSchema = z.object({
 
 export const NoteSummaryArraySchema = z.array(NoteSummarySchema);
 export const NoteResponseSchema = NoteSchema;
+export const ConflictResponseSchema = z.object({
+  error: z.string(),
+  serverVersion: z.object({ updatedAt: z.string() }),
+});
 export const TodoArraySchema = z.array(TodoSchema);
 export const TodoResponseSchema = TodoSchema;

@@ -16,7 +16,8 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
     const stat = await fs.stat(filePath);
     const nodeStream = createReadStream(filePath);
-    const webStream = Readable.toWeb(nodeStream) as ReadableStream;
+    // Type-narrow Node→Web stream
+    const webStream = Readable.toWeb(nodeStream) as unknown as ReadableStream;
 
     return new NextResponse(webStream, {
       headers: {
