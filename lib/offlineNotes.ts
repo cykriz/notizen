@@ -97,22 +97,24 @@ export async function updateNoteOffline(
   const existing = getCachedNote(id);
   const existingSummary = currentNotes.find((n) => n.id === id);
 
-  // Always cache the full updated note to prevent data loss on failed saves
-  const base: Note | null = existing ?? (existingSummary ? {
-    id,
-    slug: existingSummary.slug,
-    title: existingSummary.title,
-    content: '',
-    tags: existingSummary.tags,
-    pinned: existingSummary.pinned,
-    createdAt: existingSummary.createdAt,
-    updatedAt: existingSummary.updatedAt,
-    attachmentCount: existingSummary.attachmentCount,
-    attachments: [],
-  } : null);
-
-  if (base !== null) {
-    setCachedNote({ ...base, ...input, updatedAt: now });
+  // Only update individual note cache when we have real content to preserve.
+  // Metadata-only updates (pin, tags) without a cached note must not write
+  // content: '' — that would cause data loss if read offline.
+  if (existing !== null) {
+    setCachedNote({ ...existing, ...input, updatedAt: now });
+  } else if (input.content !== undefined && existingSummary) {
+    setCachedNote({
+      id,
+      slug: existingSummary.slug,
+      title: input.title ?? existingSummary.title,
+      content: input.content,
+      tags: input.tags ?? existingSummary.tags,
+      pinned: input.pinned ?? existingSummary.pinned,
+      createdAt: existingSummary.createdAt,
+      updatedAt: now,
+      attachmentCount: existingSummary.attachmentCount,
+      attachments: [],
+    });
   }
 
   const updatedList = currentNotes.map((n) => (n.id === id ? { ...n, ...input, updatedAt: now } : n));
