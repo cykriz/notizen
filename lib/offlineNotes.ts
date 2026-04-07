@@ -95,9 +95,24 @@ export async function updateNoteOffline(
 ): Promise<NoteSummary[]> {
   const now = new Date().toISOString();
   const existing = getCachedNote(id);
+  const existingSummary = currentNotes.find((n) => n.id === id);
 
-  if (existing !== null) {
-    setCachedNote({ ...existing, ...input, updatedAt: now });
+  // Always cache the full updated note to prevent data loss on failed saves
+  const base: Note | null = existing ?? (existingSummary ? {
+    id,
+    slug: existingSummary.slug,
+    title: existingSummary.title,
+    content: '',
+    tags: existingSummary.tags,
+    pinned: existingSummary.pinned,
+    createdAt: existingSummary.createdAt,
+    updatedAt: existingSummary.updatedAt,
+    attachmentCount: existingSummary.attachmentCount,
+    attachments: [],
+  } : null);
+
+  if (base !== null) {
+    setCachedNote({ ...base, ...input, updatedAt: now });
   }
 
   const updatedList = currentNotes.map((n) => (n.id === id ? { ...n, ...input, updatedAt: now } : n));
@@ -108,7 +123,7 @@ export async function updateNoteOffline(
 
   // Skip direct API if queue has pending mutations for this entity (preserves ordering)
   if (isOnline && !hasPendingForEntity(id)) {
-    const expectedUpdatedAt = existing?.updatedAt ?? currentNotes.find((n) => n.id === id)?.updatedAt;
+    const expectedUpdatedAt = existing?.updatedAt ?? existingSummary?.updatedAt;
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (expectedUpdatedAt !== undefined) {
       headers['X-Expected-UpdatedAt'] = expectedUpdatedAt;
