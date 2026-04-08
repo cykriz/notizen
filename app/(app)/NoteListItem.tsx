@@ -78,6 +78,7 @@ export const NoteListItem = memo(function NoteListItem({ note, isActive, onNavig
           size="icon-xs"
           onClick={handleTogglePin}
           disabled={pinning}
+          aria-label={note.pinned ? "Notiz lösen" : "Notiz anheften"}
           className={cn('h-5 w-5 [&>svg]:size-3', { 'bg-accent': note.pinned })}
         >
           {pinning ? <Loader2 className="animate-spin" /> : <Pin />}
@@ -88,6 +89,7 @@ export const NoteListItem = memo(function NoteListItem({ note, isActive, onNavig
             <Button
               variant="ghost"
               size="icon-xs"
+              aria-label="Notiz löschen"
               className="h-5 w-5 [&>svg]:size-3"
               onClick={() => {
                 setDeleteOpen(true);
@@ -103,7 +105,7 @@ export const NoteListItem = memo(function NoteListItem({ note, isActive, onNavig
             />
           </>
         ) : (
-          <Button variant="ghost" size="icon-xs" disabled className="h-5 w-5 [&>svg]:size-3">
+          <Button variant="ghost" size="icon-xs" disabled aria-label="Notiz löschen" className="h-5 w-5 [&>svg]:size-3">
             <Trash2 />
           </Button>
         )}

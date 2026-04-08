@@ -31,6 +31,7 @@ See `lib/types.ts` for full definitions. Key types:
 - `lib/localCache.ts` — client-side local cache CRUD (notes, todos, sync queue)
 - `lib/localCacheMerge.ts` — merge, tombstones, and cache expiry cleanup
 - `lib/syncQueue.ts` — offline sync queue management
+- `lib/failedSyncQueue.ts` — permanently failed sync entries (exceeded retries / non-retryable)
 - `lib/offlineNotes.ts` / `lib/offlineTodos.ts` — offline support for notes and todos
 
 ## API Routes

@@ -1,4 +1,5 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { SYNC_HEALTH_POLL_MS } from '@/lib/constants';
 
 function subscribe(callback: () => void) {
   window.addEventListener('online', callback);
@@ -51,6 +52,11 @@ async function fetchHealth(): Promise<boolean> {
 export function useOnlineStatus() {
   const browserOnline = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const [serverReachable, setServerReachable] = useState(true);
+  const serverReachableRef = useRef(serverReachable);
+
+  useEffect(() => {
+    serverReachableRef.current = serverReachable;
+  }, [serverReachable]);
 
   useEffect(() => {
     const check = () => {
@@ -72,7 +78,15 @@ export function useOnlineStatus() {
 
     document.addEventListener('visibilitychange', handleVisibility);
 
+    // Poll for reconnections that don't fire the 'online' event
+    const interval = setInterval(() => {
+      if (!document.hidden && navigator.onLine && !serverReachableRef.current) {
+        check();
+      }
+    }, SYNC_HEALTH_POLL_MS);
+
     return () => {
+      clearInterval(interval);
       window.removeEventListener('online', check);
       document.removeEventListener('visibilitychange', handleVisibility);
     };

@@ -8,6 +8,7 @@ Next.js 16 + React 19 + Bun + TypeScript (strict) + Tailwind v4 + shadcn/ui. Fil
 - Run lint + tsc after every code change. Fix all errors before moving on.
 - Dev server: `bun --bun next dev`
 - Add shadcn component: `npx shadcn@latest add <name>`
+- E2E tests: `bun run test:e2e` (headless), `bun run test:e2e:ui` (UI mode)
 
 ## Code Rules
 
@@ -45,4 +46,5 @@ class-variance-authority clsx tailwind-merge tw-animate-css
 unist-util-visit
 @serwist/turbopack serwist
 @types/bun
+@playwright/test
 ```

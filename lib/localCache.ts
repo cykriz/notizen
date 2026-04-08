@@ -4,12 +4,17 @@ import { NoteSummaryArraySchema, NoteResponseSchema, TodoArraySchema } from "@/l
 export const PREFIX = "notizen:";
 export const NOTES_LIST_KEY = `${PREFIX}notes-list`;
 export const TODOS_KEY = `${PREFIX}todos`;
-const SYNC_QUEUE_KEY = `${PREFIX}sync-queue`;
+export const SYNC_QUEUE_KEY = `${PREFIX}sync-queue`;
 export const CACHED_AT_PREFIX = `${PREFIX}cached-at:`;
 export const NOTE_PREFIX = `${PREFIX}note:`;
+export const DRAFT_PREFIX = `${PREFIX}draft:`;
 
 function noteKey(id: string): string {
   return `${NOTE_PREFIX}${id}`;
+}
+
+function draftKey(id: string): string {
+  return `${DRAFT_PREFIX}${id}`;
 }
 
 export function cachedAtKey(key: string): string {
@@ -80,6 +85,37 @@ export function setCachedNote(note: Note): void {
   safeSetJson(noteKey(note.id), note);
 }
 
+// --- Draft (unsaved editor state, separate from sync cache) ---
+
+export function getDraft(id: string): { title: string; content: string } | null {
+  const raw = safeGetJson(draftKey(id)) as Record<string, unknown> | null;
+  if (raw === null || typeof raw.title !== 'string' || typeof raw.content !== 'string') {
+    return null;
+  }
+
+  return { title: raw.title, content: raw.content };
+}
+
+export function setDraft(id: string, title: string, content: string): void {
+  if (typeof localStorage === "undefined") {
+    return;
+  }
+
+  try {
+    localStorage.setItem(draftKey(id), JSON.stringify({ title, content }));
+  } catch {
+    // localStorage full — best-effort
+  }
+}
+
+export function clearDraft(id: string): void {
+  if (typeof localStorage === "undefined") {
+    return;
+  }
+
+  localStorage.removeItem(draftKey(id));
+}
+
 export function removeCachedNote(id: string): void {
   if (typeof localStorage === "undefined") {
     return;
@@ -114,6 +150,7 @@ export interface SyncQueueEntry {
   action: SyncAction;
   payload: Record<string, unknown>;
   timestamp: string;
+  retryCount?: number;
 }
 
 export function getSyncQueue(): SyncQueueEntry[] {
@@ -132,4 +169,3 @@ export function setSyncQueue(queue: SyncQueueEntry[]): void {
     // Next successful write persists it.
   }
 }
-

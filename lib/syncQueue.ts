@@ -3,7 +3,8 @@ import {
   getSyncQueue,
   setSyncQueue,
 } from "@/lib/localCache";
-import { SYNC_ACTION, SYNC_ENTITY } from "@/lib/constants";
+import { addToFailedSync } from "@/lib/failedSyncQueue";
+import { SYNC_ACTION, SYNC_ENTITY, SYNC_MAX_RETRIES } from "@/lib/constants";
 
 let processing = false;
 
@@ -57,15 +58,38 @@ export async function processSyncQueue(): Promise<void> {
     let queue = getSyncQueue();
     while (queue.length > 0) {
       const entry = queue[0];
-      try {
-        await replayMutation(entry);
-        queue = getSyncQueue();
-        queue = queue.filter(
-          (e) => !(e.entityType === entry.entityType && e.entityId === entry.entityId && e.action === entry.action),
-        );
+
+      if ((entry.retryCount ?? 0) >= SYNC_MAX_RETRIES) {
+        console.error('Sync entry exceeded max retries, moving to failed:', entry);
+        addToFailedSync(entry);
+        queue.shift();
         setSyncQueue(queue);
-      } catch (err) {
-        console.error("Sync queue entry failed, stopping:", entry, err);
+        continue;
+      }
+
+      try {
+        const result = await replayMutation(entry);
+
+        if (result === 'discard') {
+          console.error('Sync entry not retryable, moving to failed:', entry);
+          addToFailedSync(entry);
+          queue.shift();
+          setSyncQueue(queue);
+        } else if (result === 'retry') {
+          entry.retryCount = (entry.retryCount ?? 0) + 1;
+          queue[0] = entry;
+          setSyncQueue(queue);
+          break;
+        } else {
+          queue = queue.filter(
+            (e) => !(e.entityType === entry.entityType && e.entityId === entry.entityId && e.action === entry.action),
+          );
+          setSyncQueue(queue);
+        }
+      } catch {
+        entry.retryCount = (entry.retryCount ?? 0) + 1;
+        queue[0] = entry;
+        setSyncQueue(queue);
         break;
       }
     }
@@ -74,7 +98,7 @@ export async function processSyncQueue(): Promise<void> {
   }
 }
 
-async function replayMutation(entry: SyncQueueEntry): Promise<void> {
+async function replayMutation(entry: SyncQueueEntry): Promise<'ok' | 'discard' | 'retry'> {
   const { entityType, entityId, action, payload } = entry;
   const baseUrl = entityType === SYNC_ENTITY.NOTE ? "/api/notes" : "/api/todos";
 
@@ -117,8 +141,9 @@ async function replayMutation(entry: SyncQueueEntry): Promise<void> {
   });
 
   if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    console.error(`Sync replay ${action} ${entityType}/${entityId}: ${res.status.toString()}`, body);
+    const text = await res.text().catch(() => "");
+    console.error(`Sync replay ${action} ${entityType}/${entityId}: ${res.status.toString()}`, text);
+
     if (res.status === 401) {
       if (typeof window !== 'undefined') {
         window.location.href = '/login';
@@ -128,9 +153,11 @@ async function replayMutation(entry: SyncQueueEntry): Promise<void> {
     }
 
     if (res.status >= 500 || !navigator.onLine) {
-      throw new Error(`Sync failed: ${res.status.toString()}`);
+      return 'retry';
     }
 
-    // 4xx (except 401, 409) = discard (bad data, retrying won't help)
+    return 'discard';
   }
+
+  return 'ok';
 }

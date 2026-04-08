@@ -19,9 +19,7 @@ export function TagNavigation({ notes, currentPath, setCurrentPath }: TagNavigat
   const children = useMemo(() => getChildNodes(tree, currentPath), [tree, currentPath]);
   const hasNotesAtLevel = useMemo(
     () =>
-      currentPath === ''
-        ? notes.some((n) => n.tags.length === 0)
-        : notes.some((n) => n.tags.includes(currentPath)),
+      currentPath === '' ? notes.some((n) => n.tags.length === 0) : notes.some((n) => n.tags.includes(currentPath)),
     [notes, currentPath],
   );
   const pathSegments = currentPath !== '' ? currentPath.split('/') : [];
@@ -39,7 +37,7 @@ export function TagNavigation({ notes, currentPath, setCurrentPath }: TagNavigat
   return (
     <div className="flex max-h-[50%] flex-col gap-1 overflow-y-auto">
       {currentPath !== '' && (
-        <div className="flex min-w-0 items-center gap-1 overflow-hidden px-2 text-xs text-sidebar-foreground/70">
+        <div className="flex min-w-0 items-center gap-1 overflow-hidden text-xs text-sidebar-foreground/70">
           <Button variant="ghost" size="icon-xs" onClick={handleBack} className="shrink-0">
             <ChevronLeft />
           </Button>

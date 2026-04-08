@@ -56,3 +56,7 @@ Quote the problematic code and show the fix inline.
 ## TODO Summary
 
 At the very end, add a short numbered list of all findings as actionable TODOs (one line each) so the user can quickly pick which ones to implement — or say "all".
+
+## Fix Plan
+
+If the review found any issues, create a markdown plan file (in `.claude/plans/`) that lists every issue as an actionable fix step — grouped by severity, with file paths, quoted problematic code, and the proposed fix. This allows the user to review all fixes at a glance and say "all" to apply them. Delete the plan file after all fixes have been implemented.

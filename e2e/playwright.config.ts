@@ -1,0 +1,59 @@
+import { defineConfig, devices } from '@playwright/test';
+import path from 'path';
+
+const testNotesRoot = path.join(process.cwd(), `.test-notes-pw-${process.pid}`);
+
+export const TEST_NOTES_ROOT = testNotesRoot;
+export const TEST_USER = { username: 'testuser', password: 'testpass123' };
+export const TEST_PORT = 3100;
+export const STORAGE_STATE = path.join(__dirname, '.auth', 'user.json');
+
+const isCI = !!process.env.CI;
+
+export default defineConfig({
+  testDir: './tests',
+  fullyParallel: true,
+  forbidOnly: isCI,
+  retries: isCI ? 1 : 0,
+  workers: 1,
+  reporter: [['list'], ['html', { open: 'never', outputFolder: './playwright-report' }]],
+  outputDir: './test-results',
+  globalSetup: './global-setup.ts',
+  globalTeardown: './global-teardown.ts',
+  timeout: 60_000,
+
+  use: {
+    baseURL: `http://localhost:${TEST_PORT}`,
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+    navigationTimeout: 30_000,
+    actionTimeout: 10_000,
+  },
+
+  projects: [
+    {
+      name: 'setup',
+      testMatch: /auth\.setup\.ts/,
+    },
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: STORAGE_STATE,
+      },
+      dependencies: ['setup'],
+    },
+    // Uncomment to test additional browsers:
+    // { name: "firefox", use: { ...devices["Desktop Firefox"] } },
+    // { name: "webkit", use: { ...devices["Desktop Safari"] } },
+  ],
+
+  webServer: {
+    command: `bun run scripts/manage-users.ts add ${TEST_USER.username} ${TEST_USER.password} || true; bun --bun next dev --port ${TEST_PORT}`,
+    url: `http://localhost:${TEST_PORT}`,
+    cwd: path.join(__dirname, '..'),
+    reuseExistingServer: !isCI,
+    env: { ...process.env, NOTES_ROOT: testNotesRoot },
+    timeout: 30_000,
+  },
+});

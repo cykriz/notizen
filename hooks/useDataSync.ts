@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { NoteSummary, Todo } from '@/lib/types';
 import { NoteSummaryArraySchema, TodoArraySchema } from '@/lib/schemas';
-import { setCachedNotesList, setCachedTodos } from '@/lib/localCache';
+import { getCachedNotesList, getCachedTodos, setCachedNotesList, setCachedTodos } from '@/lib/localCache';
+import { clearFailedSyncQueue, getFailedSyncCount } from '@/lib/failedSyncQueue';
+import { mergeById } from '@/lib/localCacheMerge';
 import { getPendingCount, processSyncQueue } from '@/lib/syncQueue';
+import { SYNC_RETRY_INTERVAL_MS, SYNC_RETRY_MAX_INTERVAL_MS } from '@/lib/constants';
 
 interface UseDataSyncArgs {
   isOnline: boolean;
@@ -12,7 +15,8 @@ interface UseDataSyncArgs {
 }
 
 export function useDataSync({ isOnline, isOnlineRef, setNotes, setTodos }: UseDataSyncArgs) {
-  const [hasPendingSync, setHasPendingSync] = useState(false);
+  const [hasPendingSync, setHasPendingSync] = useState(() => getPendingCount() > 0);
+  const [failedSyncCount, setFailedSyncCount] = useState(() => getFailedSyncCount());
 
   const refreshFromServer = useCallback(async () => {
     if (!isOnlineRef.current) {
@@ -31,14 +35,16 @@ export function useDataSync({ isOnline, isOnlineRef, setNotes, setTodos }: UseDa
       const [notesRes, todosRes] = await Promise.all([fetch('/api/notes'), fetch('/api/todos')]);
       if (notesRes.ok) {
         const serverNotes = NoteSummaryArraySchema.parse(await notesRes.json());
-        setNotes(serverNotes);
-        setCachedNotesList(serverNotes);
+        const mergedNotes = mergeById(serverNotes, getCachedNotesList());
+        setNotes(mergedNotes);
+        setCachedNotesList(mergedNotes);
       }
 
       if (todosRes.ok) {
         const serverTodos = TodoArraySchema.parse(await todosRes.json());
-        setTodos(serverTodos);
-        setCachedTodos(serverTodos);
+        const mergedTodos = mergeById(serverTodos, getCachedTodos());
+        setTodos(mergedTodos);
+        setCachedTodos(mergedTodos);
       }
 
     } catch {
@@ -46,30 +52,72 @@ export function useDataSync({ isOnline, isOnlineRef, setNotes, setTodos }: UseDa
     }
   }, [isOnlineRef, setNotes, setTodos]);
 
+  // Persists across effect re-runs so backoff isn't reset when hasPendingSync toggles.
+  const delayRef = useRef(SYNC_RETRY_INTERVAL_MS);
+
+  // Single effect for processing the sync queue with exponential backoff.
+  // Triggers when online status changes or hasPendingSync becomes true.
   useEffect(() => {
-    if (!isOnline || getPendingCount() === 0) {
+    if (!isOnline || !hasPendingSync) {
+      // Reset backoff when queue is fully drained
+      if (!hasPendingSync) {
+        delayRef.current = SYNC_RETRY_INTERVAL_MS;
+      }
+
       return;
     }
 
-    void (async () => {
-      try {
-        await processSyncQueue();
-      } catch (err) {
-        console.error('Sync queue processing failed:', err);
+    let cancelled = false;
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+
+    const run = async () => {
+      if (cancelled) {
+        return;
       }
 
+      if (getPendingCount() === 0) {
+        setHasPendingSync(false);
+        return;
+      }
+
+      try {
+        await processSyncQueue();
+      } catch {
+        // will retry on next cycle
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- mutated by cleanup after await
+      if (cancelled) {
+        return;
+      }
+
+      setFailedSyncCount(getFailedSyncCount());
       const remaining = getPendingCount();
       setHasPendingSync(remaining > 0);
 
       if (remaining === 0) {
-        try {
-          await refreshFromServer();
-        } catch (err) {
-          console.error('Server refresh failed:', err);
-        }
+        await refreshFromServer().catch(() => {
+          // offline — ignore
+        });
       }
-    })();
-  }, [isOnline, refreshFromServer]);
+
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- mutated by cleanup after await
+      if (!cancelled && remaining > 0) {
+        timeout = setTimeout(() => void run(), delayRef.current);
+        delayRef.current = Math.min(delayRef.current * 2, SYNC_RETRY_MAX_INTERVAL_MS);
+      }
+    };
+
+    // Run immediately on first trigger, then use exponential backoff for retries
+    void run();
+
+    return () => {
+      cancelled = true;
+      if (timeout !== null) {
+        clearTimeout(timeout);
+      }
+    };
+  }, [isOnline, hasPendingSync, refreshFromServer]);
 
   const syncPending = useCallback(() => {
     const count = getPendingCount();
@@ -82,10 +130,22 @@ export function useDataSync({ isOnline, isOnlineRef, setNotes, setTodos }: UseDa
           // retry on next trigger
         }
 
-        setHasPendingSync(getPendingCount() > 0);
+        setFailedSyncCount(getFailedSyncCount());
+        const remaining = getPendingCount();
+        setHasPendingSync(remaining > 0);
+        if (remaining === 0) {
+          void refreshFromServer().catch(() => {
+            // offline — ignore
+          });
+        }
       })();
     }
-  }, [isOnlineRef]);
+  }, [isOnlineRef, refreshFromServer]);
 
-  return { hasPendingSync, setHasPendingSync, refreshFromServer, syncPending };
+  const clearFailed = useCallback(() => {
+    clearFailedSyncQueue();
+    setFailedSyncCount(0);
+  }, []);
+
+  return { hasPendingSync, setHasPendingSync, failedSyncCount, clearFailed, refreshFromServer, syncPending };
 }

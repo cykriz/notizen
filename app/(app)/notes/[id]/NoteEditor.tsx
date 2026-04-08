@@ -3,6 +3,8 @@
 import { AttachmentList } from '@/components/AttachmentList';
 import { MarkdownEditor, type MarkdownEditorHandle } from '@/components/MarkdownEditor';
 import { useAutoSave } from '@/hooks/useAutoSave';
+import { useDraft } from '@/hooks/useDraft';
+import { useNoteInitialState } from '@/hooks/useNoteInitialState';
 import { DEFAULT_NOTE_TITLE, PREVIEW_EDIT, PREVIEW_PREVIEW } from '@/lib/constants';
 import type { Attachment, Note } from '@/lib/fsNotes';
 import type { NoteSummary, PreviewMode } from '@/lib/types';
@@ -20,12 +22,13 @@ interface NoteEditorProps {
 
 export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
   const { updateNote } = useData();
-  const [title, setTitle] = useState(note.title);
-  const [content, setContent] = useState(note.content);
+  const initial = useNoteInitialState(note);
+  const [title, setTitle] = useState(initial.title);
+  const [content, setContent] = useState(initial.content);
   const [attachments, setAttachments] = useState<Attachment[]>(note.attachments);
-  const [preview, setPreview] = useState<PreviewMode>(note.content.trim() === '' ? PREVIEW_EDIT : PREVIEW_PREVIEW);
+  const [preview, setPreview] = useState<PreviewMode>(initial.preview);
   const [tags, setTags] = useState<string[]>(note.tags);
-  const [outlineVisible, setOutlineVisible] = useState(() => /^#{1,6}\s+.+$/m.test(note.content));
+  const [outlineVisible, setOutlineVisible] = useState(initial.outlineVisible);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const deferredContent = useDeferredValue(content);
@@ -45,6 +48,13 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
     originalTitle: note.title,
     originalContent: note.content,
     saveAction: saveContent,
+  });
+
+  const { onTitleChange: draftTitle, onContentChange: draftContent } = useDraft({
+    noteId: note.id,
+    saved,
+    initialTitle: title,
+    initialContent: content,
   });
 
   useEffect(() => {
@@ -89,12 +99,22 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
     setOutlineVisible((v) => !v);
   }, []);
 
+  const handleTitleChange = useCallback(
+    (v: string) => {
+      setTitle(v);
+      handleSavedReset();
+      draftTitle(v);
+    },
+    [handleSavedReset, draftTitle],
+  );
+
   const handleContentChange = useCallback(
     (v: string) => {
       setContent(v);
       handleSavedReset();
+      draftContent(v);
     },
-    [handleSavedReset],
+    [handleSavedReset, draftContent],
   );
 
   const handleUploaded = useCallback((att: Attachment) => {
@@ -131,7 +151,7 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
     <div className="flex flex-col flex-1 min-h-0">
       <NoteHeader
         title={title}
-        onTitleChange={setTitle}
+        onTitleChange={handleTitleChange}
         preview={preview}
         onTogglePreview={handleTogglePreview}
         onSave={handleSave}

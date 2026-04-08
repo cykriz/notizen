@@ -7,26 +7,32 @@ import {
   cachedAtKey,
   safeGetJson,
   safeSetJson,
+  SYNC_QUEUE_KEY,
+  DRAFT_PREFIX,
   getSyncQueue,
 } from "./localCache";
+import { cleanExpiredFailedEntries, getFailedSyncQueue } from "./failedSyncQueue";
+import { CACHE_TTL_MS } from "./constants";
 
 const TOMBSTONES_KEY = `${PREFIX}tombstones`;
-const SYNC_QUEUE_KEY = `${PREFIX}sync-queue`;
-const TTL_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
 
 // --- Merge ---
 
 /**
  * Merge server (primary) and localStorage (cached) arrays by `id`.
  * For each item: pick whichever has the newer `updatedAt`.
- * Items only in cached (offline-created) are appended.
- * Items with a pending delete in the sync queue are excluded entirely.
+ * Cache-only items are kept only if they have a pending sync action
+ * (create/update); otherwise they were likely deleted externally and are dropped.
+ * Items with a pending delete or a tombstone are excluded entirely.
  */
 export function mergeById<T extends { id: string; updatedAt: string }>(
   primary: T[],
   cached: T[],
 ): T[] {
-  const pendingDeletes = pendingDeleteIds();
+  const queue = getSyncQueue();
+  const pendingDeletes = new Set(queue.filter((e) => e.action === 'delete').map((e) => e.entityId));
+  const failedNonDeletes = getFailedSyncQueue().filter((e) => e.action !== 'delete');
+  const pendingAll = new Set([...queue, ...failedNonDeletes].map((e) => e.entityId));
   const tombstones = getTombstones();
   const cachedMap = new Map(cached.map((item) => [item.id, item]));
   const seen = new Set<string>();
@@ -44,10 +50,15 @@ export function mergeById<T extends { id: string; updatedAt: string }>(
     merged.push(localIsNewer ? localItem : serverItem);
   }
 
-  // Append items only in localStorage (created offline)
+  // Append items only in localStorage if they have pending actions.
+  // Items with no pending create/update/delete that are missing from the server
+  // were likely deleted externally — drop them (except those in pendingDeletes).
   for (const item of cached) {
     if (!seen.has(item.id) && !pendingDeletes.has(item.id)) {
-      merged.push(item);
+      // Keep if it has any pending sync action (create/update/failed recovery)
+      if (pendingAll.has(item.id)) {
+        merged.push(item);
+      }
     }
   }
 
@@ -77,7 +88,7 @@ function getTombstones(): Set<string> {
   const now = Date.now();
   return new Set(
     Object.entries(map)
-      .filter(([, ts]) => now - ts < TTL_MS)
+      .filter(([, ts]) => now - ts < CACHE_TTL_MS)
       .map(([id]) => id),
   );
 }
@@ -87,7 +98,7 @@ function cleanTombstones(): void {
   const now = Date.now();
   const cleaned: Record<string, number> = {};
   for (const [id, ts] of Object.entries(map)) {
-    if (now - ts < TTL_MS) {
+    if (now - ts < CACHE_TTL_MS) {
       cleaned[id] = ts;
     }
   }
@@ -98,14 +109,10 @@ function cleanTombstones(): void {
 
 // --- Sync Queue Helpers ---
 
-function pendingDeleteIds(): Set<string> {
-  const queue = getSyncQueue();
-  return new Set(queue.filter((e) => e.action === 'delete').map((e) => e.entityId));
-}
-
 function pendingEntityIds(): Set<string> {
   const queue = getSyncQueue();
-  return new Set(queue.map((e) => e.entityId));
+  const failed = getFailedSyncQueue();
+  return new Set([...queue, ...failed].map((e) => e.entityId));
 }
 
 export function cleanExpiredEntries(): void {
@@ -114,6 +121,7 @@ export function cleanExpiredEntries(): void {
   }
 
   cleanTombstones();
+  cleanExpiredFailedEntries();
   const now = Date.now();
   const pending = pendingEntityIds();
   const keysToRemove: string[] = [];
@@ -130,6 +138,17 @@ export function cleanExpiredEntries(): void {
 
     // Never delete sync queue
     if (key === SYNC_QUEUE_KEY) {
+      continue;
+    }
+
+    // Keep drafts only while their note still exists or has pending sync
+    if (key.startsWith(DRAFT_PREFIX)) {
+      const entityId = key.slice(DRAFT_PREFIX.length);
+      if (pending.has(entityId) || localStorage.getItem(`${NOTE_PREFIX}${entityId}`) !== null) {
+        continue;
+      }
+
+      keysToRemove.push(key);
       continue;
     }
 
@@ -155,7 +174,7 @@ export function cleanExpiredEntries(): void {
     const cachedAt = localStorage.getItem(cachedAtKey(key));
     if (cachedAt !== null) {
       const age = now - new Date(cachedAt).getTime();
-      if (age > TTL_MS) {
+      if (age > CACHE_TTL_MS) {
         keysToRemove.push(key);
         keysToRemove.push(cachedAtKey(key));
       }

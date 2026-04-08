@@ -10,27 +10,38 @@ export interface LoginState {
   error: string | null;
 }
 
-// --- Rate Limiting ---
+// --- Rate Limiting (per-user) ---
+// Check rate limit before verification; record failures after.
+// Only successful logins clear the counter.
 
 const attempts = new Map<string, { count: number; resetAt: number }>();
 const MAX_ATTEMPTS = 5;
 const WINDOW_MS = 60_000;
 
-function checkRateLimit(username: string): string | null {
+function isRateLimited(username: string): string | null {
+  const now = Date.now();
+  const entry = attempts.get(username);
+
+  if (entry && now < entry.resetAt && entry.count >= MAX_ATTEMPTS) {
+    return 'Zu viele Versuche. Bitte warten.';
+  }
+
+  return null;
+}
+
+function recordFailedAttempt(username: string): void {
   const now = Date.now();
   const entry = attempts.get(username);
 
   if (entry && now < entry.resetAt) {
-    if (entry.count >= MAX_ATTEMPTS) {
-      return 'Zu viele Versuche. Bitte warten.';
-    }
-
     entry.count++;
-    return null;
+  } else {
+    attempts.set(username, { count: 1, resetAt: now + WINDOW_MS });
   }
+}
 
-  attempts.set(username, { count: 1, resetAt: now + WINDOW_MS });
-  return null;
+function clearRateLimit(username: string): void {
+  attempts.delete(username);
 }
 
 // --- Actions ---
@@ -46,15 +57,18 @@ export async function loginAction(
     return { error: 'Benutzername oder Passwort falsch' };
   }
 
-  const rateLimitError = checkRateLimit(username);
+  const rateLimitError = isRateLimited(username);
   if (rateLimitError !== null) {
     return { error: rateLimitError };
   }
 
   const passwordHash = await verifyPassword(username, password);
   if (passwordHash === null) {
+    recordFailedAttempt(username);
     return { error: 'Benutzername oder Passwort falsch' };
   }
+
+  clearRateLimit(username);
 
   const token = await createSessionCookie(username, passwordHash);
   const cookieStore = await cookies();

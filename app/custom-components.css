@@ -110,6 +110,17 @@
   max-width: 100%;
 }
 
+[data-color-mode] .wmde-markdown hr {
+  height: 1px;
+  border: none;
+  background-color: var(--border);
+}
+
+[data-color-mode] .wmde-markdown h1,
+[data-color-mode] .wmde-markdown h2 {
+  border: none !important;
+}
+
 /* Task list checkboxes – hide native input before JS component override mounts */
 [data-color-mode] .wmde-markdown .contains-task-list input[type='checkbox'] {
   display: none;

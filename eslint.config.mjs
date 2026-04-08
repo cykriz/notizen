@@ -8,7 +8,7 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
 
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "worker/**"]),
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "worker/**", "e2e/**"]),
 
   ...tseslint.configs.strictTypeChecked.map((cfg) => ({
     ...cfg,
