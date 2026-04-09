@@ -78,7 +78,7 @@ export const NoteListItem = memo(function NoteListItem({ note, isActive, onNavig
           size="icon-xs"
           onClick={handleTogglePin}
           disabled={pinning}
-          aria-label={note.pinned ? "Notiz lösen" : "Notiz anheften"}
+          aria-label={note.pinned ? 'Notiz lösen' : 'Notiz anheften'}
           className={cn('h-5 w-5 [&>svg]:size-3', { 'bg-accent': note.pinned })}
         >
           {pinning ? <Loader2 className="animate-spin" /> : <Pin />}

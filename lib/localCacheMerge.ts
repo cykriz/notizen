@@ -10,9 +10,9 @@ import {
   SYNC_QUEUE_KEY,
   DRAFT_PREFIX,
   getSyncQueue,
-} from "./localCache";
-import { cleanExpiredFailedEntries, getFailedSyncQueue } from "./failedSyncQueue";
-import { CACHE_TTL_MS } from "./constants";
+} from './localCache';
+import { cleanExpiredFailedEntries, getFailedSyncQueue } from './failedSyncQueue';
+import { CACHE_TTL_MS } from './constants';
 
 const TOMBSTONES_KEY = `${PREFIX}tombstones`;
 
@@ -76,7 +76,7 @@ export function addTombstone(id: string): void {
 
 function getTombstoneMap(): Record<string, number> {
   const raw = safeGetJson(TOMBSTONES_KEY);
-  if (raw !== null && typeof raw === "object" && !Array.isArray(raw)) {
+  if (raw !== null && typeof raw === 'object' && !Array.isArray(raw)) {
     return raw as Record<string, number>;
   }
 
@@ -116,7 +116,7 @@ function pendingEntityIds(): Set<string> {
 }
 
 export function cleanExpiredEntries(): void {
-  if (typeof localStorage === "undefined") {
+  if (typeof localStorage === 'undefined') {
     return;
   }
 

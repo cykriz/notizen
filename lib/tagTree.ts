@@ -1,4 +1,4 @@
-import type { NoteSummary } from "./types";
+import type { NoteSummary } from './types';
 
 export interface TagNode {
   segment: string;
@@ -12,12 +12,12 @@ export function buildTagTree(notes: NoteSummary[]): TagNode[] {
 
   for (const note of notes) {
     for (const tag of note.tags) {
-      const segments = tag.split("/");
+      const segments = tag.split('/');
       let level = root;
-      let path = "";
+      let path = '';
 
       for (const seg of segments) {
-        path = path !== "" ? `${path}/${seg}` : seg;
+        path = path !== '' ? `${path}/${seg}` : seg;
         let node = level.find((n) => n.segment === seg);
         if (!node) {
           node = { segment: seg, fullPath: path, noteCount: 0, children: [] };
@@ -42,11 +42,11 @@ function sortTree(nodes: TagNode[]): TagNode[] {
 }
 
 export function getChildNodes(tree: TagNode[], path: string): TagNode[] {
-  if (path === "") {
+  if (path === '') {
     return tree;
   }
 
-  const segments = path.split("/");
+  const segments = path.split('/');
   let level = tree;
   for (const seg of segments) {
     const node = level.find((n) => n.segment === seg);
@@ -60,7 +60,7 @@ export function getChildNodes(tree: TagNode[], path: string): TagNode[] {
 }
 
 export function getNotesAtPath(notes: NoteSummary[], path: string): NoteSummary[] {
-  if (path === "") {
+  if (path === '') {
     return notes.filter((n) => n.tags.length === 0);
   }
 
@@ -68,7 +68,7 @@ export function getNotesAtPath(notes: NoteSummary[], path: string): NoteSummary[
 }
 
 export function getNotesUnderPath(notes: NoteSummary[], path: string): NoteSummary[] {
-  if (path === "") {
+  if (path === '') {
     return notes;
   }
 

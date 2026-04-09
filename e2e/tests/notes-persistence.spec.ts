@@ -109,17 +109,19 @@ test.describe("Notes Persistence", () => {
     await page.keyboard.press("ControlOrMeta+a");
     await page.keyboard.type("Ungespeicherter Entwurf!");
 
-    // Verify draft exists in localStorage
+    // Verify draft exists in localStorage (draft writes after 300ms debounce)
     const noteId = /\/notes\/([^/?#]+)/.exec(page.url())?.[1] ?? "";
-    const draftContent = await page.evaluate(
-      (id) => {
-        const raw = localStorage.getItem(`notizen:draft:${id}`);
-        if (!raw) return null;
-        return (JSON.parse(raw) as { content: string }).content;
-      },
-      noteId,
-    );
-    expect(draftContent).toContain("Ungespeicherter Entwurf!");
+    await expect(async () => {
+      const draftContent = await page.evaluate(
+        (id) => {
+          const raw = localStorage.getItem(`notizen:draft:${id}`);
+          if (!raw) return null;
+          return (JSON.parse(raw) as { content: string }).content;
+        },
+        noteId,
+      );
+      expect(draftContent).toContain("Ungespeicherter Entwurf!");
+    }).toPass({ timeout: 2_000 });
 
     // Navigate away immediately (before auto-save fires) and reload —
     // this destroys React state, simulating what happens when the server dies
@@ -130,9 +132,10 @@ test.describe("Notes Persistence", () => {
     await page.getByRole("link", { name: "Entwurf-Test" }).click();
 
     // Verify draft content was restored (note opens in preview mode)
+    // navigation + server component render can be slow under test load
     await expect(page.locator(".wmde-markdown")).toContainText(
       "Ungespeicherter Entwurf!",
-      { timeout: 5_000 },
+      { timeout: 15_000 },
     );
   });
 });

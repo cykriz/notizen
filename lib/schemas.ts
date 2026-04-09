@@ -1,6 +1,6 @@
-import { z } from "zod/v4";
+import { z } from 'zod/v4';
 
-const TodoQuadrantSchema = z.enum(["do", "schedule", "delegate", "planned"]);
+const TodoQuadrantSchema = z.enum(['do', 'schedule', 'delegate', 'planned']);
 
 const AttachmentSchema = z.object({
   id: z.string(),

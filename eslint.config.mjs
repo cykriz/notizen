@@ -91,6 +91,7 @@ const eslintConfig = defineConfig([
       "prefer-template": "error",
       "object-shorthand": "error",
       curly: ["error", "all"],
+      "@stylistic/quotes": ["error", "single", { avoidEscape: true }],
       "@stylistic/brace-style": ["error", "1tbs"],
       "@stylistic/indent": ["error", 2],
       "@stylistic/padding-line-between-statements": [

@@ -1,6 +1,6 @@
-export { SidebarProvider, useSidebar } from "./context"
-export { Sidebar, SidebarTrigger, SidebarRail, SidebarInset } from "./sidebar"
-export { SidebarContent, SidebarHeader, SidebarFooter, SidebarSeparator, SidebarInput } from "./content"
-export { SidebarGroup, SidebarGroupLabel, SidebarGroupAction, SidebarGroupContent } from "./group"
-export { SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuAction, SidebarMenuBadge } from "./menu"
-export { SidebarMenuSkeleton, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem } from "./menu-sub"
+export { SidebarProvider, useSidebar } from './context'
+export { Sidebar, SidebarTrigger, SidebarRail, SidebarInset } from './sidebar'
+export { SidebarContent, SidebarHeader, SidebarFooter, SidebarSeparator, SidebarInput } from './content'
+export { SidebarGroup, SidebarGroupLabel, SidebarGroupAction, SidebarGroupContent } from './group'
+export { SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuAction, SidebarMenuBadge } from './menu'
+export { SidebarMenuSkeleton, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem } from './menu-sub'

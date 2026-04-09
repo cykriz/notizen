@@ -1,8 +1,8 @@
-import type { NextConfig } from "next";
-import { withSerwist } from "@serwist/turbopack";
+import type { NextConfig } from 'next';
+import { withSerwist } from '@serwist/turbopack';
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  output: 'standalone',
 };
 
 export default withSerwist(nextConfig);

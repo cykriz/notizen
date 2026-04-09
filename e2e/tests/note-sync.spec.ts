@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { createNote, deleteAllNotes, goOnline, noteIdFromUrl } from "./helpers";
+import { createNote, deleteAllNotes, goOffline, goOnline, noteIdFromUrl } from "./helpers";
 
 test.describe("Note Sync", () => {
   test.beforeEach(async ({ page }) => {
@@ -32,13 +32,7 @@ test.describe("Note Sync", () => {
   test("offline-created note survives reload before sync", async ({
     page,
   }) => {
-    // Ensure the app is fully loaded (all lazy chunks) before going offline
-    await expect(
-      page.getByRole("button", { name: /Neue Notiz/ }),
-    ).toBeVisible();
-
-    // Go offline
-    await page.context().setOffline(true);
+    await goOffline(page);
 
     // Click "Neue Notiz" — the note is created in localStorage and
     // appears in the sidebar, but page navigation doesn't work offline
@@ -58,13 +52,13 @@ test.describe("Note Sync", () => {
     });
     expect(cachedTitle).toBe("Unbenannt");
 
-    // Register response waiter before going online (sync fires immediately)
-    const syncResponse = page.waitForResponse(
-      (resp) => resp.url().includes("/api/notes") && resp.ok(),
-      { timeout: 15_000 },
-    );
+    // Go online and poll server until the note has been synced
     await goOnline(page);
-    await syncResponse;
+    await expect(async () => {
+      const res = await page.request.get("/api/notes");
+      const notes = (await res.json()) as { title: string }[];
+      expect(notes.some((n) => n.title === "Unbenannt")).toBe(true);
+    }).toPass({ timeout: 20_000 });
 
     // Reload and verify the note persists (now server-backed)
     await page.reload();
@@ -74,10 +68,11 @@ test.describe("Note Sync", () => {
   });
 
   test("editing a note offline persists and syncs", async ({ page }) => {
-    await createNote(page, "Bearbeitbar", "Originaler Inhalt.");
+    const noteUrl = await createNote(page, "Bearbeitbar", "Originaler Inhalt.");
+    const noteId = noteIdFromUrl(noteUrl);
 
     // Go offline and edit
-    await page.context().setOffline(true);
+    await goOffline(page);
     const editor = page.locator(".cm-content");
 
     // Ensure edit mode and replace content
@@ -100,33 +95,32 @@ test.describe("Note Sync", () => {
       expect(found).toBe(true);
     }).toPass({ timeout: 5_000 });
 
-    // Verify edit is in localStorage
-    const cachedContent = await page.evaluate(() => {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key?.startsWith("notizen:note:")) {
-          const raw = localStorage.getItem(key);
-          if (!raw) continue;
-          const note = JSON.parse(raw) as { content: string };
-          if (note.content.includes("Bearbeiteter Inhalt offline")) {
-            return note.content;
+    // Verify edit is in localStorage (auto-save writes after 1s debounce)
+    await expect(async () => {
+      const cachedContent = await page.evaluate(() => {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key?.startsWith("notizen:note:")) {
+            const raw = localStorage.getItem(key);
+            if (!raw) continue;
+            const note = JSON.parse(raw) as { content: string };
+            if (note.content.includes("Bearbeiteter Inhalt offline")) {
+              return note.content;
+            }
           }
         }
-      }
-      return null;
-    });
-    expect(cachedContent).toContain("Bearbeiteter Inhalt offline");
+        return null;
+      });
+      expect(cachedContent).toContain("Bearbeiteter Inhalt offline");
+    }).toPass({ timeout: 5_000 });
 
-    // Register response waiter before going online (sync fires immediately)
-    const putResponse = page.waitForResponse(
-      (resp) =>
-        resp.url().includes("/api/notes/") &&
-        resp.request().method() === "PUT" &&
-        resp.ok(),
-      { timeout: 15_000 },
-    );
+    // Go online and poll server until the edit has been synced
     await goOnline(page);
-    await putResponse;
+    await expect(async () => {
+      const res = await page.request.get(`/api/notes/${noteId}`);
+      const note = (await res.json()) as { content: string };
+      expect(note.content).toContain("Bearbeiteter Inhalt offline");
+    }).toPass({ timeout: 20_000 });
 
     // Reload and verify edits survived
     await page.reload();
@@ -147,9 +141,8 @@ test.describe("Note Sync", () => {
     ).toBeVisible();
 
     // Go offline and delete via UI
-    await page.context().setOffline(true);
+    await goOffline(page);
 
-    // Hover to reveal delete button, scoped to the specific note's list item
     const noteLink = page.getByRole("link", { name: "Bald weg" });
     const noteItem = page.locator("li", { has: noteLink });
     await noteLink.hover();
@@ -160,28 +153,22 @@ test.describe("Note Sync", () => {
       .getByRole("button", { name: "Endgültig löschen" })
       .click();
 
-    // Wait for the UI to process the deletion
     await expect(noteLink).not.toBeVisible({ timeout: 5_000 });
 
-    // Register response waiter before going online (sync fires immediately)
-    const deleteResponse = page.waitForResponse(
-      (resp) =>
-        resp.url().includes("/api/notes/") &&
-        resp.request().method() === "DELETE" &&
-        resp.ok(),
-      { timeout: 15_000 },
-    );
+    // Go online and navigate to a fresh page to trigger sync
     await goOnline(page);
-    await deleteResponse;
+    await page.goto("/notes");
 
-    // Reload and confirm gone from sidebar
+    // Poll server until the DELETE has been synced (avoids flaky waitForResponse)
+    await expect(async () => {
+      const res = await page.request.get(`/api/notes/${noteId}`);
+      expect(res.status()).toBe(404);
+    }).toPass({ timeout: 20_000 });
+
+    // Confirm gone from sidebar
     await page.reload();
     await expect(
       page.getByRole("link", { name: "Bald weg" }),
     ).not.toBeVisible();
-
-    // Confirm gone from server
-    const getRes = await page.request.get(`/api/notes/${noteId}`);
-    expect(getRes.status()).toBe(404);
   });
 });

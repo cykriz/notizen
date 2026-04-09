@@ -1,10 +1,10 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
-import { z } from "zod";
-import { listTodos, createTodo } from "@/lib/fsTodos";
-import { getUserDataDir } from "@/lib/auth";
-import { QUADRANT_KEYS } from "@/lib/constants";
-import { errorResponse, formatZodError } from "@/lib/apiHelpers";
+import { type NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
+import { listTodos, createTodo } from '@/lib/fsTodos';
+import { getUserDataDir } from '@/lib/auth';
+import { QUADRANT_KEYS } from '@/lib/constants';
+import { errorResponse, formatZodError } from '@/lib/apiHelpers';
 
 const QuadrantEnum = z.enum(QUADRANT_KEYS);
 
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     const todo = await createTodo(parsed.data, root);
-    revalidatePath("/todos");
+    revalidatePath('/todos');
     return NextResponse.json(todo, { status: 201 });
   } catch (err) {
     return errorResponse(err);

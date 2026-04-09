@@ -1,5 +1,5 @@
-import fs from "fs/promises";
-import path from "path";
+import fs from 'fs/promises';
+import path from 'path';
 import {
   createNote,
   listNotes,
@@ -9,12 +9,12 @@ import {
   listAttachments,
   saveAttachment,
   deleteAttachment,
-} from "./fsNotes";
-import { listAllTags } from "./tagTree";
+} from './fsNotes';
+import { listAllTags } from './tagTree';
 
 /* eslint-disable no-console */
 async function runTests() {
-  const sep = "─".repeat(50);
+  const sep = '─'.repeat(50);
   console.log(`\n${sep}\n  fsNotes Inline Tests\n${sep}\n`);
 
   const originalRoot = process.env.NOTES_ROOT;
@@ -22,63 +22,63 @@ async function runTests() {
   process.env.NOTES_ROOT = testRoot;
 
   try {
-    const note = await createNote({ title: "Test Note", content: "# Hello World", tags: ["dev/ts"] }, testRoot);
+    const note = await createNote({ title: 'Test Note', content: '# Hello World', tags: ['dev/ts'] }, testRoot);
     const slugOk = /^\d{4}-\d{2}-\d{2}-test-note-[a-f0-9]+$/.test(note.slug);
     if (!slugOk) {
       throw new Error(`Bad slug: ${note.slug}`);
     }
 
-    if (note.tags[0] !== "dev/ts") {
-      throw new Error("Tags not set on create");
+    if (note.tags[0] !== 'dev/ts') {
+      throw new Error('Tags not set on create');
     }
 
     if (note.pinned) {
-      throw new Error("Pinned should default to false");
+      throw new Error('Pinned should default to false');
     }
 
-    console.log("✓ createNote — slug, id, title, tags, pinned correct");
+    console.log('✓ createNote — slug, id, title, tags, pinned correct');
 
     const notes = await listNotes(testRoot);
     if (notes.length !== 1) {
       throw new Error(`Expected 1 note, got ${String(notes.length)}`);
     }
 
-    if (notes[0].tags[0] !== "dev/ts") {
-      throw new Error("listNotes tags missing");
+    if (notes[0].tags[0] !== 'dev/ts') {
+      throw new Error('listNotes tags missing');
     }
 
-    console.log("✓ listNotes — found 1 note with tags");
+    console.log('✓ listNotes — found 1 note with tags');
 
     const fetched = await getNote(note.id, testRoot);
-    if (fetched?.content !== "# Hello World") {
-      throw new Error("getNote content mismatch");
+    if (fetched?.content !== '# Hello World') {
+      throw new Error('getNote content mismatch');
     }
 
-    console.log("✓ getNote — content matches");
+    console.log('✓ getNote — content matches');
 
-    const updated = await updateNote(note.id, { title: "Updated", content: "# Updated", tags: ["a/b"], pinned: true }, testRoot);
-    if (updated.title !== "Updated") {
-      throw new Error("Title not updated");
+    const updated = await updateNote(note.id, { title: 'Updated', content: '# Updated', tags: ['a/b'], pinned: true }, testRoot);
+    if (updated.title !== 'Updated') {
+      throw new Error('Title not updated');
     }
 
-    if (updated.tags[0] !== "a/b") {
-      throw new Error("Tags not updated");
+    if (updated.tags[0] !== 'a/b') {
+      throw new Error('Tags not updated');
     }
 
     if (!updated.pinned) {
-      throw new Error("Pinned not updated");
+      throw new Error('Pinned not updated');
     }
 
-    console.log("✓ updateNote — title, content, tags, pinned updated");
+    console.log('✓ updateNote — title, content, tags, pinned updated');
 
     const allTags = listAllTags(await listNotes(testRoot));
-    if (allTags[0] !== "a/b") {
-      throw new Error("listAllTags failed");
+    if (allTags[0] !== 'a/b') {
+      throw new Error('listAllTags failed');
     }
 
-    console.log("✓ listAllTags — returns sorted unique tags");
+    console.log('✓ listAllTags — returns sorted unique tags');
 
-    const att = await saveAttachment(note.id, new File(["data"], "test.txt", { type: "text/plain" }), testRoot);
+    const att = await saveAttachment(note.id, new File(['data'], 'test.txt', { type: 'text/plain' }), testRoot);
     console.log(`✓ saveAttachment — id: ${att.id}`);
 
     const atts = await listAttachments(note.id, testRoot);
@@ -86,23 +86,23 @@ async function runTests() {
       throw new Error(`Expected 1 attachment, got ${String(atts.length)}`);
     }
 
-    console.log("✓ listAttachments — found 1 attachment");
+    console.log('✓ listAttachments — found 1 attachment');
 
     await deleteAttachment(note.id, att.id, testRoot);
     const attsAfter = await listAttachments(note.id, testRoot);
     if (attsAfter.length !== 0) {
-      throw new Error("Attachment not deleted");
+      throw new Error('Attachment not deleted');
     }
 
-    console.log("✓ deleteAttachment — attachment removed");
+    console.log('✓ deleteAttachment — attachment removed');
 
     await deleteNote(note.id, testRoot);
     const afterDelete = await listNotes(testRoot);
     if (afterDelete.length !== 0) {
-      throw new Error("Note not deleted");
+      throw new Error('Note not deleted');
     }
 
-    console.log("✓ deleteNote — note removed");
+    console.log('✓ deleteNote — note removed');
 
     console.log(`\n${sep}\n  ALL TESTS PASSED ✓\n${sep}\n`);
   } finally {
@@ -112,6 +112,6 @@ async function runTests() {
 }
 
 runTests().catch((err: unknown) => {
-  console.error("\n  TEST FAILED ✗", err);
+  console.error('\n  TEST FAILED ✗', err);
   process.exit(1);
 });

@@ -1,7 +1,7 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { deleteAttachment } from "@/lib/fsNotes";
-import { getUserDataDir } from "@/lib/auth";
-import { errorResponse } from "@/lib/apiHelpers";
+import { type NextRequest, NextResponse } from 'next/server';
+import { deleteAttachment } from '@/lib/fsNotes';
+import { getUserDataDir } from '@/lib/auth';
+import { errorResponse } from '@/lib/apiHelpers';
 
 interface RouteParams { params: Promise<{ id: string; attId: string }> }
 

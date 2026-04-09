@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { ThemeProvider } from "next-themes";
+import { useEffect } from 'react';
+import { ThemeProvider } from 'next-themes';
 
-const isProduction = process.env.NODE_ENV === "production";
+const isProduction = process.env.NODE_ENV === 'production';
 
 function SwRegistration() {
   useEffect(() => {
-    if (!("serviceWorker" in navigator)) {
+    if (!('serviceWorker' in navigator)) {
       return;
     }
 
@@ -22,7 +22,7 @@ function SwRegistration() {
     }
 
     // Production: register with root scope
-    void navigator.serviceWorker.register("/serwist/sw.js", { scope: "/" }).catch(console.error);
+    void navigator.serviceWorker.register('/serwist/sw.js', { scope: '/' }).catch(console.error);
   }, []);
   return null;
 }

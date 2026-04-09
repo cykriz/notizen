@@ -42,7 +42,7 @@ export function AttachmentList({ noteId, attachments, onDeleted, className }: At
         onDeleted?.(attId);
       }
     } catch {
-      setError("Löschen fehlgeschlagen");
+      setError('Löschen fehlgeschlagen');
     } finally {
       setDeleting(null);
     }

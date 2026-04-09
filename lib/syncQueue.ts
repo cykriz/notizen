@@ -1,30 +1,24 @@
-import {
-  type SyncQueueEntry,
-  getSyncQueue,
-  setSyncQueue,
-} from "@/lib/localCache";
-import { addToFailedSync } from "@/lib/failedSyncQueue";
-import { SYNC_ACTION, SYNC_ENTITY, SYNC_MAX_RETRIES } from "@/lib/constants";
+import { type SyncQueueEntry, getSyncQueue, nextSyncSeq, setSyncQueue } from '@/lib/localCache';
+import { addToFailedSync } from '@/lib/failedSyncQueue';
+import { SYNC_ACTION, SYNC_ENTITY, SYNC_MAX_RETRIES } from '@/lib/constants';
 
 let processing = false;
 
 export function enqueueMutation(entry: SyncQueueEntry): void {
   const queue = getSyncQueue();
+  const seq = nextSyncSeq();
 
   // Dedup: only replaces entries with the SAME action (e.g. update+update).
   // Different actions for the same entity (create, update, delete) intentionally
   // coexist — the FIFO queue replays them in order so create→update→delete works.
   const existingIdx = queue.findIndex(
-    (e) =>
-      e.entityType === entry.entityType &&
-      e.entityId === entry.entityId &&
-      e.action === entry.action,
+    (e) => e.entityType === entry.entityType && e.entityId === entry.entityId && e.action === entry.action,
   );
 
   if (existingIdx >= 0) {
-    queue[existingIdx] = entry;
+    queue[existingIdx] = { ...entry, seq };
   } else {
-    queue.push(entry);
+    queue.push({ ...entry, seq });
   }
 
   setSyncQueue(queue);
@@ -47,6 +41,30 @@ export function getPendingCount(): number {
   return getSyncQueue().length;
 }
 
+function headMatches(head: SyncQueueEntry, current: SyncQueueEntry): boolean {
+  if (current.seq !== undefined && head.seq !== undefined) {
+    return head.seq === current.seq;
+  }
+
+  return head.entityType === current.entityType && head.entityId === current.entityId && head.action === current.action;
+}
+
+function removeHeadIfMatches(current: SyncQueueEntry): void {
+  const fresh = getSyncQueue();
+  if (fresh.length > 0 && headMatches(fresh[0], current)) {
+    fresh.shift();
+    setSyncQueue(fresh);
+  }
+}
+
+function updateHeadRetryIfMatches(current: SyncQueueEntry): void {
+  const fresh = getSyncQueue();
+  if (fresh.length > 0 && headMatches(fresh[0], current)) {
+    fresh[0] = { ...fresh[0], retryCount: (fresh[0].retryCount ?? 0) + 1 };
+    setSyncQueue(fresh);
+  }
+}
+
 export async function processSyncQueue(): Promise<void> {
   if (processing) {
     return;
@@ -55,15 +73,19 @@ export async function processSyncQueue(): Promise<void> {
   processing = true;
 
   try {
+    // Re-read from localStorage on every iteration so entries enqueued
+    // concurrently (e.g. user action during an in-flight replay) are never
+    // silently overwritten.
     let queue = getSyncQueue();
+
     while (queue.length > 0) {
       const entry = queue[0];
 
       if ((entry.retryCount ?? 0) >= SYNC_MAX_RETRIES) {
         console.error('Sync entry exceeded max retries, moving to failed:', entry);
         addToFailedSync(entry);
-        queue.shift();
-        setSyncQueue(queue);
+        removeHeadIfMatches(entry);
+        queue = getSyncQueue();
         continue;
       }
 
@@ -73,23 +95,19 @@ export async function processSyncQueue(): Promise<void> {
         if (result === 'discard') {
           console.error('Sync entry not retryable, moving to failed:', entry);
           addToFailedSync(entry);
-          queue.shift();
-          setSyncQueue(queue);
+          removeHeadIfMatches(entry);
+          queue = getSyncQueue();
         } else if (result === 'retry') {
-          entry.retryCount = (entry.retryCount ?? 0) + 1;
-          queue[0] = entry;
-          setSyncQueue(queue);
+          updateHeadRetryIfMatches(entry);
+          queue = getSyncQueue();
           break;
         } else {
-          queue = queue.filter(
-            (e) => !(e.entityType === entry.entityType && e.entityId === entry.entityId && e.action === entry.action),
-          );
-          setSyncQueue(queue);
+          removeHeadIfMatches(entry);
+          queue = getSyncQueue();
         }
       } catch {
-        entry.retryCount = (entry.retryCount ?? 0) + 1;
-        queue[0] = entry;
-        setSyncQueue(queue);
+        updateHeadRetryIfMatches(entry);
+        queue = getSyncQueue();
         break;
       }
     }
@@ -100,7 +118,7 @@ export async function processSyncQueue(): Promise<void> {
 
 async function replayMutation(entry: SyncQueueEntry): Promise<'ok' | 'discard' | 'retry'> {
   const { entityType, entityId, action, payload } = entry;
-  const baseUrl = entityType === SYNC_ENTITY.NOTE ? "/api/notes" : "/api/todos";
+  const baseUrl = entityType === SYNC_ENTITY.NOTE ? '/api/notes' : '/api/todos';
 
   let url: string;
   let method: string;
@@ -109,21 +127,21 @@ async function replayMutation(entry: SyncQueueEntry): Promise<'ok' | 'discard' |
   switch (action) {
     case SYNC_ACTION.CREATE: {
       url = baseUrl;
-      method = "POST";
+      method = 'POST';
       body = JSON.stringify(payload);
       break;
     }
 
     case SYNC_ACTION.UPDATE: {
       url = `${baseUrl}/${entityId}`;
-      method = "PUT";
+      method = 'PUT';
       body = JSON.stringify(payload);
       break;
     }
 
     case SYNC_ACTION.DELETE: {
       url = `${baseUrl}/${entityId}`;
-      method = "DELETE";
+      method = 'DELETE';
       break;
     }
 
@@ -136,12 +154,12 @@ async function replayMutation(entry: SyncQueueEntry): Promise<'ok' | 'discard' |
   // detection since they are sequential writes from the same user.
   const res = await fetch(url, {
     method,
-    headers: { "Content-Type": "application/json" },
+    headers: { 'Content-Type': 'application/json' },
     body,
   });
 
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
+    const text = await res.text().catch(() => '');
     console.error(`Sync replay ${action} ${entityType}/${entityId}: ${res.status.toString()}`, text);
 
     if (res.status === 401) {
@@ -149,7 +167,7 @@ async function replayMutation(entry: SyncQueueEntry): Promise<'ok' | 'discard' |
         window.location.href = '/login';
       }
 
-      throw new Error("Session expired");
+      throw new Error('Session expired');
     }
 
     if (res.status >= 500 || !navigator.onLine) {

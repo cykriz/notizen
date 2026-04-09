@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { ListChecks, Circle, CheckCircle2 } from "lucide-react";
+import { ListChecks, Circle, CheckCircle2 } from 'lucide-react';
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -8,9 +8,9 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarMenuBadge,
-} from "@/components/ui/sidebar";
-import { QUADRANT_META } from "@/lib/constants";
-import type { Todo } from "@/lib/fsTodos";
+} from '@/components/ui/sidebar';
+import { QUADRANT_META } from '@/lib/constants';
+import type { Todo } from '@/lib/fsTodos';
 
 interface TodosSidebarContentProps {
   todos: Todo[];

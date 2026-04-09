@@ -1,10 +1,10 @@
-import { type NextRequest, NextResponse } from "next/server";
-import fs from "fs/promises";
-import { createReadStream } from "fs";
-import { Readable } from "stream";
-import { getAttachmentFilePath } from "@/lib/fsNotes";
-import { getUserDataDir } from "@/lib/auth";
-import { errorResponse } from "@/lib/apiHelpers";
+import { type NextRequest, NextResponse } from 'next/server';
+import fs from 'fs/promises';
+import { createReadStream } from 'fs';
+import { Readable } from 'stream';
+import { getAttachmentFilePath } from '@/lib/fsNotes';
+import { getUserDataDir } from '@/lib/auth';
+import { errorResponse } from '@/lib/apiHelpers';
 
 interface RouteParams { params: Promise<{ id: string; attId: string }> }
 
@@ -21,9 +21,9 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
     return new NextResponse(webStream, {
       headers: {
-        "Content-Type": mimeType,
-        "Content-Disposition": `attachment; filename="${encodeURIComponent(fileName)}"`,
-        "Content-Length": String(stat.size),
+        'Content-Type': mimeType,
+        'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"`,
+        'Content-Length': String(stat.size),
       },
     });
   } catch (err) {

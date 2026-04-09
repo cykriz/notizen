@@ -1,28 +1,28 @@
-import fs from "fs/promises";
-import path from "path";
-import { v4 as uuidv4 } from "uuid";
-import matter from "gray-matter";
+import fs from 'fs/promises';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
+import matter from 'gray-matter';
 
 export function getNotesRoot(): string {
   const root = process.env.NOTES_ROOT;
-  return root !== undefined && root !== "" ? root : path.join(process.cwd(), "dev-notes");
+  return root !== undefined && root !== '' ? root : path.join(process.cwd(), 'dev-notes');
 }
 
 export function notesDir(root: string): string {
-  return path.join(root, "notes");
+  return path.join(root, 'notes');
 }
 
 export function slugify(title: string): string {
   return title
     .toLowerCase()
-    .replace(/[^a-z0-9]/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
+    .replace(/[^a-z0-9]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
 }
 
 export function buildSlug(title: string): string {
   const date = new Date().toISOString().slice(0, 10);
-  const id = uuidv4().split("-")[0];
+  const id = uuidv4().split('-')[0];
   return `${date}-${slugify(title)}-${id}`;
 }
 
@@ -37,28 +37,28 @@ export function noteDir(slug: string, root: string): string {
 }
 
 export function noteMdPath(slug: string, root: string): string {
-  return path.join(noteDir(slug, root), "note.md");
+  return path.join(noteDir(slug, root), 'note.md');
 }
 
 export function attachmentsDir(slug: string, root: string): string {
-  return path.join(noteDir(slug, root), "attachments");
+  return path.join(noteDir(slug, root), 'attachments');
 }
 
 export function guessMimeType(filename: string): string {
   const ext = path.extname(filename).toLowerCase();
   const map: Record<string, string> = {
-    ".png": "image/png",
-    ".jpg": "image/jpeg",
-    ".jpeg": "image/jpeg",
-    ".gif": "image/gif",
-    ".webp": "image/webp",
-    ".svg": "image/svg+xml",
-    ".pdf": "application/pdf",
-    ".txt": "text/plain",
-    ".md": "text/markdown",
-    ".json": "application/json",
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp',
+    '.svg': 'image/svg+xml',
+    '.pdf': 'application/pdf',
+    '.txt': 'text/plain',
+    '.md': 'text/markdown',
+    '.json': 'application/json',
   };
-  return map[ext] ?? "application/octet-stream";
+  return map[ext] ?? 'application/octet-stream';
 }
 
 export async function ensureDir(dir: string): Promise<void> {
@@ -70,7 +70,7 @@ export async function readNoteFrontmatter(
   root: string,
 ): Promise<{ data: Record<string, unknown>; content: string } | null> {
   try {
-    const raw = await fs.readFile(noteMdPath(slug, root), "utf-8");
+    const raw = await fs.readFile(noteMdPath(slug, root), 'utf-8');
     const parsed = matter(raw);
     return { data: parsed.data as Record<string, unknown>, content: parsed.content };
   } catch {

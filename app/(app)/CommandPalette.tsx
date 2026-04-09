@@ -95,7 +95,7 @@ export function CommandPalette({ notes, todos }: CommandPaletteProps) {
       commandProps={isTagMode ? { shouldFilter: false } : undefined}
     >
       <CommandInput
-        placeholder={isTagMode ? "Tag suchen…" : "Suchen…"}
+        placeholder={isTagMode ? 'Tag suchen…' : 'Suchen…'}
         value={inputValue}
         onValueChange={setInputValue}
       />
@@ -136,8 +136,8 @@ export function CommandPalette({ notes, todos }: CommandPaletteProps) {
                     {note.pinned ? <Pin /> : <FileText />}
                     <span className="truncate">{note.title}</span>
                     {note.tags.slice(0, 2).map((tag, i) => (
-                      <Badge key={tag} variant="secondary" className={cn("text-xs px-1 py-0", { "ml-auto": i === 0 })}>
-                        {tag.split("/").pop()}
+                      <Badge key={tag} variant="secondary" className={cn('text-xs px-1 py-0', { 'ml-auto': i === 0 })}>
+                        {tag.split('/').pop()}
                       </Badge>
                     ))}
                   </CommandItem>
@@ -153,7 +153,7 @@ export function CommandPalette({ notes, todos }: CommandPaletteProps) {
                     value={todo.id}
                     keywords={[todo.title]}
                     onSelect={() => {
-                      navigate("/todos");
+                      navigate('/todos');
                     }}
                   >
                     <ListChecks />

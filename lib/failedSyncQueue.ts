@@ -1,5 +1,5 @@
-import { type SyncQueueEntry, PREFIX, safeGetJson } from "./localCache";
-import { CACHE_TTL_MS } from "./constants";
+import { type SyncQueueEntry, PREFIX, safeGetJson } from './localCache';
+import { CACHE_TTL_MS } from './constants';
 
 const FAILED_SYNC_KEY = `${PREFIX}sync-failed`;
 
@@ -9,7 +9,7 @@ export function getFailedSyncQueue(): SyncQueueEntry[] {
 }
 
 export function addToFailedSync(entry: SyncQueueEntry): void {
-  if (typeof localStorage === "undefined") {
+  if (typeof localStorage === 'undefined') {
     return;
   }
 
@@ -27,7 +27,7 @@ export function getFailedSyncCount(): number {
 }
 
 export function clearFailedSyncQueue(): void {
-  if (typeof localStorage === "undefined") {
+  if (typeof localStorage === 'undefined') {
     return;
   }
 
@@ -35,7 +35,7 @@ export function clearFailedSyncQueue(): void {
 }
 
 export function cleanExpiredFailedEntries(): void {
-  if (typeof localStorage === "undefined") {
+  if (typeof localStorage === 'undefined') {
     return;
   }
 

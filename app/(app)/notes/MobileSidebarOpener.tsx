@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect, useRef } from "react";
-import { useSidebar } from "@/components/ui/sidebar/context";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useEffect, useRef } from 'react';
+import { useSidebar } from '@/components/ui/sidebar/context';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export function MobileSidebarOpener() {
   const { setOpenMobile } = useSidebar();

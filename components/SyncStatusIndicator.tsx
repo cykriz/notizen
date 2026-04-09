@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { Cloud, CloudAlert, CloudOff, CloudUpload } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useData } from "@/app/(app)/DataProvider";
+import { Cloud, CloudAlert, CloudOff, CloudUpload } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useData } from '@/app/(app)/DataProvider';
 
 export function SyncStatusIndicator() {
   const { isOnline, hasPendingSync, failedSyncCount, clearFailedSync } = useData();

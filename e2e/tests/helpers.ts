@@ -27,15 +27,30 @@ export async function createNote(
   return page.url();
 }
 
-/** Go back online and ensure the app detects the change.
- *  Playwright's setOffline may not fire the 'online' event reliably,
- *  but useOnlineStatus depends on it to trigger the sync queue. */
+/** Go back online and wait for the app to detect it.
+ *  Tries to wait for the health check so `isOnline` flips to true,
+ *  but does not fail if the check is slow — the caller's own response
+ *  waiter (for the actual PUT/DELETE/POST) is the real gate. */
 export async function goOnline(page: Page): Promise<void> {
+  const healthOk = page
+    .waitForResponse(
+      (resp) => resp.url().includes("/api/health") && resp.ok(),
+      { timeout: 15_000 },
+    )
+    .catch(() => {});
   await page.context().setOffline(false);
-  // Dispatch online event as safety net — ignore if page navigated (sync already fired)
   await page
     .evaluate(() => window.dispatchEvent(new Event("online")))
     .catch(() => {});
+  await healthOk;
+}
+
+/** Go offline safely: waits for all pending network requests (lazy chunks,
+ *  RSC payloads) to finish before cutting the connection. Without this,
+ *  Next.js throws RuntimeChunkLoadError when an in-flight chunk fetch fails. */
+export async function goOffline(page: Page): Promise<void> {
+  await page.waitForLoadState("networkidle");
+  await page.context().setOffline(true);
 }
 
 /** Extract note ID from a /notes/<id> URL. */
@@ -45,11 +60,20 @@ export function noteIdFromUrl(url: string): string {
   return match[1];
 }
 
-/** Delete all notes via the API so tests start with a clean slate. */
+/** Delete all notes via the API and clear localStorage so tests
+ *  start with a completely clean slate (no stale cache/sync entries). */
 export async function deleteAllNotes(page: Page): Promise<void> {
   const res = await page.request.get("/api/notes");
   const notes: { id: string }[] = await res.json();
   await Promise.all(
     notes.map((n) => page.request.delete(`/api/notes/${n.id}`)),
   );
+  await page.evaluate(() => {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key?.startsWith("notizen:")) {
+        localStorage.removeItem(key);
+      }
+    }
+  });
 }

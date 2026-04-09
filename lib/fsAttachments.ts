@@ -1,13 +1,13 @@
-import fs from "fs/promises";
-import path from "path";
-import { v4 as uuidv4 } from "uuid";
-import type { Attachment } from "./types";
+import fs from 'fs/promises';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
+import type { Attachment } from './types';
 import {
   attachmentsDir,
   ensureDir,
   findSlugByNoteId,
   guessMimeType,
-} from "./fsHelpers";
+} from './fsHelpers';
 
 export async function listAttachments(noteId: string, root: string): Promise<Attachment[]> {
   const slug = await findSlugByNoteId(noteId, root);
@@ -23,7 +23,7 @@ export async function listAttachments(noteId: string, root: string): Promise<Att
     for (const file of files) {
       const filePath = path.join(attDir, file);
       const stat = await fs.stat(filePath);
-      const parts = file.split("_", 2);
+      const parts = file.split('_', 2);
       const attId = parts[0];
       const originalName = parts.length > 1 ? parts[1] : file;
 
@@ -52,7 +52,7 @@ export async function saveAttachment(
     throw new Error(`Note not found: ${noteId}`);
   }
 
-  const attId = uuidv4().split("-")[0];
+  const attId = uuidv4().split('-')[0];
   const storedName = `${attId}_${file.name}`;
   const attDir = attachmentsDir(slug, root);
   await ensureDir(attDir);
@@ -63,7 +63,7 @@ export async function saveAttachment(
   return {
     id: attId,
     originalName: file.name,
-    mimeType: file.type !== "" ? file.type : guessMimeType(file.name),
+    mimeType: file.type !== '' ? file.type : guessMimeType(file.name),
     size: file.size,
     relativePath: `attachments/${storedName}`,
   };
@@ -91,7 +91,7 @@ export async function getAttachmentFilePath(
     throw new Error(`Attachment not found: ${attId}`);
   }
 
-  const parts = target.split("_", 2);
+  const parts = target.split('_', 2);
   const originalName = parts.length > 1 ? parts[1] : target;
 
   return {

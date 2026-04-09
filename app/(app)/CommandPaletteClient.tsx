@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import dynamic from "next/dynamic";
-import { useData } from "./DataProvider";
+import dynamic from 'next/dynamic';
+import { useData } from './DataProvider';
 
 const CommandPalette = dynamic(
-  () => import("./CommandPalette").then((m) => m.CommandPalette),
+  () => import('./CommandPalette').then((m) => m.CommandPalette),
   { ssr: false },
 );
 

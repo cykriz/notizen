@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useCallback, useRef, useState } from "react";
-import { Upload } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import type { Attachment } from "@/lib/fsNotes";
+import { useCallback, useRef, useState } from 'react';
+import { Upload } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import type { Attachment } from '@/lib/fsNotes';
 
 interface FileUploadProps {
   noteId: string;
@@ -25,10 +25,10 @@ export function FileUpload({ noteId, onUploaded }: FileUploadProps) {
       try {
         for (const file of Array.from(files)) {
           const form = new FormData();
-          form.append("file", file);
+          form.append('file', file);
 
           const res = await fetch(`/api/notes/${noteId}/attachments`, {
-            method: "POST",
+            method: 'POST',
             body: form,
           });
 
@@ -38,7 +38,7 @@ export function FileUpload({ noteId, onUploaded }: FileUploadProps) {
           }
         }
       } catch {
-        setError("Upload fehlgeschlagen");
+        setError('Upload fehlgeschlagen');
       } finally {
         setUploading(false);
       }
@@ -69,9 +69,9 @@ export function FileUpload({ noteId, onUploaded }: FileUploadProps) {
   return (
     <Card
       className={cn(
-        "border-2 border-dashed transition-colors cursor-pointer",
-        dragging ? "border-primary bg-accent" : "border-muted",
-        uploading && "opacity-50 pointer-events-none",
+        'border-2 border-dashed transition-colors cursor-pointer',
+        dragging ? 'border-primary bg-accent' : 'border-muted',
+        uploading && 'opacity-50 pointer-events-none',
       )}
       onDragOver={(e) => {
         e.preventDefault(); setDragging(true); 
@@ -87,7 +87,7 @@ export function FileUpload({ noteId, onUploaded }: FileUploadProps) {
       <CardContent className="flex flex-col items-center justify-center gap-2 py-8">
         <Upload className="h-8 w-8 text-muted-foreground" />
         <p className="text-sm text-muted-foreground">
-          {uploading ? "Wird hochgeladen…" : "Dateien hierher ziehen oder klicken"}
+          {uploading ? 'Wird hochgeladen…' : 'Dateien hierher ziehen oder klicken'}
         </p>
         {error !== null && <p className="text-sm text-destructive">{error}</p>}
         <Button variant="secondary" size="sm" type="button" disabled={uploading}>

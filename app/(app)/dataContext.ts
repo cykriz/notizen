@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { createContext, useContext } from "react";
-import type { Note, NoteSummary, Todo } from "@/lib/types";
-import type { CreateNoteInput, UpdateNoteInput } from "@/lib/offlineNotes";
-import type { CreateTodoInput, UpdateTodoInput } from "@/lib/offlineTodos";
+import { createContext, useContext } from 'react';
+import type { Note, NoteSummary, Todo } from '@/lib/types';
+import type { CreateNoteInput, UpdateNoteInput } from '@/lib/offlineNotes';
+import type { CreateTodoInput, UpdateTodoInput } from '@/lib/offlineTodos';
 
 export interface DataContextValue {
   notes: NoteSummary[];
@@ -27,7 +27,7 @@ export const DataContext = createContext<DataContextValue | null>(null);
 export function useData(): DataContextValue {
   const ctx = useContext(DataContext);
   if (ctx === null) {
-    throw new Error("useData must be used within DataProvider");
+    throw new Error('useData must be used within DataProvider');
   }
 
   return ctx;

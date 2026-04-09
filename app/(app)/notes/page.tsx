@@ -1,5 +1,5 @@
-import { FileText } from "lucide-react";
-import { MobileSidebarOpener } from "./MobileSidebarOpener";
+import { FileText } from 'lucide-react';
+import { MobileSidebarOpener } from './MobileSidebarOpener';
 
 export default function NotesPage() {
   return (

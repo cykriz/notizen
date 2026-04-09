@@ -1,7 +1,7 @@
-import type { Note, NoteSummary, SyncAction, SyncEntityType, Todo } from "@/lib/types";
-import { NoteSummaryArraySchema, NoteResponseSchema, TodoArraySchema } from "@/lib/schemas";
+import type { Note, NoteSummary, SyncAction, SyncEntityType, Todo } from '@/lib/types';
+import { NoteSummaryArraySchema, NoteResponseSchema, TodoArraySchema } from '@/lib/schemas';
 
-export const PREFIX = "notizen:";
+export const PREFIX = 'notizen:';
 export const NOTES_LIST_KEY = `${PREFIX}notes-list`;
 export const TODOS_KEY = `${PREFIX}todos`;
 export const SYNC_QUEUE_KEY = `${PREFIX}sync-queue`;
@@ -22,7 +22,7 @@ export function cachedAtKey(key: string): string {
 }
 
 export function safeGetJson(key: string): unknown {
-  if (typeof localStorage === "undefined") {
+  if (typeof localStorage === 'undefined') {
     return null;
   }
 
@@ -40,7 +40,7 @@ export function safeGetJson(key: string): unknown {
 }
 
 export function safeSetJson(key: string, value: unknown): void {
-  if (typeof localStorage === "undefined") {
+  if (typeof localStorage === 'undefined') {
     return;
   }
 
@@ -97,7 +97,7 @@ export function getDraft(id: string): { title: string; content: string } | null 
 }
 
 export function setDraft(id: string, title: string, content: string): void {
-  if (typeof localStorage === "undefined") {
+  if (typeof localStorage === 'undefined') {
     return;
   }
 
@@ -109,7 +109,7 @@ export function setDraft(id: string, title: string, content: string): void {
 }
 
 export function clearDraft(id: string): void {
-  if (typeof localStorage === "undefined") {
+  if (typeof localStorage === 'undefined') {
     return;
   }
 
@@ -117,7 +117,7 @@ export function clearDraft(id: string): void {
 }
 
 export function removeCachedNote(id: string): void {
-  if (typeof localStorage === "undefined") {
+  if (typeof localStorage === 'undefined') {
     return;
   }
 
@@ -151,6 +151,11 @@ export interface SyncQueueEntry {
   payload: Record<string, unknown>;
   timestamp: string;
   retryCount?: number;
+  seq?: string;
+}
+
+export function nextSyncSeq(): string {
+  return crypto.randomUUID();
 }
 
 export function getSyncQueue(): SyncQueueEntry[] {
@@ -158,7 +163,7 @@ export function getSyncQueue(): SyncQueueEntry[] {
 }
 
 export function setSyncQueue(queue: SyncQueueEntry[]): void {
-  if (typeof localStorage === "undefined") {
+  if (typeof localStorage === 'undefined') {
     return;
   }
 
