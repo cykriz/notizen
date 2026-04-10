@@ -18,7 +18,8 @@ export async function createNote(
   content: string,
 ): Promise<string> {
   await page.getByRole("button", { name: /Neue Notiz/ }).click();
-  await expect(page.locator("#note-title")).toHaveValue("Unbenannt");
+  await page.waitForURL(/\/notes\/[^/]+$/, { timeout: 30_000 });
+  await expect(page.locator("#note-title")).toHaveValue("Unbenannt", { timeout: 10_000 });
   await page.locator("#note-title").fill(title);
   const saved = waitForSave(page);
   await page.locator(".cm-content").click();

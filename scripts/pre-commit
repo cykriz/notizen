@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "=== Pre-commit: lint ==="
+bun run lint:check
+
+echo "=== Pre-commit: typecheck ==="
+bunx tsc --noEmit
+
+echo "=== All checks passed ==="

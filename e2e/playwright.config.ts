@@ -49,11 +49,11 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: `bun run scripts/manage-users.ts add ${TEST_USER.username} ${TEST_USER.password} || true; bun --bun next dev --port ${TEST_PORT}`,
+    command: `bun run scripts/manage-users.ts add ${TEST_USER.username} ${TEST_USER.password} || true; bun --bun next build && bun --bun next start --port ${TEST_PORT}`,
     url: `http://localhost:${TEST_PORT}`,
     cwd: path.join(__dirname, '..'),
     reuseExistingServer: !isCI,
     env: { ...process.env, NOTES_ROOT: testNotesRoot },
-    timeout: 30_000,
+    timeout: 90_000,
   },
 });

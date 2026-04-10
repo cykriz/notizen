@@ -9,6 +9,7 @@ Next.js 16 + React 19 + Bun + TypeScript (strict) + Tailwind v4 + shadcn/ui. Fil
 - Dev server: `bun --bun next dev`
 - Add shadcn component: `npx shadcn@latest add <name>`
 - E2E tests: `bun run test:e2e` (headless), `bun run test:e2e:ui` (UI mode)
+- Install git hooks: `cp scripts/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit`
 
 ## Code Rules
 

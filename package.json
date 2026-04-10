@@ -7,6 +7,7 @@
     "build": "bun --bun next build",
     "start": "bun --bun next start",
     "lint": "eslint --fix --fix-type suggestion,problem,layout .",
+    "lint:check": "eslint .",
     "deploy": "sh scripts/deploy.sh",
     "user": "bun run scripts/manage-users.ts",
     "test:e2e": "bunx playwright test --config e2e/playwright.config.ts",
