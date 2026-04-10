@@ -11,6 +11,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { SyncStatusIndicator } from '@/components/SyncStatusIndicator';
@@ -36,6 +37,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ authEnabled }: AppSidebarProps) {
   const { notes, todos, createNote } = useData();
+  const { setOpenMobile } = useSidebar();
   const pathname = usePathname();
   const router = useRouter();
   const isTodos = pathname.startsWith('/todos');
@@ -78,6 +80,7 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
     void createNote({ title: DEFAULT_NOTE_TITLE, content: '', tags })
       .then((note) => {
         if (note.slug !== '') {
+          setOpenMobile(false);
           router.push(`/notes/${note.id}`);
         }
       })
@@ -85,7 +88,7 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
         pendingRef.current = false;
         setPending(false);
       });
-  }, [createNote, router, currentTagPath]);
+  }, [createNote, router, currentTagPath, setOpenMobile]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

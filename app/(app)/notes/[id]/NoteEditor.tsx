@@ -62,7 +62,9 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
       if (e.key === 'Escape' && !e.defaultPrevented) {
         e.preventDefault();
 
-        if (title === DEFAULT_NOTE_TITLE) {
+        if (preview === PREVIEW_EDIT) {
+          setPreview(PREVIEW_PREVIEW);
+        } else if (title === DEFAULT_NOTE_TITLE) {
           setDeleteDialogOpen(true);
         }
 
@@ -85,7 +87,7 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [note.id, title]);
+  }, [note.id, title, preview]);
 
   const handleTogglePreview = useCallback(() => {
     setPreview((p) => (p === PREVIEW_EDIT ? PREVIEW_PREVIEW : PREVIEW_EDIT));

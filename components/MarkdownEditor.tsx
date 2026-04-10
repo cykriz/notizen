@@ -1,6 +1,6 @@
 'use client';
 import { useTheme } from 'next-themes';
-import { forwardRef, memo, useCallback, useImperativeHandle, useMemo, useRef } from 'react';
+import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 
 import { usePreviewCheckbox } from '@/hooks/usePreviewCheckbox';
 
@@ -58,6 +58,10 @@ export const MarkdownEditor = memo(
 
     const isEditing = preview === PREVIEW_EDIT;
     const pendingCursorPosRef = useRef<number | null>(null);
+    const valueRef = useRef(value);
+    useEffect(() => {
+      valueRef.current = value;
+    }, [value]);
 
     const { dragging, uploading, fileDropExtension, handleDrop, handleDragOver, handleDragLeave } = useFileDrop({
       noteId,
@@ -79,9 +83,10 @@ export const MarkdownEditor = memo(
       pendingCursorPosRef.current = null;
 
       if (pending !== null && pending >= 0 && pending <= view.state.doc.length) {
+        const line = view.state.doc.lineAt(pending);
         view.dispatch({
-          selection: { anchor: pending },
-          effects: EditorView.scrollIntoView(pending, { y: 'center' }),
+          selection: { anchor: line.to },
+          effects: EditorView.scrollIntoView(line.to, { y: 'center' }),
         });
       } else {
         const end = view.state.doc.length;
@@ -139,7 +144,7 @@ export const MarkdownEditor = memo(
             return;
           }
 
-          const headingCount = value
+          const headingCount = valueRef.current
             .split('\n')
             .slice(0, line)
             .filter((l) => /^#{1,6}\s+/.test(l)).length;
@@ -158,7 +163,7 @@ export const MarkdownEditor = memo(
           }
         },
       }),
-      [value],
+      [],
     );
 
     const handleIndentMore = useCallback(() => {
