@@ -8,7 +8,7 @@ Next.js 16 + React 19 + Bun + TypeScript (strict) + Tailwind v4 + shadcn/ui. Fil
 - Run lint + tsc after every code change. Fix all errors before moving on.
 - Dev server: `bun --bun next dev`
 - Add shadcn component: `npx shadcn@latest add <name>`
-- E2E tests: `bun run test:e2e` (headless), `bun run test:e2e:ui` (UI mode)
+- E2E tests: `bun run test:e2e` (headless), `bun run test:e2e:ui` (UI mode) — uses `npx` (not `bunx`) because Playwright's test runner needs Node.js module loading internals
 - Install git hooks: `cp scripts/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit`
 
 ## Code Rules
@@ -44,7 +44,7 @@ uuid zod gray-matter cmdk
 shadcn/ui next-themes radix-ui lucide-react
 class-variance-authority clsx tailwind-merge tw-animate-css
 @uiw/react-codemirror @uiw/react-markdown-preview @codemirror/lang-markdown @codemirror/search @codemirror/commands @codemirror/view @codemirror/state
-unist-util-visit
+unist-util-visit @types/mdast
 @serwist/turbopack serwist
 @types/bun
 @playwright/test

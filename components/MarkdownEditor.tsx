@@ -16,6 +16,7 @@ import { useLineTransform } from '@/hooks/useLineTransform';
 import { useNoteLinkPicker } from '@/hooks/useNoteLinkPicker';
 import { PREVIEW_EDIT } from '@/lib/constants';
 import { getSourceOffsetFromClick } from '@/lib/previewClickToOffset';
+import { remarkLooseListGaps } from '@/lib/remarkLooseListGaps';
 import { remarkSourceOffset } from '@/lib/remarkSourceOffset';
 import { cn } from '@/lib/utils';
 import { indentMore } from '@codemirror/commands';
@@ -186,7 +187,7 @@ export const MarkdownEditor = memo(
 
     const colorMode = (mounted ? resolvedTheme : undefined) ?? 'dark';
     const { checkboxCtx, previewComponents } = usePreviewCheckbox(value, onChange);
-    const previewRemarkPlugins = useMemo(() => [remarkSourceOffset], []);
+    const previewRemarkPlugins = useMemo(() => [remarkSourceOffset, remarkLooseListGaps], []);
 
     return (
       <div

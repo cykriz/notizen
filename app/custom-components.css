@@ -130,6 +130,15 @@
   margin-right: 0.375rem;
 }
 
+/* Loose task lists: collapse first <p> margin, keep spacing for continuation paragraphs */
+[data-color-mode] .wmde-markdown .contains-task-list li > p:first-child {
+  margin: 0;
+}
+
+[data-color-mode] .wmde-markdown .contains-task-list li[data-blank-before] {
+  margin-top: 1.25em;
+}
+
 /* --- Markdown editor styles end --- */
 
 /* --- CodeMirror search panel --- */

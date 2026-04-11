@@ -7,4 +7,13 @@ bun run lint:check
 echo "=== Pre-commit: typecheck ==="
 bunx tsc --noEmit
 
+echo "=== Pre-commit: unit tests ==="
+bun test lib/
+
+# NOTE: E2E in pre-commit is intentional for now — ensures nothing ships broken.
+# npx (not bunx): Playwright's test runner needs Node.js module loading internals
+# for test.describe() globals — Bun's runtime doesn't support these hooks.
+echo "=== Pre-commit: e2e tests ==="
+npx playwright test --config e2e/playwright.config.ts
+
 echo "=== All checks passed ==="

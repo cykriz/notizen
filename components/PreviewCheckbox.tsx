@@ -2,7 +2,7 @@
 
 import { createContext, useContext, type JSX } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
-import { toggleCheckboxAtOffset } from '@/lib/toggleCheckbox';
+import { toggleBlockCheckboxes, toggleCheckboxAtOffset } from '@/lib/toggleCheckbox';
 
 // Matches the task-list checkbox marker inside a list item line.
 // Broad match is safe because callers only reach this via data-source-offset
@@ -24,16 +24,13 @@ function findCheckboxOffset(source: string, liOffset: number): number | null {
 }
 
 function findSourceOffset(el: HTMLElement): number | null {
-  let current: HTMLElement | null = el;
-  while (current && !current.classList.contains('wmde-markdown')) {
-    const attr = current.getAttribute('data-source-offset');
-    if (attr !== null) {
-      return Number(attr);
-    }
-
-    current = current.parentElement;
+  const li = el.closest('li');
+  if (!li) {
+    return null;
   }
-  return null;
+
+  const attr = li.getAttribute('data-source-offset');
+  return attr !== null ? Number(attr) : null;
 }
 
 /**
@@ -55,7 +52,7 @@ export function PreviewCheckbox(props: JSX.IntrinsicElements['input']) {
     return null;
   }
 
-  const toggle = (el: HTMLElement) => {
+  const toggle = (el: HTMLElement, blockToggle: boolean) => {
     const source = ctx.getSource();
     const liOffset = findSourceOffset(el);
     if (liOffset === null) {
@@ -67,7 +64,10 @@ export function PreviewCheckbox(props: JSX.IntrinsicElements['input']) {
       return;
     }
 
-    const updated = toggleCheckboxAtOffset(source, bracketPos);
+    const updated = blockToggle
+      ? toggleBlockCheckboxes(source, bracketPos)
+      : toggleCheckboxAtOffset(source, bracketPos);
+
     if (updated !== source) {
       ctx.onChange(updated);
     }
@@ -75,14 +75,14 @@ export function PreviewCheckbox(props: JSX.IntrinsicElements['input']) {
 
   const handleClick = (e: React.MouseEvent<HTMLSpanElement>) => {
     e.stopPropagation();
-    toggle(e.currentTarget);
+    toggle(e.currentTarget, e.metaKey || e.ctrlKey);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLSpanElement>) => {
     if (e.key === ' ' || e.key === 'Enter') {
       e.preventDefault();
       e.stopPropagation();
-      toggle(e.currentTarget);
+      toggle(e.currentTarget, e.metaKey || e.ctrlKey);
     }
   };
 
