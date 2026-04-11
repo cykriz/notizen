@@ -54,28 +54,13 @@ export default function LoginPage() {
           <form action={formAction} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
               <Label htmlFor="username">Benutzername</Label>
-              <Input
-                id="username"
-                name="username"
-                type="text"
-                autoComplete="username"
-                autoFocus
-                required
-              />
+              <Input id="username" name="username" type="text" autoComplete="username" autoFocus required />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="password">Passwort</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-              />
+              <Input id="password" name="password" type="password" autoComplete="current-password" required />
             </div>
-            {state.error !== null && (
-              <p className="text-sm text-destructive">{state.error}</p>
-            )}
+            {state.error !== null && <p className="text-sm text-destructive">{state.error}</p>}
             <Button type="submit" disabled={isPending}>
               {isPending ? 'Anmelden\u2026' : 'Anmelden'}
             </Button>

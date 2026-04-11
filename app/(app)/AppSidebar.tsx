@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { SyncStatusIndicator } from '@/components/SyncStatusIndicator';
 import { DEFAULT_NOTE_TITLE } from '@/lib/constants';
+import { useSwipeBack } from '@/hooks/useSwipeBack';
 import { logoutAction } from '@/app/login/actions';
 import { tagNavigationStore } from './tagNavigationStore';
 import { viewStore } from './viewStore';
@@ -37,7 +38,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ authEnabled }: AppSidebarProps) {
   const { notes, todos, createNote } = useData();
-  const { setOpenMobile } = useSidebar();
+  const { isMobile, setOpenMobile } = useSidebar();
   const pathname = usePathname();
   const router = useRouter();
   const isTodos = pathname.startsWith('/todos');
@@ -49,7 +50,11 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
     path: getNoteTagPath(notes, pathname),
   }));
   const view = useSyncExternalStore(viewStore.subscribe, viewStore.getSnapshot, viewStore.getServerSnapshot);
-  const tagNav = useSyncExternalStore(tagNavigationStore.subscribe, tagNavigationStore.getSnapshot, tagNavigationStore.getServerSnapshot);
+  const tagNav = useSyncExternalStore(
+    tagNavigationStore.subscribe,
+    tagNavigationStore.getSnapshot,
+    tagNavigationStore.getServerSnapshot,
+  );
   const [pending, setPending] = useState(false);
   const pendingRef = useRef(false);
 
@@ -68,6 +73,14 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
   const setCurrentTagPath = useCallback((path: string) => {
     setTagState((prev) => ({ ...prev, path }));
   }, []);
+
+  const [swipeEl, setSwipeEl] = useState<HTMLDivElement | null>(null);
+  const handleTagBack = useCallback(() => {
+    const parts = currentTagPath.split('/');
+    parts.pop();
+    setCurrentTagPath(parts.join('/'));
+  }, [currentTagPath, setCurrentTagPath]);
+  useSwipeBack(swipeEl, handleTagBack, isMobile && !isTodos && view === 'tags' && currentTagPath !== '');
 
   const handleCreate = useCallback(() => {
     if (pendingRef.current) {
@@ -140,17 +153,25 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
         </div>
       </SidebarHeader>
 
-      {!isTodos && view === 'tags' && (
-        <TagNavigation notes={notes} currentPath={currentTagPath} setCurrentPath={setCurrentTagPath} />
-      )}
-
-      <SidebarContent>
-        {isTodos ? (
-          <TodosSidebarContent todos={todos} />
-        ) : (
-          <NotesSidebarContent notes={notes} currentTagPath={currentTagPath} view={view} handleCreate={handleCreate} pending={pending} />
+      <div ref={setSwipeEl} className="flex min-h-0 flex-1 flex-col gap-2">
+        {!isTodos && view === 'tags' && (
+          <TagNavigation notes={notes} currentPath={currentTagPath} setCurrentPath={setCurrentTagPath} />
         )}
-      </SidebarContent>
+
+        <SidebarContent>
+          {isTodos ? (
+            <TodosSidebarContent todos={todos} />
+          ) : (
+            <NotesSidebarContent
+              notes={notes}
+              currentTagPath={currentTagPath}
+              view={view}
+              handleCreate={handleCreate}
+              pending={pending}
+            />
+          )}
+        </SidebarContent>
+      </div>
 
       {!isTodos && <NotesSidebarFooter view={view} handleCreate={handleCreate} pending={pending} />}
     </Sidebar>
