@@ -97,12 +97,7 @@ export const NoteListItem = memo(function NoteListItem({ note, isActive, onNavig
             >
               <Trash2 />
             </Button>
-            <DeleteNoteDialog
-              noteId={note.id}
-              noteTitle={note.title}
-              open={deleteOpen}
-              onOpenChange={setDeleteOpen}
-            />
+            <DeleteNoteDialog noteId={note.id} noteTitle={note.title} open={deleteOpen} onOpenChange={setDeleteOpen} />
           </>
         ) : (
           <Button variant="ghost" size="icon-xs" disabled aria-label="Notiz löschen" className="h-5 w-5 [&>svg]:size-3">

@@ -63,7 +63,7 @@ export function NoteOutline({ content, onHeadingClick, className }: NoteOutlineP
             <Button
               variant="ghost"
               className={cn(
-                'w-full min-w-0 justify-start rounded-md h-auto px-0 pr-4 py-0.5 text-sm leading-10 text-muted-foreground hover:text-foreground cursor-pointer',
+                'w-full min-w-0 justify-start rounded-md h-auto px-0 pr-4 py-0.5 text-sm leading-10 text-muted-foreground hover:text-foreground',
                 LEVEL_INDENT[heading.level] ?? 'pl-4',
                 { 'font-medium text-foreground': heading.level === 1 },
               )}
