@@ -1,20 +1,23 @@
 'use client';
 
-import { useMemo } from 'react';
-import { ChevronLeft, Folder, Tag } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ChevronLeft, Folder, Tag, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuBadge } from '@/components/ui/sidebar';
 import { buildTagTree, getChildNodes } from '@/lib/tagTree';
 import type { NoteSummary } from '@/lib/types';
+import { DeleteTagFolderDialog } from './DeleteTagFolderDialog';
 
 interface TagNavigationProps {
   notes: NoteSummary[];
   currentPath: string;
   setCurrentPath: (path: string) => void;
+  onFolderDeleted: () => void;
 }
 
-export function TagNavigation({ notes, currentPath, setCurrentPath }: TagNavigationProps) {
+export function TagNavigation({ notes, currentPath, setCurrentPath, onFolderDeleted }: TagNavigationProps) {
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const tree = useMemo(() => buildTagTree(notes), [notes]);
   const children = useMemo(() => getChildNodes(tree, currentPath), [tree, currentPath]);
   const hasNotesAtLevel = useMemo(
@@ -56,6 +59,23 @@ export function TagNavigation({ notes, currentPath, setCurrentPath }: TagNavigat
               </Button>
             </span>
           ))}
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={() => {
+              setDeleteOpen(true);
+            }}
+            className="ml-auto shrink-0 text-destructive hover:text-destructive"
+            title="Ordner löschen"
+          >
+            <Trash2 />
+          </Button>
+          <DeleteTagFolderDialog
+            path={currentPath}
+            open={deleteOpen}
+            onOpenChange={setDeleteOpen}
+            onDeleted={onFolderDeleted}
+          />
         </div>
       )}
 

@@ -9,6 +9,7 @@ import {
   deleteNoteOffline,
   updateNoteOffline,
 } from '@/lib/offlineNotes';
+import { deleteTagFolderOffline } from '@/lib/offlineTagFolder';
 import {
   type CreateTodoInput,
   type UpdateTodoInput,
@@ -94,6 +95,11 @@ export function DataProvider({ initialNotes, initialTodos, children }: DataProvi
     syncPending();
   }, [syncPending]);
 
+  const handleDeleteTagFolder = useCallback(async (path: string) => {
+    setNotes(await deleteTagFolderOffline(path, notesRef.current, isOnlineRef.current));
+    syncPending();
+  }, [syncPending]);
+
   const handleCreateTodo = useCallback(async (input: CreateTodoInput): Promise<Todo> => {
     const { todo, updatedList } = await createTodoOffline(input, todosRef.current, isOnlineRef.current);
     setTodos(updatedList);
@@ -123,6 +129,7 @@ export function DataProvider({ initialNotes, initialTodos, children }: DataProvi
         createNote: handleCreateNote,
         updateNote: handleUpdateNote,
         deleteNote: handleDeleteNote,
+        deleteTagFolder: handleDeleteTagFolder,
         createTodo: handleCreateTodo,
         updateTodo: handleUpdateTodo,
         deleteTodo: handleDeleteTodo,

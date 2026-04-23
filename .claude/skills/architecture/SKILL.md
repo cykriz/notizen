@@ -33,6 +33,7 @@ See `lib/types.ts` for full definitions. Key types:
 - `lib/syncQueue.ts` — offline sync queue management
 - `lib/failedSyncQueue.ts` — permanently failed sync entries (exceeded retries / non-retryable)
 - `lib/offlineNotes.ts` / `lib/offlineTodos.ts` — offline support for notes and todos
+- `lib/offlineTagFolder.ts` — offline tag-folder deletion (deleteTagFolderOffline, stripFolderTags)
 
 ## API Routes
 
@@ -80,6 +81,7 @@ app/api/serwist/[...path]/route.ts   → service worker
 | TagBrowser | `app/(app)/TagBrowser.tsx` — folder-style drill-down |
 | DataProvider | `app/(app)/DataProvider.tsx` — client-side data context |
 | DeleteNoteDialog | `app/(app)/DeleteNoteDialog.tsx` — note deletion confirmation |
+| DeleteTagFolderDialog | `app/(app)/DeleteTagFolderDialog.tsx` — tag folder deletion confirmation |
 | NoteListItem | `app/(app)/NoteListItem.tsx` — note list entry |
 | MobileBottomNav | `app/(app)/MobileBottomNav.tsx` — bottom tab bar (`md:hidden`) |
 | CommandPalette | `app/(app)/CommandPalette.tsx` — Cmd+P search (@ prefix for tag navigation) |

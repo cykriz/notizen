@@ -15,6 +15,7 @@ export interface DataContextValue {
   createNote: (input: CreateNoteInput) => Promise<Note>;
   updateNote: (id: string, input: UpdateNoteInput) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
+  deleteTagFolder: (path: string) => Promise<void>;
   createTodo: (input: CreateTodoInput) => Promise<Todo>;
   updateTodo: (id: string, input: UpdateTodoInput) => Promise<void>;
   deleteTodo: (id: string) => Promise<void>;

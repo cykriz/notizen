@@ -82,6 +82,13 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
   }, [currentTagPath, setCurrentTagPath]);
   useSwipeBack(swipeEl, handleTagBack, isMobile && !isTodos && view === 'tags' && currentTagPath !== '');
 
+  const handleFolderDeleted = useCallback(() => {
+    handleTagBack();
+    if (noteId !== null && !notes.some((n) => n.id === noteId)) {
+      router.push('/notes');
+    }
+  }, [handleTagBack, noteId, notes, router]);
+
   const handleCreate = useCallback(() => {
     if (pendingRef.current) {
       return;
@@ -155,7 +162,12 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
 
       <div ref={setSwipeEl} className="flex min-h-0 flex-1 flex-col gap-2">
         {!isTodos && view === 'tags' && (
-          <TagNavigation notes={notes} currentPath={currentTagPath} setCurrentPath={setCurrentTagPath} />
+          <TagNavigation
+            notes={notes}
+            currentPath={currentTagPath}
+            setCurrentPath={setCurrentTagPath}
+            onFolderDeleted={handleFolderDeleted}
+          />
         )}
 
         <SidebarContent>
