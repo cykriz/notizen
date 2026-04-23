@@ -137,6 +137,33 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
     }
   }, [preview]);
 
+  useEffect(() => {
+    const headingCount = (initial.content.match(/^#{1,6}\s+.+$/gm) ?? []).length;
+    if (headingCount < 2) {
+      return;
+    }
+
+    const container = editorRef.current?.getScrollContainer();
+    if (!container) {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      if (container.scrollHeight > container.clientHeight) {
+        setOutlineVisible(true);
+        observer.disconnect();
+      }
+    });
+    observer.observe(container);
+    if (container.firstElementChild) {
+      observer.observe(container.firstElementChild);
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [note.id, initial.content]);
+
   const handleHeadingClick = useCallback((line: number) => {
     editorRef.current?.scrollToLine(line);
   }, []);

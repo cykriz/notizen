@@ -29,7 +29,7 @@ export function useNoteInitialState(note: Note): NoteInitialState {
       title: best.title,
       content: best.content,
       preview: best.content.trim() === '' ? PREVIEW_EDIT : PREVIEW_PREVIEW,
-      outlineVisible: /^#{1,6}\s+.+$/m.test(best.content),
+      outlineVisible: false,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only recalculate when the note identity or version changes, not on every object reference
   }, [note.id, note.updatedAt]);

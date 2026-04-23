@@ -43,6 +43,7 @@ export interface MarkdownEditorHandle {
   scrollToLine: (line: number) => void;
   focus: () => void;
   openSearch: () => void;
+  getScrollContainer: () => HTMLElement | null;
 }
 
 export const MarkdownEditor = memo(
@@ -53,6 +54,7 @@ export const MarkdownEditor = memo(
     const { resolvedTheme } = useTheme();
     const mounted = useClientMounted();
     const wrapperRef = useRef<HTMLDivElement>(null);
+    const previewScrollRef = useRef<HTMLDivElement>(null);
     const cmRef = useRef<ReactCodeMirrorRef>(null);
     const viewRef = useRef<EditorView | null>(null);
     const getView = () => cmRef.current?.view ?? null;
@@ -163,6 +165,9 @@ export const MarkdownEditor = memo(
             openSearchPanel(v);
           }
         },
+        getScrollContainer() {
+          return getView()?.scrollDOM ?? previewScrollRef.current;
+        },
       }),
       [],
     );
@@ -212,7 +217,7 @@ export const MarkdownEditor = memo(
           />
         ) : (
           <PreviewCheckboxContext.Provider value={checkboxCtx}>
-            <div className="h-full overflow-y-auto cursor-text" onClick={handlePreviewClick}>
+            <div ref={previewScrollRef} className="h-full overflow-y-auto cursor-text" onClick={handlePreviewClick}>
               <MarkdownPreview source={value} components={previewComponents} remarkPlugins={previewRemarkPlugins} />
             </div>
           </PreviewCheckboxContext.Provider>
