@@ -2,10 +2,22 @@ import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import matter from 'gray-matter';
+import { USERS_DATA_DIR } from './constants';
+
+export class NotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NotFoundError';
+  }
+}
 
 export function getNotesRoot(): string {
   const root = process.env.NOTES_ROOT;
   return root !== undefined && root !== '' ? root : path.join(process.cwd(), 'dev-notes');
+}
+
+export function userRootFor(username: string): string {
+  return path.join(getNotesRoot(), USERS_DATA_DIR, username);
 }
 
 export function notesDir(root: string): string {

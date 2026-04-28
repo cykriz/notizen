@@ -19,14 +19,20 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     // Type-narrow Node→Web stream
     const webStream = Readable.toWeb(nodeStream) as unknown as ReadableStream;
 
+    // Per RFC 6266: legacy `filename=` carries display chars in a quoted
+    // string (sanitize \ and " for safety); modern `filename*` (RFC 5987)
+    // is percent-encoded UTF-8 and wins on browsers that support it.
+    const safeFilename = fileName.replace(/[\\"]/g, '_');
+    const encoded = encodeURIComponent(fileName);
     return new NextResponse(webStream, {
       headers: {
         'Content-Type': mimeType,
-        'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"`,
+        'Content-Disposition': `attachment; filename="${safeFilename}"; filename*=UTF-8''${encoded}`,
         'Content-Length': String(stat.size),
+        'X-Content-Type-Options': 'nosniff',
       },
     });
   } catch (err) {
-    return errorResponse(err, { notFoundAs404: true });
+    return errorResponse(err);
   }
 }

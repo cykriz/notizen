@@ -1,8 +1,9 @@
 import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
-import { getNotesRoot, ensureDir } from './fsHelpers';
-import { AUTH_DIR, USERS_FILE, USERS_DATA_DIR } from './constants';
+import { getNotesRoot, ensureDir, userRootFor } from './fsHelpers';
+import { AUTH_DIR, USERS_FILE, USERNAME_RE } from './constants';
+import { removeUserShares } from './fsSharesRegistry';
 
 interface StoredUser {
   username: string;
@@ -20,10 +21,6 @@ function authDir(): string {
 
 function usersFilePath(): string {
   return path.join(authDir(), USERS_FILE);
-}
-
-export function userDataDir(username: string): string {
-  return path.join(getNotesRoot(), USERS_DATA_DIR, username);
 }
 
 // --- Cached file reads (10s TTL) ---
@@ -97,8 +94,6 @@ const DUMMY_HASH = hashPassword('dummy-password-for-timing');
 
 // --- Validation ---
 
-const USERNAME_RE = /^[a-z0-9_-]{1,32}$/;
-
 function validateUsername(username: string): void {
   if (!USERNAME_RE.test(username)) {
     throw new Error('Ungueltiger Benutzername: nur Kleinbuchstaben, Ziffern, Bindestriche und Unterstriche (1-32 Zeichen)');
@@ -126,7 +121,7 @@ export async function createUser(username: string, password: string): Promise<vo
 
   users.push({ username, hash: hashPassword(password) });
   await writeUsersFile(users);
-  await ensureDir(userDataDir(username));
+  await ensureDir(userRootFor(username));
 }
 
 export async function removeUser(username: string): Promise<void> {
@@ -137,6 +132,11 @@ export async function removeUser(username: string): Promise<void> {
   }
 
   await writeUsersFile(filtered);
+  // Best-effort cascade: a transient I/O error here would only orphan share
+  // entries (anonymous viewers 404 once the data dir is gone).
+  await removeUserShares(username).catch((err: unknown) => {
+    console.error('removeUserShares failed', err);
+  });
 }
 
 export async function changePassword(username: string, newPassword: string): Promise<void> {

@@ -6,6 +6,36 @@ export const AUTH_DIR = '.auth';
 export const USERS_FILE = 'users.json';
 export const AUTH_SECRET_FILE = 'secret.key';
 export const USERS_DATA_DIR = 'users';
+export const USERNAME_RE = /^[a-z0-9_-]{1,32}$/;
+
+export const SHARES_DIR = '.shares';
+export const SHARES_FILE = 'shares.json';
+export const SHARE_PATH_PREFIX = '/share/';
+export const SHARE_CACHE_CONTROL = 'private, max-age=0, must-revalidate';
+
+export const SHARE_EXPIRY_PRESETS = {
+  '1d': 24 * 60 * 60 * 1000,
+  '1w': 7 * 24 * 60 * 60 * 1000,
+  '1m': 30 * 24 * 60 * 60 * 1000,
+  never: null,
+} as const;
+
+export type ShareExpiryPreset = keyof typeof SHARE_EXPIRY_PRESETS;
+export const DEFAULT_SHARE_EXPIRY: ShareExpiryPreset = '1w';
+
+export const SHARE_EXPIRY_LABELS: Record<ShareExpiryPreset, string> = {
+  '1d': '1 Tag',
+  '1w': '1 Woche',
+  '1m': '1 Monat',
+  never: 'Unbegrenzt',
+};
+
+export const INLINE_SAFE_MIMES: readonly string[] = [
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+];
 
 export const DEFAULT_NOTE_TITLE = 'Unbenannt';
 

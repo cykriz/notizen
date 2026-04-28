@@ -13,8 +13,8 @@
 
 import fs from 'fs/promises';
 import path from 'path';
-import { createUser, removeUser, changePassword, listUsers, userDataDir } from '../lib/users';
-import { getNotesRoot } from '../lib/fsHelpers';
+import { createUser, removeUser, changePassword, listUsers } from '../lib/users';
+import { getNotesRoot, userRootFor } from '../lib/fsHelpers';
 import { createInterface } from 'readline';
 
 const [command, ...args] = process.argv.slice(2);
@@ -117,7 +117,7 @@ async function main() {
       }
 
       const root = getNotesRoot();
-      const target = userDataDir(username);
+      const target = userRootFor(username);
       const notesSource = path.join(root, 'notes');
       const todosSource = path.join(root, 'todos.json');
       const notesTarget = path.join(target, 'notes');

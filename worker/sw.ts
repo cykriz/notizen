@@ -1,8 +1,10 @@
+import { SHARE_PATH_PREFIX } from '@/lib/constants';
+
 declare const self: ServiceWorkerGlobalScope;
 
 const CACHE = {
   static: "static-v1",
-  pages: "pages-v1",
+  pages: "pages-v2",
   api: "api-v1",
   misc: "misc-v1",
 } as const;
@@ -25,7 +27,7 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((names) => {
-      const valid = new Set(Object.values(CACHE));
+      const valid = new Set<string>(Object.values(CACHE));
       return Promise.all(names.filter((n) => !valid.has(n)).map((n) => caches.delete(n)));
     }).then(() => self.clients.claim()),
   );
@@ -51,6 +53,13 @@ self.addEventListener("fetch", (event) => {
 
   // Skip non-GET (POST/PUT/DELETE go straight to network)
   if (request.method !== "GET") return;
+
+  // Public share routes must never be cached by the SW: revocation/expiry
+  // must take effect immediately, and the owner's device would otherwise
+  // serve stale pages to anonymous viewers on the same device.
+  if (url.pathname.startsWith(SHARE_PATH_PREFIX)) {
+    return;
+  }
 
   // Route to the right strategy
   if (request.mode === "navigate") {

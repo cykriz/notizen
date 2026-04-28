@@ -14,6 +14,7 @@
 /coverage
 .test-notes-*
 .test-todos-*
+/test-results/
 /e2e/test-results/
 /e2e/playwright-report/
 /e2e/blob-report/
@@ -59,3 +60,6 @@ next-env.d.ts
 
 # claude code local settings
 .claude/settings.local.json
+
+# editor / tooling backups
+*.bak

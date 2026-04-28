@@ -19,6 +19,10 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
   },
   icons: {
+    icon: [
+      { url: '/icon-light-192.png', type: 'image/png', sizes: '192x192', media: '(prefers-color-scheme: light)' },
+      { url: '/icon-dark-192.png', type: 'image/png', sizes: '192x192', media: '(prefers-color-scheme: dark)' },
+    ],
     apple: '/apple-touch-icon.png',
   },
   other: {
@@ -33,22 +37,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="de-DE" suppressHydrationWarning>
-      <head>
-        <link
-          rel="icon"
-          type="image/png"
-          sizes="192x192"
-          href="/icon-light-192.png"
-          media="(prefers-color-scheme: light)"
-        />
-        <link
-          rel="icon"
-          type="image/png"
-          sizes="192x192"
-          href="/icon-dark-192.png"
-          media="(prefers-color-scheme: dark)"
-        />
-      </head>
       <body className="font-sans antialiased">
         <Providers>{children}</Providers>
       </body>

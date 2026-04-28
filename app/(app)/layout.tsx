@@ -1,6 +1,7 @@
 import { listNotes } from '@/lib/fsNotes';
 import { listTodos } from '@/lib/fsTodos';
-import { getUserDataDir, isAuthEnabled } from '@/lib/auth';
+import { getUserDataDir, isAuthEnabled, NoUsersConfiguredError, UnauthorizedError } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,14 +20,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     const root = await getUserDataDir();
     [notes, todos] = await Promise.all([listNotes(root), listTodos(root)]);
   } catch (err) {
-    // Auth failure — redirect instead of showing empty shell
-    if (err instanceof Error && err.message.includes('Unauthorized')) {
-      const { redirect } = await import('next/navigation');
+    if (err instanceof UnauthorizedError) {
       redirect('/login');
     }
 
-    if (err instanceof Error && err.message.includes('No users configured')) {
-      const { redirect } = await import('next/navigation');
+    if (err instanceof NoUsersConfiguredError) {
       redirect('/setup');
     }
 

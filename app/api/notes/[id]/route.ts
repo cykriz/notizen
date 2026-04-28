@@ -2,7 +2,8 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { getNote, updateNote, deleteNote } from '@/lib/fsNotes';
-import { getUserDataDir } from '@/lib/auth';
+import { getUserSession } from '@/lib/auth';
+import { revokeShare } from '@/lib/fsShares';
 import { checkConflict, errorResponse, formatZodError, idempotentDelete } from '@/lib/apiHelpers';
 
 const UpdateNoteSchema = z.object({
@@ -18,7 +19,7 @@ interface RouteParams {
 
 export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
-    const root = await getUserDataDir();
+    const { root } = await getUserSession();
     const { id } = await params;
     const note = await getNote(id, root);
 
@@ -34,7 +35,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const root = await getUserDataDir();
+    const { root } = await getUserSession();
     const { id } = await params;
     const body: unknown = await request.json();
     const parsed = UpdateNoteSchema.safeParse(body);
@@ -54,15 +55,24 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     revalidatePath(`/notes/${id}`);
     return NextResponse.json(note);
   } catch (err) {
-    return errorResponse(err, { notFoundAs404: true });
+    return errorResponse(err);
   }
 }
 
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
-    const root = await getUserDataDir();
+    const { root, username } = await getUserSession();
     const { id } = await params;
     const response = await idempotentDelete(() => deleteNote(id, root));
+    // 200 covers both success and idempotent-not-found; both are fine to
+    // revoke for. Skip 5xx so a transient I/O error doesn't drop a still-
+    // valid share.
+    if (response.status === 200) {
+      await revokeShare(username, id).catch((err: unknown) => {
+        console.error('revokeShare failed', err);
+      });
+    }
+
     revalidatePath('/notes');
     return response;
   } catch (err) {

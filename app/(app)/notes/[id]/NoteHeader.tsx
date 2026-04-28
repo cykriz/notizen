@@ -9,8 +9,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { PREVIEW_EDIT } from '@/lib/constants';
 import type { PreviewMode } from '@/lib/types';
 import { TagInput } from './TagInput';
+import { ShareNoteButton } from './ShareNoteButton';
 
 interface NoteHeaderProps {
+  noteId: string;
   title: string;
   onTitleChange: (title: string) => void;
   preview: PreviewMode;
@@ -28,6 +30,7 @@ interface NoteHeaderProps {
 }
 
 export const NoteHeader = memo(function NoteHeader({
+  noteId,
   title,
   onTitleChange,
   preview,
@@ -100,6 +103,7 @@ export const NoteHeader = memo(function NoteHeader({
           <Button onClick={onTogglePreview} size="icon-xs" variant="ghost">
             {preview === PREVIEW_EDIT ? <Eye /> : <Pencil />}
           </Button>
+          <ShareNoteButton noteId={noteId} key={noteId} />
           <Button onClick={onSave} disabled={saving || (!isDirty && !saved)} size="icon-xs" variant="ghost">
             {saving ? <Loader2 className="animate-spin" /> : <Save />}
           </Button>

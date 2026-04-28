@@ -58,7 +58,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     revalidatePath('/todos');
     return NextResponse.json(todo);
   } catch (err) {
-    return errorResponse(err, { notFoundAs404: true });
+    return errorResponse(err);
   }
 }
 

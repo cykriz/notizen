@@ -39,6 +39,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const attachment = await saveAttachment(id, file, root);
     return NextResponse.json(attachment, { status: 201 });
   } catch (err) {
-    return errorResponse(err, { notFoundAs404: true });
+    return errorResponse(err);
   }
 }

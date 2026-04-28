@@ -17,6 +17,7 @@ See `lib/types.ts` for full definitions. Key types:
 - Notes: `NOTES_ROOT/notes/YYYY-MM-DD-slug-uuid/note.md` + `attachments/`
 - Frontmatter in `note.md`: id, title, tags, pinned, createdAt, updatedAt
 - Todos: `NOTES_ROOT/todos.json` (single JSON array)
+- Shares: `NOTES_ROOT/.shares/shares.json` (single JSON registry, token → { username, noteId, preset, createdAt, expiresAt })
 
 ## Core Functions
 
@@ -34,6 +35,10 @@ See `lib/types.ts` for full definitions. Key types:
 - `lib/failedSyncQueue.ts` — permanently failed sync entries (exceeded retries / non-retryable)
 - `lib/offlineNotes.ts` / `lib/offlineTodos.ts` — offline support for notes and todos
 - `lib/offlineTagFolder.ts` — offline tag-folder deletion (deleteTagFolderOffline, stripFolderTags)
+- `lib/fsShares.ts` — share registry CRUD (upsertShare, revokeShare, getShare, getShareByNote)
+- `lib/fsSharesRegistry.ts` — share registry I/O + locking (read/write, prune, withSharesLock, removeUserShares)
+- `lib/shareTypes.ts` — `ShareRecord` and `SharePresetSchema` (shared by server actions and helpers)
+- `lib/shareContent.ts` — rewrite attachment URLs in shared note bodies (rewriteAttachmentUrlsForShare)
 
 ## API Routes
 
@@ -49,8 +54,21 @@ app/api/health/route.ts              → GET
 app/api/serwist/[...path]/route.ts   → service worker
 ```
 
+Public share routes (bypass proxy auth, registered in `proxy.ts` `PUBLIC_PREFIXES`; the proxy also sets `Cache-Control: private, max-age=0, must-revalidate` so revocation/expiry take effect immediately):
+
+```
+app/share/[token]/page.tsx                              → GET (read-only note view)
+app/share/[token]/attachments/[attId]/route.ts          → GET (read-only attachment download)
+```
+
+A valid share token grants read access to the shared note AND every attachment of that note (not only attIds referenced in the markdown body). attIds are 8 hex chars and only resolvable in the context of the share's note — the 256-bit token is the real gate.
+
 - NextRequest/NextResponse, Zod validation on every endpoint
 - Error shape: `{ error: string }`
+
+## Server Actions
+
+- `app/(app)/notes/[id]/shareActions.ts` — `upsertShareLinkAction(noteId, preset)`, `revokeShareLinkAction(noteId)`, `getShareInfoForNoteAction(noteId)`. All gated by `requireAuthSession()` and validate inputs with Zod. The share page is `dynamic = 'force-dynamic'`, so no `revalidatePath` is needed.
 
 ## Layout & Pages
 
@@ -60,6 +78,8 @@ app/api/serwist/[...path]/route.ts   → service worker
 - `app/(app)/todos/page.tsx` — Eisenhower Matrix (2x2 grid)
 - `app/(app)/offline/page.tsx` — Offline fallback page
 - `app/(app)/error.tsx` — Error boundary
+- `app/share/[token]/page.tsx` — Public read-only shared note view (no `loading.tsx`: a Suspense boundary would flush 200 headers before `notFound()` could set 404)
+- `app/share/layout.tsx`, `app/share/error.tsx`, `app/share/not-found.tsx` — share segment overrides (suppress PWA metadata, render anonymous error / 404 UI)
 - Mobile: bottom tab bar via MobileBottomNav (`md:hidden`)
 
 ## Key Components
@@ -74,6 +94,7 @@ app/api/serwist/[...path]/route.ts   → service worker
 | SyncStatusIndicator | `components/SyncStatusIndicator.tsx` — offline sync status |
 | AttachmentList | `components/AttachmentList.tsx` — display note attachments |
 | FileUpload | `components/FileUpload.tsx` — file upload UI |
+| NoteOutline | `components/NoteOutline.tsx` — heading-based outline, shared by editor and share view |
 | ThemeToggle | `components/ThemeToggle.tsx` — dark/light theme switch |
 | AppSidebar | `app/(app)/AppSidebar.tsx` — tabs for Notizen/Aufgaben |
 | NotesSidebarContent | `app/(app)/NotesSidebarContent.tsx` — pinned + Tags/Alle toggle |
@@ -89,10 +110,13 @@ app/api/serwist/[...path]/route.ts   → service worker
 | CommandPaletteClient | `app/(app)/CommandPaletteClient.tsx` — client-side command palette |
 | NoteEditor | `app/(app)/notes/[id]/NoteEditor.tsx` — note editing logic |
 | NoteHeader | `app/(app)/notes/[id]/NoteHeader.tsx` — note header component |
-| NoteOutline | `app/(app)/notes/[id]/NoteOutline.tsx` — note outline/structure |
 | NotePageClient | `app/(app)/notes/[id]/NotePageClient.tsx` — note page client logic |
 | TagInput | `app/(app)/notes/[id]/TagInput.tsx` — tag editing with autocomplete |
 | TagBadge | `app/(app)/notes/[id]/TagBadge.tsx` — tag display badge |
+| ShareNoteButton | `app/(app)/notes/[id]/ShareNoteButton.tsx` — popover to create/revoke share link |
+| ShareNoteBody | `app/(app)/notes/[id]/ShareNoteBody.tsx` — share popover body (fetch state, copy link, expiry display, revoke) |
+| useShareInfo | `app/(app)/notes/[id]/useShareInfo.ts` — hook orchestrating share state lifecycle (fetch, create, revoke, change preset) |
+| SharedNoteView | `app/share/[token]/SharedNoteView.tsx` — public read-only note renderer |
 | EisenhowerMatrix | `app/(app)/todos/EisenhowerMatrix.tsx` — 2x2 grid |
 | TodoDialog | `app/(app)/todos/TodoDialog.tsx` — create/edit with note linking |
 | QuadrantCard | `app/(app)/todos/QuadrantCard.tsx` — quadrant card |
@@ -102,4 +126,4 @@ app/api/serwist/[...path]/route.ts   → service worker
 
 ## Installed shadcn/ui Components
 
-button, card, input, dialog, textarea, badge, sidebar, separator, sheet, tooltip, skeleton, checkbox, select, command
+button, card, input, dialog, textarea, badge, sidebar, separator, sheet, tooltip, skeleton, checkbox, select, command, popover

@@ -4,6 +4,7 @@ import matter from 'gray-matter';
 import type { Note, NoteSummary } from './types';
 import { listAttachments } from './fsAttachments';
 import {
+  NotFoundError,
   notesDir,
   noteDir,
   noteMdPath,
@@ -18,7 +19,13 @@ import {
 } from './fsHelpers';
 
 export type { Note, NoteSummary, Attachment } from './types';
-export { listAttachments, saveAttachment, deleteAttachment, getAttachmentFilePath } from './fsAttachments';
+export { NotFoundError } from './fsHelpers';
+export {
+  listAttachments,
+  saveAttachment,
+  deleteAttachment,
+  getAttachmentFilePath,
+} from './fsAttachments';
 
 function parseTags(raw: unknown): string[] {
   return Array.isArray(raw) ? raw.filter((t): t is string => typeof t === 'string') : [];
@@ -138,7 +145,7 @@ export async function updateNote(
   return await withNoteLock(id, async () => {
     const existing = await getNote(id, root);
     if (!existing) {
-      throw new Error(`Note not found: ${id}`);
+      throw new NotFoundError(`Note not found: ${id}`);
     }
 
     const newTitle = input.title ?? existing.title;
@@ -187,7 +194,7 @@ export async function deleteNote(id: string, root: string): Promise<void> {
   await withNoteLock(id, async () => {
     const existing = await getNote(id, root);
     if (!existing) {
-      throw new Error(`Note not found: ${id}`);
+      throw new NotFoundError(`Note not found: ${id}`);
     }
 
     await fs.rm(noteDir(existing.slug, root), { recursive: true, force: true });

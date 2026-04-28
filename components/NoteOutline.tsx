@@ -4,23 +4,45 @@ import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
-interface HeadingItem {
+export interface HeadingItem {
   level: number;
   text: string;
   line: number;
 }
 
 interface NoteOutlineProps {
-  content: string;
-  onHeadingClick?: (line: number) => void;
+  content?: string;
+  // Pre-extracted headings; pass these to avoid scanning `content` twice when
+  // the parent already needs them (e.g. to gate a wrapper element).
+  headings?: HeadingItem[];
+  // index is the heading's position in document order — useful for callers
+  // that want to scroll a rendered preview without recounting headings.
+  onHeadingClick?: (line: number, index: number) => void;
   className?: string;
 }
 
-function extractHeadings(markdown: string): HeadingItem[] {
+export function extractHeadings(markdown: string): HeadingItem[] {
   const lines = markdown.split('\n');
   const headings: HeadingItem[] = [];
+  let fence: string | null = null;
 
   for (let i = 0; i < lines.length; i++) {
+    const fenceMatch = /^(```+|~~~+)/.exec(lines[i]);
+    if (fenceMatch) {
+      const marker = fenceMatch[1];
+      if (fence === null) {
+        fence = marker[0];
+      } else if (marker.startsWith(fence)) {
+        fence = null;
+      }
+
+      continue;
+    }
+
+    if (fence !== null) {
+      continue;
+    }
+
     const match = /^(#{1,6})\s+(.+)$/.exec(lines[i]);
     if (match) {
       headings.push({
@@ -43,8 +65,11 @@ const LEVEL_INDENT: Record<number, string> = {
   6: 'pl-19',
 };
 
-export function NoteOutline({ content, onHeadingClick, className }: NoteOutlineProps) {
-  const headings = useMemo(() => extractHeadings(content), [content]);
+export function NoteOutline({ content, headings: providedHeadings, onHeadingClick, className }: NoteOutlineProps) {
+  const headings = useMemo(
+    () => providedHeadings ?? extractHeadings(content ?? ''),
+    [providedHeadings, content],
+  );
 
   if (headings.length === 0) {
     return (
@@ -69,7 +94,7 @@ export function NoteOutline({ content, onHeadingClick, className }: NoteOutlineP
               )}
               title={heading.text}
               onClick={() => {
-                onHeadingClick?.(heading.line);
+                onHeadingClick?.(heading.line, idx);
               }}
             >
               <span className="truncate">{heading.text}</span>

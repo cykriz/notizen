@@ -1,7 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
 import path from 'path';
 
-const testNotesRoot = path.join(process.cwd(), `.test-notes-pw-${process.pid}`);
+// Stabilize the notes-root path across Playwright processes: the runner and
+// each worker all evaluate this file, but have different PIDs. Storing the
+// computed path in an env var lets workers inherit the runner's value.
+const testNotesRoot =
+  process.env.NOTIZEN_E2E_NOTES_ROOT ??
+  path.join(process.cwd(), `.test-notes-pw-${process.pid}`);
+process.env.NOTIZEN_E2E_NOTES_ROOT = testNotesRoot;
 
 export const TEST_NOTES_ROOT = testNotesRoot;
 export const TEST_USER = { username: 'testuser', password: 'testpass123' };

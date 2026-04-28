@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import type { Todo, TodoQuadrant } from './types';
-import { ensureDir, withTodosLock } from './fsHelpers';
+import { NotFoundError, ensureDir, withTodosLock } from './fsHelpers';
 
 export type { Todo, TodoQuadrant } from './types';
 
@@ -85,7 +85,7 @@ export async function updateTodo(id: string, input: UpdateTodoInput, root: strin
     const todos = await readTodos(root);
     const idx = todos.findIndex((t) => t.id === id);
     if (idx === -1) {
-      throw new Error(`Todo not found: ${id}`);
+      throw new NotFoundError(`Todo not found: ${id}`);
     }
 
     const existing = todos[idx];
@@ -106,7 +106,7 @@ export async function deleteTodo(id: string, root: string): Promise<void> {
     const todos = await readTodos(root);
     const idx = todos.findIndex((t) => t.id === id);
     if (idx === -1) {
-      throw new Error(`Todo not found: ${id}`);
+      throw new NotFoundError(`Todo not found: ${id}`);
     }
 
     todos.splice(idx, 1);

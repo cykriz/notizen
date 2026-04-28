@@ -1,11 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { AUTH_COOKIE_NAME } from '@/lib/constants';
+import { AUTH_COOKIE_NAME, SHARE_CACHE_CONTROL, SHARE_PATH_PREFIX } from '@/lib/constants';
 import { isAuthEnabled, getUser, getPasswordHashPrefix } from '@/lib/users';
 import { verifySessionCookie } from '@/lib/auth';
 
 const PUBLIC_PREFIXES = [
   '/login',
   '/setup',
+  SHARE_PATH_PREFIX,
   '/_next/',
   '/serwist/',
   '/manifest.webmanifest',
@@ -22,6 +23,19 @@ function isPublicPath(pathname: string): boolean {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   if (isPublicPath(pathname)) {
+    if (pathname.startsWith(SHARE_PATH_PREFIX)) {
+      // Verified on Next 16.1.6 (2026-04-26): mutating headers on the
+      // NextResponse.next() return value DOES propagate to the HTTP response
+      // sent to the client (covered by the "share page response carries
+      // Cache-Control" e2e test in share-note.spec.ts).
+      // Token validity is checked downstream — invalid/expired tokens fall
+      // through to the page's `notFound()`, which renders app/share/not-found.tsx
+      // with status 404.
+      const response = NextResponse.next();
+      response.headers.set('Cache-Control', SHARE_CACHE_CONTROL);
+      return response;
+    }
+
     return NextResponse.next();
   }
 

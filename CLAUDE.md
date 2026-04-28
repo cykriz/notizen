@@ -18,9 +18,9 @@ Next.js 16 + React 19 + Bun + TypeScript (strict) + Tailwind v4 + shadcn/ui. Fil
 ## Key Rules
 
 - All user-facing text in **German**
-- Max 200 lines per file — split if exceeded
+- Max 200 lines per file — split if exceeded (excludes test files: `*.spec.ts`, `*.test.ts`)
 - `NOTES_ROOT` env var points to data directory
-- `revalidatePath()` after mutations
+- `revalidatePath()` after mutations (skip on `dynamic = 'force-dynamic'` pages — they rebuild every request)
 - No database, no experimental Next.js features, no new packages without updating this file
 - When a missing type definition or API is needed, propose installing a proper package — never write manual shims or workarounds when a package exists. Update this file when adding a package.
 - Every imported package must be a **direct dependency** in `package.json` — never rely on transitive deps (they break in clean Docker installs)

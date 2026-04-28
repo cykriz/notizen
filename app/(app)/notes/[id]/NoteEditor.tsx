@@ -12,7 +12,7 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } f
 import { DeleteNoteDialog } from '../../DeleteNoteDialog';
 import { useData } from '../../DataProvider';
 import { NoteHeader } from './NoteHeader';
-import { NoteOutline } from './NoteOutline';
+import { NoteOutline, extractHeadings } from '@/components/NoteOutline';
 
 interface NoteEditorProps {
   note: Note;
@@ -32,6 +32,7 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const deferredContent = useDeferredValue(content);
+  const headings = useMemo(() => extractHeadings(deferredContent), [deferredContent]);
   const nonImageAttachments = useMemo(() => attachments.filter((a) => !a.mimeType.startsWith('image/')), [attachments]);
 
   const saveContent = useCallback(
@@ -138,8 +139,7 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
   }, [preview]);
 
   useEffect(() => {
-    const headingCount = (initial.content.match(/^#{1,6}\s+.+$/gm) ?? []).length;
-    if (headingCount < 2) {
+    if (extractHeadings(initial.content).length < 2) {
       return;
     }
 
@@ -179,6 +179,7 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <NoteHeader
+        noteId={note.id}
         title={title}
         onTitleChange={handleTitleChange}
         preview={preview}
@@ -197,7 +198,7 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {outlineVisible && (
           <aside className="hidden md:flex flex-col w-56 shrink-0">
-            <NoteOutline content={deferredContent} onHeadingClick={handleHeadingClick} className="flex-1 min-h-0" />
+            <NoteOutline headings={headings} onHeadingClick={handleHeadingClick} className="flex-1 min-h-0" />
           </aside>
         )}
         <MarkdownEditor

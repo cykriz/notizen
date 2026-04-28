@@ -1,4 +1,9 @@
 import { type Page, expect } from "@playwright/test";
+import fs from "fs/promises";
+import path from "path";
+import { TEST_NOTES_ROOT } from "../playwright.config";
+import { SHARES_DIR, SHARES_FILE } from "../../lib/constants";
+import type { ShareEntry } from "../../lib/fsSharesRegistry";
 
 /** Wait for the auto-save PUT to /api/notes/ to complete successfully. */
 export async function waitForSave(page: Page): Promise<void> {
@@ -59,6 +64,35 @@ export function noteIdFromUrl(url: string): string {
   const match = /\/notes\/([^/?#]+)/.exec(url);
   if (!match) throw new Error(`No note ID in URL: ${url}`);
   return match[1];
+}
+
+const SHARES_FILE_PATH = path.join(TEST_NOTES_ROOT, SHARES_DIR, SHARES_FILE);
+
+/** Wipe the central share registry. Use in beforeEach to prevent cross-test leakage. */
+export async function deleteAllShares(): Promise<void> {
+  await fs.rm(SHARES_FILE_PATH, { force: true });
+}
+
+/** Read the raw share registry. Returns empty object if missing. */
+export async function readShareRegistry(): Promise<Record<string, ShareEntry>> {
+  try {
+    const raw = await fs.readFile(SHARES_FILE_PATH, "utf-8");
+    return JSON.parse(raw) as Record<string, ShareEntry>;
+  } catch {
+    return {};
+  }
+}
+
+/** Overwrite a single share's expiresAt. Used to force expiry without time-travel. */
+export async function setShareExpiry(token: string, expiresAt: string): Promise<void> {
+  const registry = await readShareRegistry();
+  const entry = registry[token];
+  if (!entry) {
+    throw new Error(`Share token not found in registry: ${token}`);
+  }
+  registry[token] = { ...entry, expiresAt };
+  await fs.mkdir(path.dirname(SHARES_FILE_PATH), { recursive: true });
+  await fs.writeFile(SHARES_FILE_PATH, JSON.stringify(registry, null, 2), "utf-8");
 }
 
 /** Delete all notes via the API and clear localStorage so tests

@@ -12,6 +12,6 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     await deleteAttachment(id, attId, root);
     return NextResponse.json({ success: true });
   } catch (err) {
-    return errorResponse(err, { notFoundAs404: true });
+    return errorResponse(err);
   }
 }

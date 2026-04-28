@@ -3,8 +3,8 @@ import path from 'path';
 import crypto from 'crypto';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { getNotesRoot } from './fsHelpers';
-import { AUTH_COOKIE_NAME, AUTH_COOKIE_MAX_AGE, AUTH_DIR, AUTH_SECRET_FILE, USERS_DATA_DIR } from './constants';
+import { getNotesRoot, userRootFor } from './fsHelpers';
+import { AUTH_COOKIE_NAME, AUTH_COOKIE_MAX_AGE, AUTH_DIR, AUTH_SECRET_FILE } from './constants';
 import { isAuthEnabled, getUser, getPasswordHashPrefix } from './users';
 
 function secretFilePath(): string {
@@ -146,28 +146,59 @@ export async function getSessionUsername(): Promise<string | null> {
   return session.username;
 }
 
-export async function getUserDataDir(): Promise<string> {
+export class UnauthorizedError extends Error {
+  constructor() {
+    super('Unauthorized');
+    this.name = 'UnauthorizedError';
+  }
+}
+
+export class NoUsersConfiguredError extends Error {
+  constructor() {
+    super('No users configured');
+    this.name = 'NoUsersConfiguredError';
+  }
+}
+
+export async function getUserSession(): Promise<{ root: string; username: string }> {
   const username = await getSessionUsername();
   if (username !== null) {
-    return path.join(getNotesRoot(), USERS_DATA_DIR, username);
+    return { root: userRootFor(username), username };
   }
 
   const enabled = await isAuthEnabled();
   if (enabled) {
-    throw new Error('Unauthorized');
+    throw new UnauthorizedError();
   }
 
-  // No users configured — proxy blocks access, but this is a safety fallback.
-  throw new Error('No users configured');
+  throw new NoUsersConfiguredError();
 }
 
-/** getUserDataDir with redirect to /login on auth failure. Use in server actions. */
-export async function requireAuth(): Promise<string> {
+export async function getUserDataDir(): Promise<string> {
+  return (await getUserSession()).root;
+}
+
+/** getUserSession with redirect to /login (or /setup if no users exist) on
+ *  auth failure. Non-auth errors (e.g. transient I/O) propagate to the
+ *  nearest error boundary. */
+export async function requireAuthSession(): Promise<{ root: string; username: string }> {
   try {
-    return await getUserDataDir();
-  } catch {
-    redirect('/login');
+    return await getUserSession();
+  } catch (err) {
+    if (err instanceof NoUsersConfiguredError) {
+      redirect('/setup');
+    }
+
+    if (err instanceof UnauthorizedError) {
+      redirect('/login');
+    }
+
+    throw err;
   }
+}
+
+export async function requireAuth(): Promise<string> {
+  return (await requireAuthSession()).root;
 }
 
 export { isAuthEnabled } from './users';

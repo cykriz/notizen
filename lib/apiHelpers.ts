@@ -1,19 +1,21 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import type { z } from 'zod';
+import { NotFoundError } from './fsHelpers';
+import { UnauthorizedError } from './auth';
 
 /** Extract a human-readable message from an unknown caught value. */
 export function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : 'Unknown error';
 }
 
-/** Return a JSON error response, mapping "not found" messages to 404. */
-export function errorResponse(err: unknown, { notFoundAs404 = false } = {}): NextResponse {
+/** Return a JSON error response. NotFoundError → 404, UnauthorizedError → 401. */
+export function errorResponse(err: unknown): NextResponse {
   const message = errorMessage(err);
   let status = 500;
-  if (message.includes('Unauthorized')) {
-    status = 401;
-  } else if (notFoundAs404 && message.includes('not found')) {
+  if (err instanceof NotFoundError) {
     status = 404;
+  } else if (err instanceof UnauthorizedError) {
+    status = 401;
   }
 
   return NextResponse.json({ error: message }, { status });
@@ -49,18 +51,17 @@ export async function checkConflict<T extends { updatedAt: string }>(
 }
 
 /**
- * Idempotent delete: if the underlying delete throws "not found", treat it as success.
+ * Idempotent delete: if the underlying delete throws NotFoundError, treat it as success.
  */
 export async function idempotentDelete(deleteFn: () => Promise<void>): Promise<NextResponse> {
   try {
     await deleteFn();
   } catch (err) {
-    const message = errorMessage(err);
-    if (message.includes('not found')) {
+    if (err instanceof NotFoundError) {
       return NextResponse.json({ success: true });
     }
 
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 });
   }
   return NextResponse.json({ success: true });
 }
