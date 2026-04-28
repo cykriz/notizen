@@ -44,7 +44,7 @@ export function SharedNoteView({ title, content }: SharedNoteViewProps) {
   const { resolvedTheme } = useTheme();
   const mounted = useClientMounted();
   const previewScrollRef = useRef<HTMLDivElement>(null);
-  const colorMode = mounted ? resolvedTheme : undefined;
+  const colorMode = (mounted ? resolvedTheme : undefined) ?? 'light';
 
   const previewRemarkPlugins = useMemo(() => [remarkLooseListGaps], []);
 

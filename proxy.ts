@@ -6,7 +6,6 @@ import { verifySessionCookie } from '@/lib/auth';
 const PUBLIC_PREFIXES = [
   '/login',
   '/setup',
-  SHARE_PATH_PREFIX,
   '/_next/',
   '/serwist/',
   '/manifest.webmanifest',
@@ -14,6 +13,7 @@ const PUBLIC_PREFIXES = [
   '/api/health',
   '/offline',
   '/favicon.ico',
+  SHARE_PATH_PREFIX,
 ];
 
 function isPublicPath(pathname: string): boolean {
@@ -22,6 +22,7 @@ function isPublicPath(pathname: string): boolean {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
   if (isPublicPath(pathname)) {
     if (pathname.startsWith(SHARE_PATH_PREFIX)) {
       // Verified on Next 16.1.6 (2026-04-26): mutating headers on the
