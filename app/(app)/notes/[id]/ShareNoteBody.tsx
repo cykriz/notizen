@@ -52,12 +52,7 @@ export function ShareNoteBody({
   onCreate,
 }: ShareNoteBodyProps) {
   if (!fetched) {
-    return (
-      <>
-        <Skeleton className="h-9 w-full" />
-        <Skeleton className="h-9 w-full" />
-      </>
-    );
+    return <Skeleton className="h-9 w-full" />;
   }
 
   if (info) {
@@ -69,9 +64,7 @@ export function ShareNoteBody({
             {copied ? <Check /> : <Copy />}
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Gültig bis: {formatExpiresAt(info.expiresAt)}
-        </p>
+        <p className="text-xs text-muted-foreground">Gültig bis: {formatExpiresAt(info.expiresAt)}</p>
         <p className="text-xs text-muted-foreground min-h-4" aria-live="polite">
           {presetUpdated ? 'Gültigkeit aktualisiert' : ''}
         </p>

@@ -4,13 +4,9 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from '
 import { Share } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Popover, PopoverArrow, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-  DEFAULT_SHARE_EXPIRY,
-  SHARE_EXPIRY_LABELS,
-  type ShareExpiryPreset,
-} from '@/lib/constants';
+import { DEFAULT_SHARE_EXPIRY, SHARE_EXPIRY_LABELS, type ShareExpiryPreset } from '@/lib/constants';
 import { PRESET_KEYS } from '@/lib/shareTypes';
 import { ShareNoteBody } from './ShareNoteBody';
 import { useShareInfo } from './useShareInfo';
@@ -39,15 +35,12 @@ export function ShareNoteButton({ noteId }: { noteId: string }) {
     };
   }, []);
 
-  const handleOpenChange = useCallback(
-    (next: boolean) => {
-      setOpen(next);
-      if (!next) {
-        setUserPreset(null);
-      }
-    },
-    [],
-  );
+  const handleOpenChange = useCallback((next: boolean) => {
+    setOpen(next);
+    if (!next) {
+      setUserPreset(null);
+    }
+  }, []);
 
   const shareUrl = info && origin !== '' ? `${origin}/share/${info.token}` : '';
 
@@ -101,7 +94,8 @@ export function ShareNoteButton({ noteId }: { noteId: string }) {
           <Share />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 flex flex-col gap-3">
+      <PopoverContent align="end" sideOffset={-3} className="w-80 flex flex-col gap-3">
+        <PopoverArrow className="-translate-y-1/2" />
         <div className="flex flex-col gap-1">
           <p className="text-sm font-medium">Notiz teilen</p>
           <p className="text-xs text-muted-foreground">
