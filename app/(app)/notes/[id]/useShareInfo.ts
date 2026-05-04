@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import type { ShareExpiryPreset } from '@/lib/constants';
 import type { ShareRecord } from '@/lib/shareTypes';
+import { sharedNotesStore } from '../../sharedNotesStore';
 import {
   upsertShareLinkAction,
-  getShareInfoForNoteAction,
   revokeShareLinkAction,
-} from './shareActions';
+  getShareInfoForNoteAction,
+} from '../../shareActions';
 
 export interface UseShareInfoResult {
   info: ShareRecord | null;
@@ -130,6 +131,9 @@ export function useShareInfo(noteId: string, open: boolean): UseShareInfoResult 
           }
 
           resyncFromServer(opId);
+          // Mid-response failures may have applied server-side; reconcile the
+          // sidebar store so the badge doesn't lag behind reality.
+          void sharedNotesStore.refresh();
         }
       });
     },
@@ -142,6 +146,7 @@ export function useShareInfo(noteId: string, open: boolean): UseShareInfoResult 
         () => upsertShareLinkAction(noteId, preset),
         (result) => {
           setInfo(result);
+          sharedNotesStore.upsert({ ...result, noteId });
         },
         'Teilen-Link konnte nicht erstellt werden.',
       );
@@ -154,6 +159,7 @@ export function useShareInfo(noteId: string, open: boolean): UseShareInfoResult 
       () => revokeShareLinkAction(noteId),
       () => {
         setInfo(null);
+        sharedNotesStore.removeByNoteId(noteId);
         setPresetUpdated(false);
         if (presetUpdatedTimer.current) {
           clearTimeout(presetUpdatedTimer.current);
@@ -170,6 +176,7 @@ export function useShareInfo(noteId: string, open: boolean): UseShareInfoResult 
         () => upsertShareLinkAction(noteId, preset),
         (result) => {
           setInfo(result);
+          sharedNotesStore.upsert({ ...result, noteId });
           setPresetUpdated(true);
           if (presetUpdatedTimer.current) {
             clearTimeout(presetUpdatedTimer.current);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,6 +25,7 @@ interface DeleteNoteDialogProps {
 export function DeleteNoteDialog({ noteId, noteTitle, open, onOpenChange }: DeleteNoteDialogProps) {
   const { deleteNote } = useData();
   const router = useRouter();
+  const pathname = usePathname();
   const [deleting, setDeleting] = useState(false);
 
   return (
@@ -46,7 +47,9 @@ export function DeleteNoteDialog({ noteId, noteTitle, open, onOpenChange }: Dele
               setDeleting(true);
               void deleteNote(noteId)
                 .then(() => {
-                  router.push('/notes');
+                  if (pathname !== '/notes') {
+                    router.push('/notes');
+                  }
                 })
                 .catch(console.error)
                 .finally(() => {

@@ -29,6 +29,7 @@ import { getPendingCount } from '@/lib/syncQueue';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useDataSync } from '@/hooks/useDataSync';
 import { DataContext } from './dataContext';
+import { sharedNotesStore } from './sharedNotesStore';
 
 export { useData } from './dataContext';
 
@@ -55,6 +56,22 @@ export function DataProvider({ initialNotes, initialTodos, children }: DataProvi
     setNotes,
     setTodos,
   });
+
+  // Re-pull shares on the sync-queue drain edge so mutations applied during sync land in the sidebar.
+  // Only refresh once the store has been hydrated — users who never opened the dialog or shared
+  // anything keep `snapshot === null` and skip a server call after every sync drain.
+  const prevPendingSync = useRef(hasPendingSync);
+  useEffect(() => {
+    if (
+      prevPendingSync.current &&
+      !hasPendingSync &&
+      sharedNotesStore.getSnapshot() !== null
+    ) {
+      void sharedNotesStore.refresh();
+    }
+
+    prevPendingSync.current = hasPendingSync;
+  }, [hasPendingSync]);
 
   useEffect(() => {
     const cachedNotes = getCachedNotesList();
@@ -92,11 +109,25 @@ export function DataProvider({ initialNotes, initialTodos, children }: DataProvi
 
   const handleDeleteNote = useCallback(async (id: string) => {
     setNotes(await deleteNoteOffline(id, notesRef.current, isOnlineRef.current));
+    sharedNotesStore.removeByNoteId(id);
     syncPending();
   }, [syncPending]);
 
   const handleDeleteTagFolder = useCallback(async (path: string) => {
-    setNotes(await deleteTagFolderOffline(path, notesRef.current, isOnlineRef.current));
+    const before = notesRef.current;
+    const after = await deleteTagFolderOffline(path, before, isOnlineRef.current);
+    setNotes(after);
+    const survivingIds = new Set(after.map((n) => n.id));
+    for (const n of before) {
+      if (!survivingIds.has(n.id)) {
+        sharedNotesStore.removeByNoteId(n.id);
+      }
+    }
+
+    if (isOnlineRef.current) {
+      void sharedNotesStore.refresh();
+    }
+
     syncPending();
   }, [syncPending]);
 

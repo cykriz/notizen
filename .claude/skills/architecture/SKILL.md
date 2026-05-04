@@ -37,8 +37,11 @@ See `lib/types.ts` for full definitions. Key types:
 - `lib/offlineTagFolder.ts` — offline tag-folder deletion (deleteTagFolderOffline, stripFolderTags)
 - `lib/fsShares.ts` — share registry CRUD (upsertShare, revokeShare, getShare, getShareByNote)
 - `lib/fsSharesRegistry.ts` — share registry I/O + locking (read/write, prune, withSharesLock, removeUserShares)
-- `lib/shareTypes.ts` — `ShareRecord` and `SharePresetSchema` (shared by server actions and helpers)
+- `lib/fsSharesQuery.ts` — read-side share queries (`listSharesByUsername` returns `UserShareRecord[]`)
+- `lib/shareTypes.ts` — `ShareRecord`, `UserShareRecord`, and `SharePresetSchema` (shared by server actions and helpers)
+- `lib/shareFormat.ts` — share-link presentation helpers (`formatExpiresAt`, `buildShareUrl`)
 - `lib/shareContent.ts` — rewrite attachment URLs in shared note bodies (rewriteAttachmentUrlsForShare)
+- `app/(app)/sharedNotesStore.ts` — client store (`refresh`, `upsert`, `removeByNoteId`) for the current user's active shares
 
 ## API Routes
 
@@ -68,7 +71,7 @@ A valid share token grants read access to the shared note AND every attachment o
 
 ## Server Actions
 
-- `app/(app)/notes/[id]/shareActions.ts` — `upsertShareLinkAction(noteId, preset)`, `revokeShareLinkAction(noteId)`, `getShareInfoForNoteAction(noteId)`. All gated by `requireAuthSession()` and validate inputs with Zod. The share page is `dynamic = 'force-dynamic'`, so no `revalidatePath` is needed.
+- `app/(app)/shareActions.ts` — `upsertShareLinkAction(noteId, preset)`, `revokeShareLinkAction(noteId)`, `getShareInfoForNoteAction(noteId)`, `listSharedNotesAction()`. All gated by `requireAuthSession()` and validate inputs with Zod. The share page is `dynamic = 'force-dynamic'`, so no `revalidatePath` is needed.
 
 ## Layout & Pages
 
@@ -116,6 +119,10 @@ A valid share token grants read access to the shared note AND every attachment o
 | ShareNoteButton | `app/(app)/notes/[id]/ShareNoteButton.tsx` — popover to create/revoke share link |
 | ShareNoteBody | `app/(app)/notes/[id]/ShareNoteBody.tsx` — share popover body (fetch state, copy link, expiry display, revoke) |
 | useShareInfo | `app/(app)/notes/[id]/useShareInfo.ts` — hook orchestrating share state lifecycle (fetch, create, revoke, change preset) |
+| SharedNotesEntry | `app/(app)/SharedNotesEntry.tsx` — sidebar entry + badge that opens the shared-notes dialog (online-only, hidden in todos view) |
+| SharedNotesDialog | `app/(app)/SharedNotesDialog.tsx` — list dialog for all of a user's active share links (open / copy / revoke) |
+| SharedNotesList | `app/(app)/SharedNotesList.tsx` — presentational list rendered inside the dialog |
+| sharedNotesStore | `app/(app)/sharedNotesStore.ts` — `useSyncExternalStore` for current user's active shares (refresh, upsert, removeByNoteId) |
 | SharedNoteView | `app/share/[token]/SharedNoteView.tsx` — public read-only note renderer |
 | EisenhowerMatrix | `app/(app)/todos/EisenhowerMatrix.tsx` — 2x2 grid |
 | TodoDialog | `app/(app)/todos/TodoDialog.tsx` — create/edit with note linking |

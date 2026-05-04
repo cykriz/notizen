@@ -4,7 +4,7 @@ import { Check, Copy, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { SHARE_EXPIRY_LABELS } from '@/lib/constants';
+import { formatExpiresAt } from '@/lib/shareFormat';
 import type { ShareRecord } from '@/lib/shareTypes';
 
 export interface ShareNoteBodyProps {
@@ -18,17 +18,6 @@ export interface ShareNoteBodyProps {
   onCopy: () => void;
   onRevoke: () => void;
   onCreate: () => void;
-}
-
-function formatExpiresAt(expiresAt: string | null): string {
-  if (expiresAt === null) {
-    return SHARE_EXPIRY_LABELS.never;
-  }
-
-  return new Intl.DateTimeFormat('de-DE', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(expiresAt));
 }
 
 function ErrorMessage({ error }: { error: string | null }) {

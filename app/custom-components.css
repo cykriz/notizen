@@ -111,7 +111,7 @@
 }
 
 [data-color-mode] .wmde-markdown hr {
-  height: 1.5px;
+  height: 2px;
   border: none;
   background-color: var(--border);
 }

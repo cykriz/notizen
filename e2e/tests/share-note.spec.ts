@@ -198,6 +198,37 @@ test.describe("Share note", () => {
     await anonContext.close();
   });
 
+  test("sidebar entry lists active shares; revoke from dialog clears registry", async ({ page }) => {
+    await createNote(page, "Sidebar-Eintrag", "Inhalt");
+    const { token } = await createShareViaUI(page);
+
+    // Dismiss the share popover so it doesn't intercept sidebar clicks.
+    await page.keyboard.press("Escape");
+
+    const entry = page.getByRole("button", { name: "Geteilte Notizen" });
+    await expect(entry).toBeVisible({ timeout: 5_000 });
+    const entryBadge = page
+      .locator('[data-slot="sidebar-menu-item"]')
+      .filter({ has: entry })
+      .locator('[data-slot="sidebar-menu-badge"]');
+    await expect(entryBadge).toHaveText("1");
+
+    await entry.click();
+
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("heading", { name: "Geteilte Notizen" })).toBeVisible();
+    await expect(dialog.getByText("Sidebar-Eintrag")).toBeVisible();
+
+    await dialog.getByRole("button", { name: "Widerrufen" }).click();
+    await expect(dialog.getByText("Du hast keine Notizen geteilt.")).toBeVisible();
+
+    await page.keyboard.press("Escape");
+    await expect(entry).toHaveCount(0);
+
+    const registry = await readShareRegistry();
+    expect(registry[token]).toBeUndefined();
+  });
+
   test("share page response carries Cache-Control: must-revalidate", async ({ page, browser }) => {
     await createNote(page, "Cache Header", "Inhalt");
     const { url } = await createShareViaUI(page);

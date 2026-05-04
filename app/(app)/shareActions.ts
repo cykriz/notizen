@@ -3,8 +3,9 @@
 import { z } from 'zod';
 import { getNote, NotFoundError } from '@/lib/fsNotes';
 import { requireAuthSession } from '@/lib/auth';
-import { upsertShare, getShareByNote, revokeShare, type ShareRecord } from '@/lib/fsShares';
-import { SharePresetSchema } from '@/lib/shareTypes';
+import { upsertShare, getShareByNote, revokeShare } from '@/lib/fsShares';
+import { listSharesByUsername } from '@/lib/fsSharesQuery';
+import { SharePresetSchema, type ShareRecord, type UserShareRecord } from '@/lib/shareTypes';
 import { DEFAULT_SHARE_EXPIRY, type ShareExpiryPreset } from '@/lib/constants';
 
 const NoteIdSchema = z.uuid();
@@ -43,4 +44,9 @@ export async function getShareInfoForNoteAction(noteId: string): Promise<ShareRe
   const { username } = await requireAuthSession();
 
   return await getShareByNote(username, validNoteId);
+}
+
+export async function listSharedNotesAction(): Promise<UserShareRecord[]> {
+  const { username } = await requireAuthSession();
+  return await listSharesByUsername(username);
 }

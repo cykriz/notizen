@@ -1,13 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useState, useSyncExternalStore } from 'react';
 import { Share } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverArrow, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DEFAULT_SHARE_EXPIRY, SHARE_EXPIRY_LABELS, type ShareExpiryPreset } from '@/lib/constants';
+import { buildShareUrl } from '@/lib/shareFormat';
 import { PRESET_KEYS } from '@/lib/shareTypes';
+import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
 import { ShareNoteBody } from './ShareNoteBody';
 import { useShareInfo } from './useShareInfo';
 
@@ -16,24 +18,18 @@ const noopSubscribe = () => noopUnsubscribe;
 const getClientOrigin = () => window.location.origin;
 const getServerOrigin = () => '';
 
+const COPY_KEY = 'share-link';
+
 export function ShareNoteButton({ noteId }: { noteId: string }) {
   const [open, setOpen] = useState(false);
   const [userPreset, setUserPreset] = useState<ShareExpiryPreset | null>(null);
-  const [copied, setCopied] = useState(false);
   const origin = useSyncExternalStore(noopSubscribe, getClientOrigin, getServerOrigin);
-  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { copiedKey, copy, reset: resetCopied } = useCopyToClipboard();
+  const copied = copiedKey === COPY_KEY;
 
   const { info, fetched, pending, presetUpdated, error, create, revoke, changePreset } = useShareInfo(noteId, open);
 
   const preset: ShareExpiryPreset = userPreset ?? info?.preset ?? DEFAULT_SHARE_EXPIRY;
-
-  useEffect(() => {
-    return () => {
-      if (copiedTimer.current) {
-        clearTimeout(copiedTimer.current);
-      }
-    };
-  }, []);
 
   const handleOpenChange = useCallback((next: boolean) => {
     setOpen(next);
@@ -42,7 +38,7 @@ export function ShareNoteButton({ noteId }: { noteId: string }) {
     }
   }, []);
 
-  const shareUrl = info && origin !== '' ? `${origin}/share/${info.token}` : '';
+  const shareUrl = info && origin !== '' ? buildShareUrl(origin, info.token) : '';
 
   const handleCreate = useCallback(() => {
     create(preset);
@@ -50,8 +46,8 @@ export function ShareNoteButton({ noteId }: { noteId: string }) {
 
   const handleRevoke = useCallback(() => {
     revoke();
-    setCopied(false);
-  }, [revoke]);
+    resetCopied();
+  }, [revoke, resetCopied]);
 
   const handlePresetChange = useCallback(
     (value: string) => {
@@ -65,27 +61,12 @@ export function ShareNoteButton({ noteId }: { noteId: string }) {
   );
 
   const handleCopy = useCallback(() => {
-    // Spec types navigator.clipboard as always present, but it's undefined
-    // in non-secure contexts (HTTP, older browsers).
-    if (shareUrl === '' || !('clipboard' in navigator)) {
+    if (shareUrl === '') {
       return;
     }
 
-    void navigator.clipboard
-      .writeText(shareUrl)
-      .then(() => {
-        setCopied(true);
-        if (copiedTimer.current) {
-          clearTimeout(copiedTimer.current);
-        }
-
-        copiedTimer.current = setTimeout(() => {
-          setCopied(false);
-          copiedTimer.current = null;
-        }, 1500);
-      })
-      .catch(console.error);
-  }, [shareUrl]);
+    void copy(COPY_KEY, shareUrl);
+  }, [copy, shareUrl]);
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>

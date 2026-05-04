@@ -22,6 +22,7 @@ import { tagNavigationStore } from './tagNavigationStore';
 import { viewStore } from './viewStore';
 import { NotesSidebarContent } from './NotesSidebarContent';
 import { NotesSidebarFooter } from './NotesSidebarFooter';
+import { SharedNotesEntry } from './SharedNotesEntry';
 import { TagNavigation } from './TagNavigation';
 import { TodosSidebarContent } from './TodosSidebarContent';
 import { useData } from './DataProvider';
@@ -161,6 +162,8 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
       </SidebarHeader>
 
       <div ref={setSwipeEl} className="flex min-h-0 flex-1 flex-col gap-2">
+        <SharedNotesEntry hidden={isTodos} />
+
         {!isTodos && view === 'tags' && (
           <TagNavigation
             notes={notes}

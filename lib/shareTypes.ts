@@ -14,6 +14,10 @@ export interface ShareRecord {
   expiresAt: string | null;
 }
 
+export interface UserShareRecord extends ShareRecord {
+  noteId: string;
+}
+
 export interface ShareLookup {
   username: string;
   noteId: string;
