@@ -63,7 +63,7 @@ export function SharedNoteView({ title, content }: SharedNoteViewProps) {
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col h-dvh">
       <Card className="shrink-0 gap-0 py-0 shadow-panel z-10 mx-2 mt-2">
         <CardContent className="note-section-padding flex items-center gap-3">
           <h1 className="flex-1 min-w-0 truncate text-xl md:text-2xl font-semibold">
@@ -88,7 +88,7 @@ export function SharedNoteView({ title, content }: SharedNoteViewProps) {
           data-color-mode={colorMode}
           className="w-full flex-1 min-w-0 min-h-0 flex flex-col"
         >
-          <div ref={previewScrollRef} className="h-full overflow-y-auto">
+          <div ref={previewScrollRef} className="h-full overflow-y-auto overscroll-contain">
             {/* XSS gate: @uiw/react-markdown-preview overrides
                 react-markdown's URL allowlist with a pass-through, so we
                 must pass our own urlTransform to block javascript:/data:/etc.

@@ -217,7 +217,7 @@ export const MarkdownEditor = memo(
           />
         ) : (
           <PreviewCheckboxContext.Provider value={checkboxCtx}>
-            <div ref={previewScrollRef} className="h-full overflow-y-auto cursor-text" onClick={handlePreviewClick}>
+            <div ref={previewScrollRef} className="h-full overflow-y-auto overscroll-contain cursor-text" onClick={handlePreviewClick}>
               <MarkdownPreview source={value} components={previewComponents} remarkPlugins={previewRemarkPlugins} />
             </div>
           </PreviewCheckboxContext.Provider>
