@@ -42,6 +42,7 @@ See `lib/types.ts` for full definitions. Key types:
 - `lib/shareFormat.ts` — share-link presentation helpers (`formatExpiresAt`, `buildShareUrl`)
 - `lib/shareContent.ts` — rewrite attachment URLs in shared note bodies (rewriteAttachmentUrlsForShare)
 - `app/(app)/sharedNotesStore.ts` — client store (`refresh`, `upsert`, `removeByNoteId`) for the current user's active shares
+- `app/(app)/navTabs.ts` — shared `NAV_TABS` (route + label + icon) and `isTabActive(href, pathname)` used by sidebar header and mobile bottom nav
 
 ## API Routes
 
@@ -99,7 +100,8 @@ A valid share token grants read access to the shared note AND every attachment o
 | FileUpload | `components/FileUpload.tsx` — file upload UI |
 | NoteOutline | `components/NoteOutline.tsx` — heading-based outline, shared by editor and share view |
 | ThemeToggle | `components/ThemeToggle.tsx` — dark/light theme switch |
-| AppSidebar | `app/(app)/AppSidebar.tsx` — tabs for Notizen/Aufgaben |
+| AppSidebar | `app/(app)/AppSidebar.tsx` — sidebar shell, double-click-to-create, swipe-back |
+| AppSidebarHeader | `app/(app)/AppSidebarHeader.tsx` — tabs (Notizen/Aufgaben), sync indicator, logout |
 | NotesSidebarContent | `app/(app)/NotesSidebarContent.tsx` — pinned + Tags/Alle toggle |
 | TodosSidebarContent | `app/(app)/TodosSidebarContent.tsx` — todos sidebar content |
 | TagBrowser | `app/(app)/TagBrowser.tsx` — folder-style drill-down |

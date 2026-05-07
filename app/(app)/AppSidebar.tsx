@@ -1,25 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { FileText, ListChecks, LogOut } from 'lucide-react';
-import {
-  Sidebar,
-  SidebarHeader,
-  SidebarContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  useSidebar,
-} from '@/components/ui/sidebar';
-import { Button } from '@/components/ui/button';
-import { SyncStatusIndicator } from '@/components/SyncStatusIndicator';
+import { Sidebar, SidebarContent, useSidebar } from '@/components/ui/sidebar';
 import { DEFAULT_NOTE_TITLE } from '@/lib/constants';
 import { useSwipeBack } from '@/hooks/useSwipeBack';
-import { logoutAction } from '@/app/login/actions';
 import { tagNavigationStore } from './tagNavigationStore';
 import { viewStore } from './viewStore';
+import { isTabActive } from './navTabs';
+import { AppSidebarHeader } from './AppSidebarHeader';
 import { NotesSidebarContent } from './NotesSidebarContent';
 import { NotesSidebarFooter } from './NotesSidebarFooter';
 import { SharedNotesEntry } from './SharedNotesEntry';
@@ -27,11 +16,6 @@ import { TagNavigation } from './TagNavigation';
 import { TodosSidebarContent } from './TodosSidebarContent';
 import { useData } from './DataProvider';
 import { extractNoteId, getNoteTagPath } from '@/lib/noteUtils';
-
-const tabs = [
-  { href: '/notes', label: 'Notizen', icon: FileText },
-  { href: '/todos', label: 'Aufgaben', icon: ListChecks },
-] as const;
 
 interface AppSidebarProps {
   authEnabled: boolean;
@@ -42,7 +26,7 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
   const { isMobile, setOpenMobile } = useSidebar();
   const pathname = usePathname();
   const router = useRouter();
-  const isTodos = pathname.startsWith('/todos');
+  const isTodos = isTabActive('/todos', pathname);
 
   const noteId = extractNoteId(pathname);
   const [tagState, setTagState] = useState(() => ({
@@ -111,6 +95,27 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
       });
   }, [createNote, router, currentTagPath, setOpenMobile]);
 
+  const handleSidebarDoubleClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const target = e.target instanceof Element ? e.target : null;
+      if (!target) {
+        return;
+      }
+
+      const interactive = target.closest(
+        'a, button, input, textarea, select, label, [role="button"], [role="link"], [role="menuitem"], [role="checkbox"], [role="option"], [role="tab"], [role="treeitem"], [contenteditable="true"]',
+      );
+      if (interactive) {
+        return;
+      }
+
+      // dblclick selects the word under the cursor — clear it so the new note opens with no stray selection
+      window.getSelection()?.removeAllRanges();
+      handleCreate();
+    },
+    [handleCreate],
+  );
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey)) {
@@ -134,34 +139,13 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
 
   return (
     <Sidebar variant="floating">
-      <SidebarHeader className="gap-3">
-        <div className="flex items-center gap-3">
-          <SidebarMenu className="flex-row gap-1">
-            {tabs.map((tab) => (
-              <SidebarMenuItem key={tab.href}>
-                <SidebarMenuButton asChild isActive={tab.href === '/todos' ? isTodos : !isTodos} size="sm">
-                  <Link href={tab.href}>
-                    <tab.icon />
-                    <span>{tab.label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-          <div className="ml-auto flex shrink-0 items-center gap-1">
-            <SyncStatusIndicator />
-            {authEnabled && (
-              <form action={logoutAction}>
-                <Button type="submit" variant="ghost" size="icon-xs" title="Abmelden">
-                  <LogOut />
-                </Button>
-              </form>
-            )}
-          </div>
-        </div>
-      </SidebarHeader>
+      <AppSidebarHeader authEnabled={authEnabled} pathname={pathname} />
 
-      <div ref={setSwipeEl} className="flex min-h-0 flex-1 flex-col gap-2">
+      <div
+        ref={setSwipeEl}
+        onDoubleClick={isTodos || isMobile ? undefined : handleSidebarDoubleClick}
+        className="flex min-h-0 flex-1 flex-col gap-2"
+      >
         <SharedNotesEntry hidden={isTodos} />
 
         {!isTodos && view === 'tags' && (

@@ -1,15 +1,10 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { FileText, ListChecks } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
-
-const tabs = [
-  { href: '/notes', label: 'Notizen', icon: FileText },
-  { href: '/todos', label: 'Aufgaben', icon: ListChecks },
-] as const;
+import { NAV_TABS, isTabActive } from './navTabs';
 
 export function MobileBottomNav() {
   const pathname = usePathname();
@@ -26,8 +21,8 @@ export function MobileBottomNav() {
 
   return (
     <nav className="card-base mx-2 mb-2 flex h-14 shrink-0 items-center bg-sidebar pb-[env(safe-area-inset-bottom)] md:hidden z-10">
-      {tabs.map((tab) => {
-        const isActive = tab.href === '/todos' ? pathname.startsWith('/todos') : !pathname.startsWith('/todos');
+      {NAV_TABS.map((tab) => {
+        const isActive = isTabActive(tab.href, pathname);
 
         return (
           <Button
