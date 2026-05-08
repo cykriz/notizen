@@ -2,21 +2,16 @@
 
 import { Heading, IndentIncrease } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 interface MarkdownEditorToolbarProps {
-  keyboardOffset: number;
   onIncreaseHeading: () => void;
   onIndentMore: () => void;
 }
 
-export function MarkdownEditorToolbar({ keyboardOffset, onIncreaseHeading, onIndentMore }: MarkdownEditorToolbarProps) {
+export function MarkdownEditorToolbar({ onIncreaseHeading, onIndentMore }: MarkdownEditorToolbarProps) {
   return (
     <div
-      className={cn('flex md:hidden items-center gap-1 border-t px-2 py-1 shrink-0 bg-background', {
-        'fixed left-0 right-0 z-50 shadow-sm': keyboardOffset > 0,
-      })}
-      style={keyboardOffset > 0 ? { bottom: keyboardOffset } : undefined}
+      className="flex md:hidden items-center gap-1 border-t px-2 py-1 shrink-0 bg-background"
       onMouseDown={(e) => {
         e.preventDefault();
       }}

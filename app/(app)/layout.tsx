@@ -10,6 +10,7 @@ import { AppSidebar } from './AppSidebar';
 import { CommandPaletteClient } from './CommandPaletteClient';
 import { MobileBottomNav } from './MobileBottomNav';
 import { DataProvider } from './DataProvider';
+import { ViewportEffects } from './ViewportEffects';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const authEnabled = await isAuthEnabled();
@@ -33,10 +34,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <DataProvider initialNotes={notes} initialTodos={todos}>
+      <ViewportEffects />
       <SidebarProvider>
         <AppSidebar authEnabled={authEnabled} />
         <CommandPaletteClient />
-        <SidebarInset className="max-h-svh min-w-0">
+        <SidebarInset className="max-h-(--app-h) min-w-0">
           <div className="flex flex-1 flex-col min-h-0">{children}</div>
           <MobileBottomNav />
         </SidebarInset>

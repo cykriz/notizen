@@ -20,7 +20,7 @@ export function MobileBottomNav() {
   }
 
   return (
-    <nav className="card-base mx-2 mb-2 flex h-14 shrink-0 items-center bg-sidebar pb-[env(safe-area-inset-bottom)] md:hidden z-10">
+    <nav className="card-base mx-2 mb-2 flex h-14 shrink-0 items-center bg-sidebar pb-[env(safe-area-inset-bottom)] md:hidden z-10 in-data-keyboard-open:hidden">
       {NAV_TABS.map((tab) => {
         const isActive = isTabActive(tab.href, pathname);
 

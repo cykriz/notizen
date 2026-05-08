@@ -110,6 +110,8 @@ A valid share token grants read access to the shared note AND every attachment o
 | DeleteTagFolderDialog | `app/(app)/DeleteTagFolderDialog.tsx` — tag folder deletion confirmation |
 | NoteListItem | `app/(app)/NoteListItem.tsx` — note list entry |
 | MobileBottomNav | `app/(app)/MobileBottomNav.tsx` — bottom tab bar (`md:hidden`) |
+| useVisualViewportHeight | `hooks/useVisualViewportHeight.ts` — tracks `window.visualViewport`; sets `--app-h` on `<html>` and toggles `data-keyboard-open` so the app shell shrinks and mobile UI hides when the on-screen keyboard opens |
+| ViewportEffects | `app/(app)/ViewportEffects.tsx` — mounts `useVisualViewportHeight` to expose `--app-h` and `data-keyboard-open` for the app shell |
 | CommandPalette | `app/(app)/CommandPalette.tsx` — Cmd+P search (@ prefix for tag navigation) |
 | tagNavigationStore | `app/(app)/tagNavigationStore.ts` — cross-component tag path navigation |
 | CommandPaletteClient | `app/(app)/CommandPaletteClient.tsx` — client-side command palette |

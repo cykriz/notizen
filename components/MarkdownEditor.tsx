@@ -11,7 +11,6 @@ import { PreviewCheckboxContext } from '@/components/PreviewCheckbox';
 import { editorBasicSetup, staticExtensions } from '@/components/markdownEditorSetup';
 import { useClientMounted } from '@/hooks/useClientMounted';
 import { useFileDrop } from '@/hooks/useFileDrop';
-import { useKeyboardToolbar } from '@/hooks/useKeyboardToolbar';
 import { useLineTransform } from '@/hooks/useLineTransform';
 import { useNoteLinkPicker } from '@/hooks/useNoteLinkPicker';
 import { PREVIEW_EDIT } from '@/lib/constants';
@@ -73,7 +72,6 @@ export const MarkdownEditor = memo(
       wrapperRef,
     });
     const { increaseHeading } = useLineTransform(viewRef);
-    const keyboardOffset = useKeyboardToolbar();
     const { pickerOpen, setPickerOpen, handleNoteSelect, checkLinkTrigger, noteLinkExtension } = useNoteLinkPicker({
       viewRef,
       notes,
@@ -236,11 +234,7 @@ export const MarkdownEditor = memo(
           <NoteLinkPicker notes={notes} open={pickerOpen} onOpenChange={setPickerOpen} onSelect={handleNoteSelect} />
         )}
         {isEditing && (
-          <MarkdownEditorToolbar
-            keyboardOffset={keyboardOffset}
-            onIncreaseHeading={increaseHeading}
-            onIndentMore={handleIndentMore}
-          />
+          <MarkdownEditorToolbar onIncreaseHeading={increaseHeading} onIndentMore={handleIndentMore} />
         )}
       </div>
     );
