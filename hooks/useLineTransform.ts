@@ -1,4 +1,5 @@
 import { useCallback, type RefObject } from 'react';
+import { transformLineToCheckbox } from '@/lib/toggleCheckbox';
 import type { EditorView } from '@codemirror/view';
 
 export function useLineTransform(viewRef: RefObject<EditorView | null>) {
@@ -34,5 +35,22 @@ export function useLineTransform(viewRef: RefObject<EditorView | null>) {
     view.focus();
   }, [viewRef]);
 
-  return { increaseHeading };
+  const addOrToggleCheckbox = useCallback(() => {
+    const view = viewRef.current;
+    if (!view) {
+      return;
+    }
+
+    const { from } = view.state.selection.main;
+    const line = view.state.doc.lineAt(from);
+    const { line: updatedLine, cursorDelta } = transformLineToCheckbox(line.text);
+
+    view.dispatch({
+      changes: { from: line.from, to: line.to, insert: updatedLine },
+      selection: { anchor: Math.max(line.from, from + cursorDelta) },
+    });
+    view.focus();
+  }, [viewRef]);
+
+  return { increaseHeading, addOrToggleCheckbox };
 }

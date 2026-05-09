@@ -71,7 +71,7 @@ export const MarkdownEditor = memo(
       onFileUploaded,
       wrapperRef,
     });
-    const { increaseHeading } = useLineTransform(viewRef);
+    const { increaseHeading, addOrToggleCheckbox } = useLineTransform(viewRef);
     const { pickerOpen, setPickerOpen, handleNoteSelect, checkLinkTrigger, noteLinkExtension } = useNoteLinkPicker({
       viewRef,
       notes,
@@ -234,7 +234,11 @@ export const MarkdownEditor = memo(
           <NoteLinkPicker notes={notes} open={pickerOpen} onOpenChange={setPickerOpen} onSelect={handleNoteSelect} />
         )}
         {isEditing && (
-          <MarkdownEditorToolbar onIncreaseHeading={increaseHeading} onIndentMore={handleIndentMore} />
+          <MarkdownEditorToolbar
+            onIncreaseHeading={increaseHeading}
+            onIndentMore={handleIndentMore}
+            onAddOrToggleCheckbox={addOrToggleCheckbox}
+          />
         )}
       </div>
     );

@@ -1,4 +1,50 @@
+const LIST_PREFIX_RE = /^(\s*[-*+]\s+)/;
 const CHECKBOX_LINE_RE = /^(\s*[-*+]\s+)\[[ xX]\]/;
+const UNCHECKED_LINE_RE = /^(\s*[-*+]\s+)\[ \]/;
+const CHECKED_LINE_RE = /^(\s*[-*+]\s+)\[[xX]\]/;
+const INDENT_RE = /^(\s*)/;
+
+export interface CheckboxLineTransform {
+  line: string;
+  cursorDelta: number;
+}
+
+/**
+ * Converts a single editor line into a markdown task checkbox, or toggles
+ * the checked state if it already is one. Returns the new line text plus
+ * how many characters the cursor should shift right.
+ */
+export function transformLineToCheckbox(lineText: string): CheckboxLineTransform {
+  const uncheckedMatch = UNCHECKED_LINE_RE.exec(lineText);
+  if (uncheckedMatch) {
+    return {
+      line: `${uncheckedMatch[1]}[x]${lineText.slice(uncheckedMatch[0].length)}`,
+      cursorDelta: 0,
+    };
+  }
+
+  const checkedMatch = CHECKED_LINE_RE.exec(lineText);
+  if (checkedMatch) {
+    return {
+      line: `${checkedMatch[1]}[ ]${lineText.slice(checkedMatch[0].length)}`,
+      cursorDelta: 0,
+    };
+  }
+
+  const listMatch = LIST_PREFIX_RE.exec(lineText);
+  if (listMatch) {
+    return {
+      line: `${listMatch[1]}[ ] ${lineText.slice(listMatch[0].length)}`,
+      cursorDelta: 4,
+    };
+  }
+
+  const indent = INDENT_RE.exec(lineText)?.[1] ?? '';
+  return {
+    line: `${indent}- [ ] ${lineText.slice(indent.length)}`,
+    cursorDelta: 6,
+  };
+}
 
 /**
  * Toggles a markdown checkbox at a specific character offset.

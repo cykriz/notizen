@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { toggleBlockCheckboxes, toggleCheckboxAtOffset } from './toggleCheckbox';
+import { toggleBlockCheckboxes, toggleCheckboxAtOffset, transformLineToCheckbox } from './toggleCheckbox';
 
 describe('toggleCheckboxAtOffset', () => {
   test('[ ] → [x]', () => {
@@ -81,5 +81,63 @@ describe('toggleBlockCheckboxes', () => {
   test('negative offset returns source unchanged', () => {
     const src = '- [ ] a';
     expect(toggleBlockCheckboxes(src, -1)).toBe(src);
+  });
+});
+
+describe('transformLineToCheckbox', () => {
+  test('unchecked → checked', () => {
+    expect(transformLineToCheckbox('- [ ] task')).toEqual({
+      line: '- [x] task',
+      cursorDelta: 0,
+    });
+  });
+
+  test('checked → unchecked', () => {
+    expect(transformLineToCheckbox('- [x] task')).toEqual({
+      line: '- [ ] task',
+      cursorDelta: 0,
+    });
+  });
+
+  test('uppercase [X] → unchecked', () => {
+    expect(transformLineToCheckbox('- [X] task')).toEqual({
+      line: '- [ ] task',
+      cursorDelta: 0,
+    });
+  });
+
+  test('plain list item → checkbox list item', () => {
+    expect(transformLineToCheckbox('- buy milk')).toEqual({
+      line: '- [ ] buy milk',
+      cursorDelta: 4,
+    });
+  });
+
+  test('asterisk list item → checkbox list item', () => {
+    expect(transformLineToCheckbox('* buy milk')).toEqual({
+      line: '* [ ] buy milk',
+      cursorDelta: 4,
+    });
+  });
+
+  test('plain text → checkbox list item', () => {
+    expect(transformLineToCheckbox('buy milk')).toEqual({
+      line: '- [ ] buy milk',
+      cursorDelta: 6,
+    });
+  });
+
+  test('indented plain text preserves indent', () => {
+    expect(transformLineToCheckbox('  buy milk')).toEqual({
+      line: '  - [ ] buy milk',
+      cursorDelta: 6,
+    });
+  });
+
+  test('empty line → checkbox list item', () => {
+    expect(transformLineToCheckbox('')).toEqual({
+      line: '- [ ] ',
+      cursorDelta: 6,
+    });
   });
 });
