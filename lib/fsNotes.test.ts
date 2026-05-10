@@ -1,3 +1,5 @@
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+
 import fs from 'fs/promises';
 import path from 'path';
 import {
@@ -12,106 +14,58 @@ import {
 } from './fsNotes';
 import { listAllTags } from './tagTree';
 
-/* eslint-disable no-console */
-async function runTests() {
-  const sep = '─'.repeat(50);
-  console.log(`\n${sep}\n  fsNotes Inline Tests\n${sep}\n`);
-
+describe('fsNotes', () => {
   const originalRoot = process.env.NOTES_ROOT;
   const testRoot = path.join(process.cwd(), `.test-notes-${String(Date.now())}`);
-  process.env.NOTES_ROOT = testRoot;
 
-  try {
+  beforeAll(() => {
+    process.env.NOTES_ROOT = testRoot;
+  });
+
+  afterAll(async () => {
+    if (originalRoot === undefined) {
+      delete process.env.NOTES_ROOT;
+    } else {
+      process.env.NOTES_ROOT = originalRoot;
+    }
+
+    await fs.rm(testRoot, { recursive: true, force: true });
+  });
+
+  // Single sequential lifecycle: each step depends on the previous one's mutation
+  // of shared filesystem state, so splitting into independent `test`s would either
+  // require per-test fixtures or break under randomized order.
+  test('full CRUD lifecycle (create → list → update → tags → attach → detach → delete)', async () => {
     const note = await createNote({ title: 'Test Note', content: '# Hello World', tags: ['dev/ts'] }, testRoot);
-    const slugOk = /^\d{4}-\d{2}-\d{2}-test-note-[a-f0-9]+$/.test(note.slug);
-    if (!slugOk) {
-      throw new Error(`Bad slug: ${note.slug}`);
-    }
+    expect(note.slug).toMatch(/^\d{4}-\d{2}-\d{2}-test-note-[a-f0-9]+$/);
+    expect(note.tags[0]).toBe('dev/ts');
+    expect(note.pinned).toBe(false);
 
-    if (note.tags[0] !== 'dev/ts') {
-      throw new Error('Tags not set on create');
-    }
-
-    if (note.pinned) {
-      throw new Error('Pinned should default to false');
-    }
-
-    console.log('✓ createNote — slug, id, title, tags, pinned correct');
-
-    const notes = await listNotes(testRoot);
-    if (notes.length !== 1) {
-      throw new Error(`Expected 1 note, got ${String(notes.length)}`);
-    }
-
-    if (notes[0].tags[0] !== 'dev/ts') {
-      throw new Error('listNotes tags missing');
-    }
-
-    console.log('✓ listNotes — found 1 note with tags');
+    const listed = await listNotes(testRoot);
+    expect(listed).toHaveLength(1);
+    expect(listed[0].tags[0]).toBe('dev/ts');
 
     const fetched = await getNote(note.id, testRoot);
-    if (fetched?.content !== '# Hello World') {
-      throw new Error('getNote content mismatch');
-    }
-
-    console.log('✓ getNote — content matches');
+    expect(fetched?.content).toBe('# Hello World');
 
     const updated = await updateNote(note.id, { title: 'Updated', content: '# Updated', tags: ['a/b'], pinned: true }, testRoot);
-    if (updated.title !== 'Updated') {
-      throw new Error('Title not updated');
-    }
-
-    if (updated.tags[0] !== 'a/b') {
-      throw new Error('Tags not updated');
-    }
-
-    if (!updated.pinned) {
-      throw new Error('Pinned not updated');
-    }
-
-    console.log('✓ updateNote — title, content, tags, pinned updated');
+    expect(updated.title).toBe('Updated');
+    expect(updated.tags[0]).toBe('a/b');
+    expect(updated.pinned).toBe(true);
 
     const allTags = listAllTags(await listNotes(testRoot));
-    if (allTags[0] !== 'a/b') {
-      throw new Error('listAllTags failed');
-    }
-
-    console.log('✓ listAllTags — returns sorted unique tags');
+    expect(allTags[0]).toBe('a/b');
 
     const att = await saveAttachment(note.id, new File(['data'], 'test.txt', { type: 'text/plain' }), testRoot);
-    console.log(`✓ saveAttachment — id: ${att.id}`);
+    expect(att.id).toMatch(/^[a-f0-9]{8}$/);
 
     const atts = await listAttachments(note.id, testRoot);
-    if (atts.length !== 1) {
-      throw new Error(`Expected 1 attachment, got ${String(atts.length)}`);
-    }
-
-    console.log('✓ listAttachments — found 1 attachment');
+    expect(atts).toHaveLength(1);
 
     await deleteAttachment(note.id, att.id, testRoot);
-    const attsAfter = await listAttachments(note.id, testRoot);
-    if (attsAfter.length !== 0) {
-      throw new Error('Attachment not deleted');
-    }
-
-    console.log('✓ deleteAttachment — attachment removed');
+    expect(await listAttachments(note.id, testRoot)).toHaveLength(0);
 
     await deleteNote(note.id, testRoot);
-    const afterDelete = await listNotes(testRoot);
-    if (afterDelete.length !== 0) {
-      throw new Error('Note not deleted');
-    }
-
-    console.log('✓ deleteNote — note removed');
-
-    console.log(`\n${sep}\n  ALL TESTS PASSED ✓\n${sep}\n`);
-  } finally {
-    process.env.NOTES_ROOT = originalRoot;
-    await fs.rm(testRoot, { recursive: true, force: true });
-  }
-}
-
-runTests().catch((err: unknown) => {
-  console.error('\n  TEST FAILED ✗', err);
-  process.exit(1);
+    expect(await listNotes(testRoot)).toHaveLength(0);
+  });
 });

@@ -1,61 +1,54 @@
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+
 import fs from 'fs/promises';
 import path from 'path';
 import { createTodo, listTodos, getTodo, updateTodo, deleteTodo } from './fsTodos';
 
-/* eslint-disable no-console */
-async function runTests() {
-  const sep = '─'.repeat(50);
-  console.log(`\n${sep}\n  fsTodos Tests\n${sep}\n`);
-
+describe('fsTodos', () => {
   const originalRoot = process.env.NOTES_ROOT;
   const testRoot = path.join(process.cwd(), `.test-todos-${String(Date.now())}`);
-  process.env.NOTES_ROOT = testRoot;
+  let todo: Awaited<ReturnType<typeof createTodo>>;
 
-  try {
-    const todo = await createTodo({ title: 'Test', quadrant: 'do', description: 'desc' }, testRoot);
-    if (todo.id === '' || todo.title !== 'Test' || todo.quadrant !== 'do') {
-      throw new Error('createTodo fields wrong');
+  beforeAll(async () => {
+    process.env.NOTES_ROOT = testRoot;
+    todo = await createTodo({ title: 'Test', quadrant: 'do', description: 'desc' }, testRoot);
+  });
+
+  afterAll(async () => {
+    if (originalRoot === undefined) {
+      delete process.env.NOTES_ROOT;
+    } else {
+      process.env.NOTES_ROOT = originalRoot;
     }
 
-    console.log('✓ createTodo — fields correct');
+    await fs.rm(testRoot, { recursive: true, force: true });
+  });
 
+  test('createTodo — fields correct', () => {
+    expect(todo.id).not.toBe('');
+    expect(todo.title).toBe('Test');
+    expect(todo.quadrant).toBe('do');
+  });
+
+  test('listTodos — found 1 todo', async () => {
     const all = await listTodos(testRoot);
-    if (all.length !== 1) {
-      throw new Error(`Expected 1 todo, got ${String(all.length)}`);
-    }
+    expect(all).toHaveLength(1);
+  });
 
-    console.log('✓ listTodos — found 1 todo');
-
+  test('getTodo — description matches', async () => {
     const fetched = await getTodo(todo.id, testRoot);
-    if (fetched?.description !== 'desc') {
-      throw new Error('getTodo description mismatch');
-    }
+    expect(fetched?.description).toBe('desc');
+  });
 
-    console.log('✓ getTodo — description matches');
-
+  test('updateTodo — title and completed updated', async () => {
     const updated = await updateTodo(todo.id, { title: 'Updated', completed: true }, testRoot);
-    if (updated.title !== 'Updated' || !updated.completed) {
-      throw new Error('updateTodo fields wrong');
-    }
+    expect(updated.title).toBe('Updated');
+    expect(updated.completed).toBe(true);
+  });
 
-    console.log('✓ updateTodo — title and completed updated');
-
+  test('deleteTodo — todo removed', async () => {
     await deleteTodo(todo.id, testRoot);
     const afterDelete = await listTodos(testRoot);
-    if (afterDelete.length !== 0) {
-      throw new Error('Todo not deleted');
-    }
-
-    console.log('✓ deleteTodo — todo removed');
-
-    console.log(`\n${sep}\n  ALL TESTS PASSED ✓\n${sep}\n`);
-  } finally {
-    process.env.NOTES_ROOT = originalRoot;
-    await fs.rm(testRoot, { recursive: true, force: true });
-  }
-}
-
-runTests().catch((err: unknown) => {
-  console.error('\n  TEST FAILED ✗', err);
-  process.exit(1);
+    expect(afterDelete).toHaveLength(0);
+  });
 });

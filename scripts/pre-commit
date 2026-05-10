@@ -8,7 +8,7 @@ echo "=== Pre-commit: typecheck ==="
 bunx tsc --noEmit
 
 echo "=== Pre-commit: unit tests ==="
-bun test lib/
+bun test
 
 # NOTE: E2E in pre-commit is intentional for now — ensures nothing ships broken.
 # npx (not bunx): Playwright's test runner needs Node.js module loading internals
