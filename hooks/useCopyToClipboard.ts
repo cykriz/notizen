@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { FEEDBACK_FLASH_MS } from '@/lib/constants';
 
 interface UseCopyToClipboardResult {
   copiedKey: string | null;
@@ -8,7 +9,7 @@ interface UseCopyToClipboardResult {
   reset: () => void;
 }
 
-export function useCopyToClipboard(resetMs = 1500): UseCopyToClipboardResult {
+export function useCopyToClipboard(resetMs = FEEDBACK_FLASH_MS): UseCopyToClipboardResult {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 

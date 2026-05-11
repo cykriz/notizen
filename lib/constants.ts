@@ -8,6 +8,8 @@ export const AUTH_SECRET_FILE = 'secret.key';
 export const USERS_DATA_DIR = 'users';
 export const USERNAME_RE = /^[a-z0-9_-]{1,32}$/;
 
+export const FEEDBACK_FLASH_MS = 1500;
+
 export const SHARES_DIR = '.shares';
 export const SHARES_FILE = 'shares.json';
 export const SHARE_PATH_PREFIX = '/share/';

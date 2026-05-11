@@ -1,4 +1,5 @@
 import { useState, useTransition, useCallback, useRef, useEffect } from 'react';
+import { FEEDBACK_FLASH_MS } from '@/lib/constants';
 
 interface UseAutoSaveOptions {
   noteId: string;
@@ -49,8 +50,8 @@ export function useAutoSave({
     }
 
     savedTimer.current = setTimeout(() => {
-      setSaved(false); 
-    }, 2000);
+      setSaved(false);
+    }, FEEDBACK_FLASH_MS);
   }, []);
 
   const isDirty = title !== originalTitle || content !== originalContent;

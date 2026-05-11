@@ -1,15 +1,18 @@
 'use client';
 
-import { memo, useState } from 'react';
-import { Save, Loader2, Eye, Pencil, List, Tag } from 'lucide-react';
+import { memo, useCallback, useState } from 'react';
+import { Copy, Check, Eye, Pencil, List, Tag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { PREVIEW_EDIT } from '@/lib/constants';
 import type { PreviewMode } from '@/lib/types';
+import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
 import { TagInput } from './TagInput';
 import { ShareNoteButton } from './ShareNoteButton';
+
+const COPY_KEY_NOTE_MD = 'note-md';
 
 interface NoteHeaderProps {
   noteId: string;
@@ -17,11 +20,7 @@ interface NoteHeaderProps {
   onTitleChange: (title: string) => void;
   preview: PreviewMode;
   onTogglePreview: () => void;
-  onSave: () => void;
-  saving: boolean;
-  saved: boolean;
-  isDirty: boolean;
-  onSavedReset: () => void;
+  getContent: () => string;
   outlineVisible: boolean;
   onToggleOutline: () => void;
   tags: string[];
@@ -35,11 +34,7 @@ export const NoteHeader = memo(function NoteHeader({
   onTitleChange,
   preview,
   onTogglePreview,
-  onSave,
-  saving,
-  saved,
-  isDirty,
-  onSavedReset,
+  getContent,
   outlineVisible,
   onToggleOutline,
   tags,
@@ -47,6 +42,12 @@ export const NoteHeader = memo(function NoteHeader({
   onTagsChange,
 }: NoteHeaderProps) {
   const [tagsExpanded, setTagsExpanded] = useState(false);
+  const { copiedKey, copy } = useCopyToClipboard();
+  const isCopied = copiedKey === COPY_KEY_NOTE_MD;
+
+  const handleCopy = useCallback(() => {
+    void copy(COPY_KEY_NOTE_MD, getContent());
+  }, [copy, getContent]);
 
   return (
     <Card className="shrink-0 gap-0 py-0 shadow-panel z-10 mx-2 mt-2">
@@ -57,7 +58,6 @@ export const NoteHeader = memo(function NoteHeader({
           value={title}
           onChange={(e) => {
             onTitleChange(e.target.value);
-            onSavedReset();
           }}
           placeholder="Notiz-Titel…"
           rounded={false}
@@ -104,8 +104,14 @@ export const NoteHeader = memo(function NoteHeader({
             {preview === PREVIEW_EDIT ? <Eye /> : <Pencil />}
           </Button>
           <ShareNoteButton noteId={noteId} key={noteId} />
-          <Button onClick={onSave} disabled={saving || (!isDirty && !saved)} size="icon-xs" variant="ghost">
-            {saving ? <Loader2 className="animate-spin" /> : <Save />}
+          <Button
+            onClick={handleCopy}
+            size="icon-xs"
+            variant="ghost"
+            aria-label="Markdown kopieren"
+            title="Markdown kopieren"
+          >
+            {isCopied ? <Check /> : <Copy />}
           </Button>
         </div>
       </CardContent>

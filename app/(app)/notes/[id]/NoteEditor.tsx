@@ -12,6 +12,7 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } f
 import { DeleteNoteDialog } from '../../DeleteNoteDialog';
 import { useData } from '../../DataProvider';
 import { NoteHeader } from './NoteHeader';
+import { SaveIndicator } from './SaveIndicator';
 import { NoteOutline, extractHeadings } from '@/components/NoteOutline';
 
 interface NoteEditorProps {
@@ -35,6 +36,13 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
   const headings = useMemo(() => extractHeadings(deferredContent), [deferredContent]);
   const nonImageAttachments = useMemo(() => attachments.filter((a) => !a.mimeType.startsWith('image/')), [attachments]);
 
+  // Avoid passing live `content` to memoized NoteHeader — it would re-render on every keystroke.
+  const contentRef = useRef(content);
+  useEffect(() => {
+    contentRef.current = content;
+  }, [content]);
+  const getContent = useCallback(() => contentRef.current, []);
+
   const saveContent = useCallback(
     async (id: string, data: { title: string; content: string }) => {
       await updateNote(id, data);
@@ -42,7 +50,7 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
     [updateNote],
   );
 
-  const { saving, saved, isDirty, handleSave, handleSavedReset } = useAutoSave({
+  const { saving, saved, handleSavedReset } = useAutoSave({
     noteId: note.id,
     title,
     content,
@@ -184,18 +192,14 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
         onTitleChange={handleTitleChange}
         preview={preview}
         onTogglePreview={handleTogglePreview}
-        onSave={handleSave}
-        saving={saving}
-        saved={saved}
-        isDirty={isDirty}
-        onSavedReset={handleSavedReset}
+        getContent={getContent}
         outlineVisible={outlineVisible}
         onToggleOutline={handleToggleOutline}
         tags={tags}
         allTags={allTags}
         onTagsChange={handleTagsChange}
       />
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div className="relative flex flex-1 min-h-0 overflow-hidden">
         {outlineVisible && (
           <aside className="hidden md:flex flex-col w-56 shrink-0">
             <NoteOutline headings={headings} onHeadingClick={handleHeadingClick} className="flex-1 min-h-0" />
@@ -211,6 +215,7 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
           notes={notes}
           onSwitchToEdit={handleSwitchToEdit}
         />
+        <SaveIndicator saving={saving} saved={saved} />
       </div>
       {nonImageAttachments.length > 0 && (
         <AttachmentList
