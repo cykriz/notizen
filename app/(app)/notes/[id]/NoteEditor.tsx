@@ -3,9 +3,12 @@
 import { AttachmentList } from '@/components/AttachmentList';
 import { MarkdownEditor, type MarkdownEditorHandle } from '@/components/MarkdownEditor';
 import { useAutoSave } from '@/hooks/useAutoSave';
+import { useAutoShowOutline } from '@/hooks/useAutoShowOutline';
 import { useDraft } from '@/hooks/useDraft';
+import { useFocusOnEditMode } from '@/hooks/useFocusOnEditMode';
 import { useNoteInitialState } from '@/hooks/useNoteInitialState';
-import { DEFAULT_NOTE_TITLE, PREVIEW_EDIT, PREVIEW_PREVIEW } from '@/lib/constants';
+import { useNoteKeyboardShortcuts } from '@/hooks/useNoteKeyboardShortcuts';
+import { PREVIEW_EDIT, PREVIEW_PREVIEW } from '@/lib/constants';
 import type { Attachment, Note } from '@/lib/fsNotes';
 import type { NoteSummary, PreviewMode } from '@/lib/types';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
@@ -66,37 +69,17 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
     initialContent: content,
   });
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !e.defaultPrevented) {
-        e.preventDefault();
+  const handleRequestDelete = useCallback(() => {
+    setDeleteDialogOpen(true);
+  }, []);
 
-        if (preview === PREVIEW_EDIT) {
-          setPreview(PREVIEW_PREVIEW);
-        } else if (title === DEFAULT_NOTE_TITLE) {
-          setDeleteDialogOpen(true);
-        }
-
-        return;
-      }
-
-      if (e.key === 'o' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
-        e.preventDefault();
-        setOutlineVisible((v) => !v);
-        return;
-      }
-
-      if (e.key === 'o' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setPreview((p) => (p === PREVIEW_EDIT ? PREVIEW_PREVIEW : PREVIEW_EDIT));
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [note.id, title, preview]);
+  useNoteKeyboardShortcuts({
+    title,
+    preview,
+    setPreview,
+    setOutlineVisible,
+    onRequestDelete: handleRequestDelete,
+  });
 
   const handleTogglePreview = useCallback(() => {
     setPreview((p) => (p === PREVIEW_EDIT ? PREVIEW_PREVIEW : PREVIEW_EDIT));
@@ -138,39 +121,14 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
 
   const editorRef = useRef<MarkdownEditorHandle>(null);
 
-  useEffect(() => {
-    if (preview === PREVIEW_EDIT) {
-      requestAnimationFrame(() => {
-        editorRef.current?.focus();
-      });
-    }
-  }, [preview]);
+  useFocusOnEditMode({ editorRef, preview });
 
-  useEffect(() => {
-    if (extractHeadings(initial.content).length < 2) {
-      return;
-    }
-
-    const container = editorRef.current?.getScrollContainer();
-    if (!container) {
-      return;
-    }
-
-    const observer = new ResizeObserver(() => {
-      if (container.scrollHeight > container.clientHeight) {
-        setOutlineVisible(true);
-        observer.disconnect();
-      }
-    });
-    observer.observe(container);
-    if (container.firstElementChild) {
-      observer.observe(container.firstElementChild);
-    }
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [note.id, initial.content]);
+  useAutoShowOutline({
+    noteId: note.id,
+    initialContent: initial.content,
+    editorRef,
+    setOutlineVisible,
+  });
 
   const handleHeadingClick = useCallback((line: number) => {
     editorRef.current?.scrollToLine(line);

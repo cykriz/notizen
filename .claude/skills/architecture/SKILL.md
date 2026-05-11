@@ -111,6 +111,9 @@ A valid share token grants read access to the shared note AND every attachment o
 | NoteListItem | `app/(app)/NoteListItem.tsx` — note list entry |
 | MobileBottomNav | `app/(app)/MobileBottomNav.tsx` — bottom tab bar (`md:hidden`) |
 | useVisualViewportHeight | `hooks/useVisualViewportHeight.ts` — tracks `window.visualViewport`; sets `--app-h` on `<html>` and toggles `data-keyboard-open` so the app shell shrinks and mobile UI hides when the on-screen keyboard opens |
+| useNoteKeyboardShortcuts | `hooks/useNoteKeyboardShortcuts.ts` — Escape / Cmd+O / Cmd+Shift+O shortcuts for the note editor |
+| useFocusOnEditMode | `hooks/useFocusOnEditMode.ts` — focuses MarkdownEditor when preview switches to edit |
+| useAutoShowOutline | `hooks/useAutoShowOutline.ts` — opens the outline once content overflows the editor viewport |
 | ViewportEffects | `app/(app)/ViewportEffects.tsx` — mounts `useVisualViewportHeight` to expose `--app-h` and `data-keyboard-open` for the app shell |
 | CommandPalette | `app/(app)/CommandPalette.tsx` — Cmd+P search (@ prefix for tag navigation) |
 | tagNavigationStore | `app/(app)/tagNavigationStore.ts` — cross-component tag path navigation |
