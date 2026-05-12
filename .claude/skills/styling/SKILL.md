@@ -27,6 +27,7 @@ Global classes for consistent visuals. Use plain CSS values — avoid `@apply` b
 | `.sidebar-inner` | Desktop sidebar, mobile SheetContent | `flex h-full w-full flex-col p-2 gap-2` |
 | `.sidebar-panel` | Desktop sidebar, mobile SheetContent | `border-0 gap-2` |
 | `.note-section-padding` | Note section elements | `px-4 py-2` |
+| `.note-outline-aside` | NoteEditor, SharedNoteView | `hidden md:flex flex-col shrink-0`, `width: clamp(14rem, 20vw, 22rem)` |
 
 ## Theme System
 

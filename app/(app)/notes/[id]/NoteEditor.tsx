@@ -159,7 +159,7 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
       />
       <div className="relative flex flex-1 min-h-0 overflow-hidden">
         {outlineVisible && (
-          <aside className="hidden md:flex flex-col w-56 shrink-0">
+          <aside className="note-outline-aside">
             <NoteOutline headings={headings} onHeadingClick={handleHeadingClick} className="flex-1 min-h-0" />
           </aside>
         )}

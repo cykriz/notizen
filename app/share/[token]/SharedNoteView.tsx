@@ -76,7 +76,7 @@ export function SharedNoteView({ title, content }: SharedNoteViewProps) {
       </Card>
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {headings.length > 0 && (
-          <aside className="hidden md:flex flex-col w-56 shrink-0">
+          <aside className="note-outline-aside">
             <NoteOutline
               headings={headings}
               onHeadingClick={handleHeadingClick}
