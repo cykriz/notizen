@@ -11,6 +11,7 @@ import { isTabActive } from './navTabs';
 import { AppSidebarHeader } from './AppSidebarHeader';
 import { NotesSidebarContent } from './NotesSidebarContent';
 import { NotesSidebarFooter } from './NotesSidebarFooter';
+import { PinnedNotesGroup } from './PinnedNotesGroup';
 import { SharedNotesEntry } from './SharedNotesEntry';
 import { TagNavigation } from './TagNavigation';
 import { TodosSidebarContent } from './TodosSidebarContent';
@@ -147,6 +148,8 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
         className="flex min-h-0 flex-1 flex-col gap-2"
       >
         <SharedNotesEntry hidden={isTodos} />
+
+        {!isTodos && <PinnedNotesGroup notes={notes} />}
 
         {!isTodos && view === 'tags' && (
           <TagNavigation

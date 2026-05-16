@@ -19,7 +19,7 @@ All defined as CSS variables in `app/globals.css` (`:root` for light, `.dark` fo
 
 ## Shared CSS Classes (`app/custom-components.css`)
 
-Global classes for consistent visuals. Use plain CSS values — avoid `@apply` beyond well-known Tailwind v4 utilities (Turbopack can fail on unresolved utilities).
+Global classes for consistent visuals. Extract a class into this file **only once it has a second consumer** — one-off custom styles stay inline at the call site. Use plain CSS values — avoid `@apply` beyond well-known Tailwind v4 utilities (Turbopack can fail on unresolved utilities).
 
 | Class | Used on | Controls |
 |---|---|---|

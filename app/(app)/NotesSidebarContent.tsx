@@ -1,11 +1,10 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useCallback } from 'react';
 import { usePathname } from 'next/navigation';
-import { Plus, FileText, Pin } from 'lucide-react';
+import { Plus, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenu, useSidebar } from '@/components/ui/sidebar';
+import { SidebarGroup, SidebarGroupContent, SidebarMenu, useSidebar } from '@/components/ui/sidebar';
 import { TagNoteList } from './TagBrowser';
 import { NoteListItem } from './NoteListItem';
 import type { SidebarView } from './viewStore';
@@ -23,11 +22,9 @@ export function NotesSidebarContent({ notes, currentTagPath, view, handleCreate,
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
 
-  const onNavigate = () => {
+  const onNavigate = useCallback(() => {
     setOpenMobile(false);
-  };
-
-  const pinnedNotes = useMemo(() => notes.filter((n) => n.pinned), [notes]);
+  }, [setOpenMobile]);
 
   return (
     <>
@@ -40,28 +37,6 @@ export function NotesSidebarContent({ notes, currentTagPath, view, handleCreate,
           </Button>
         </div>
       )}
-
-      {pinnedNotes.length > 0 && (
-        <SidebarGroup>
-          <SidebarGroupLabel>
-            <Pin className="mr-1" /> Angepinnt
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {pinnedNotes.map((note) => (
-                <NoteListItem
-                  key={note.id}
-                  note={note}
-                  isActive={pathname === `/notes/${note.id}`}
-                  onNavigate={onNavigate}
-                />
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      )}
-
-      {pinnedNotes.length > 0 && <Separator className="mx-4" />}
 
       {notes.length > 0 && (
         <SidebarGroup>

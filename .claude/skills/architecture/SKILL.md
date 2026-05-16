@@ -102,7 +102,8 @@ A valid share token grants read access to the shared note AND every attachment o
 | ThemeToggle | `components/ThemeToggle.tsx` — dark/light theme switch |
 | AppSidebar | `app/(app)/AppSidebar.tsx` — sidebar shell, double-click-to-create, swipe-back |
 | AppSidebarHeader | `app/(app)/AppSidebarHeader.tsx` — tabs (Notizen/Aufgaben), sync indicator, logout |
-| NotesSidebarContent | `app/(app)/NotesSidebarContent.tsx` — pinned + Tags/Alle toggle |
+| NotesSidebarContent | `app/(app)/NotesSidebarContent.tsx` — Tags/Alle toggle and main note list (pinned moved to PinnedNotesGroup) |
+| PinnedNotesGroup | `app/(app)/PinnedNotesGroup.tsx` — pinned-notes sidebar group, shown after SharedNotesEntry; caps at 40vh and scrolls internally |
 | TodosSidebarContent | `app/(app)/TodosSidebarContent.tsx` — todos sidebar content |
 | TagBrowser | `app/(app)/TagBrowser.tsx` — folder-style drill-down |
 | DataProvider | `app/(app)/DataProvider.tsx` — client-side data context |

@@ -3,8 +3,13 @@
 import { useMemo, useState } from 'react';
 import { ChevronLeft, Folder, Tag, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuBadge } from '@/components/ui/sidebar';
+import {
+  SidebarMenu,
+  SidebarMenuBadge,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarSeparator,
+} from '@/components/ui/sidebar';
 import { buildTagTree, getChildNodes } from '@/lib/tagTree';
 import type { NoteSummary } from '@/lib/types';
 import { DeleteTagFolderDialog } from './DeleteTagFolderDialog';
@@ -38,7 +43,7 @@ export function TagNavigation({ notes, currentPath, setCurrentPath, onFolderDele
   }
 
   return (
-    <div className="flex max-h-[50%] flex-col gap-1 overflow-y-auto">
+    <div className="flex max-h-[calc(0.5*var(--app-h))] flex-col gap-1 overflow-y-auto">
       {currentPath !== '' && (
         <div className="flex min-w-0 items-center gap-1 overflow-hidden text-xs text-sidebar-foreground/70">
           <Button variant="ghost" size="icon-xs" onClick={handleBack} className="shrink-0">
@@ -98,7 +103,7 @@ export function TagNavigation({ notes, currentPath, setCurrentPath, onFolderDele
         </SidebarMenu>
       )}
 
-      {hasNotesAtLevel && children.length > 0 && <Separator className="mx-2" />}
+      {hasNotesAtLevel && children.length > 0 && <SidebarSeparator />}
     </div>
   );
 }

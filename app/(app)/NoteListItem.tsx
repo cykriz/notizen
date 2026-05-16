@@ -18,9 +18,15 @@ interface NoteListItemProps {
   note: NoteSummary;
   isActive: boolean;
   onNavigate: () => void;
+  showDate?: boolean;
 }
 
-export const NoteListItem = memo(function NoteListItem({ note, isActive, onNavigate }: NoteListItemProps) {
+export const NoteListItem = memo(function NoteListItem({
+  note,
+  isActive,
+  onNavigate,
+  showDate = true,
+}: NoteListItemProps) {
   const { updateNote } = useData();
   const [pinning, startPinning] = useTransition();
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -48,7 +54,7 @@ export const NoteListItem = memo(function NoteListItem({ note, isActive, onNavig
         <Link href={`/notes/${note.id}`} onClick={onNavigate}>
           <div className="flex min-w-0 flex-col gap-0.5 leading-tight">
             <span className="truncate font-medium">{note.title}</span>
-            <span className="text-xs text-sidebar-foreground/60">{formatDate(note.updatedAt)}</span>
+            {showDate && <span className="text-xs text-sidebar-foreground/60">{formatDate(note.updatedAt)}</span>}
           </div>
         </Link>
       </SidebarMenuButton>

@@ -7,8 +7,8 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarMenuBadge,
+  SidebarSeparator,
 } from '@/components/ui/sidebar';
-import { Separator } from '@/components/ui/separator';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { sharedNotesStore } from './sharedNotesStore';
 import { SharedNotesDialog } from './SharedNotesDialog';
@@ -98,7 +98,7 @@ export function SharedNotesEntry({ hidden }: SharedNotesEntryProps) {
               <SidebarMenuBadge>{shares.length}</SidebarMenuBadge>
             </SidebarMenuItem>
           </SidebarMenu>
-          <Separator className="mx-2" />
+          <SidebarSeparator />
         </>
       )}
       <SharedNotesDialog open={open} onOpenChange={setOpen} />
