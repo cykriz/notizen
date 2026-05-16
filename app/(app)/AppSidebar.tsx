@@ -44,9 +44,19 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
   const [pending, setPending] = useState(false);
   const pendingRef = useRef(false);
 
-  // Render-time sync: when a different note is opened, jump to its tag folder.
+  // Render-time sync: when a different note is opened, jump to its tag folder —
+  // unless the sidebar is already on one of the note's tags (or a parent folder),
+  // in which case we stay put so the user keeps their browsing context.
   if (noteId !== tagState.noteId) {
-    const path = noteId !== null ? getNoteTagPath(notes, pathname) : tagState.path;
+    let path = tagState.path;
+    if (noteId !== null) {
+      const note = notes.find((n) => n.id === noteId);
+      const keep =
+        tagState.path !== '' &&
+        note?.tags.some((t) => t === tagState.path || t.startsWith(`${tagState.path}/`)) === true;
+      path = keep ? tagState.path : getNoteTagPath(notes, pathname);
+    }
+
     setTagState({ noteId, tagNavVersion: tagState.tagNavVersion, path });
   }
 
