@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { PREFIX } from '@/lib/localCache';
+import { clearSwCaches } from '@/lib/clearSwCaches';
 import { loginAction, type LoginState } from './actions';
 
 const initialState: LoginState = { error: null };
@@ -26,14 +27,6 @@ function clearLocalCaches() {
   for (const key of keysToRemove) {
     localStorage.removeItem(key);
   }
-}
-
-function clearSwCaches() {
-  if (typeof navigator === 'undefined') {
-    return;
-  }
-
-  navigator.serviceWorker.controller?.postMessage({ type: 'CLEAR_AUTH_CACHES' });
 }
 
 export default function LoginPage() {

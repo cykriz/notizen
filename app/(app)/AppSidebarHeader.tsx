@@ -1,9 +1,7 @@
 import Link from 'next/link';
-import { LogOut } from 'lucide-react';
 import { SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
-import { Button } from '@/components/ui/button';
 import { SyncStatusIndicator } from '@/components/SyncStatusIndicator';
-import { logoutAction } from '@/app/login/actions';
+import { LogoutButton } from './LogoutButton';
 import { NAV_TABS, isTabActive } from './navTabs';
 
 interface AppSidebarHeaderProps {
@@ -29,13 +27,7 @@ export function AppSidebarHeader({ authEnabled, pathname }: AppSidebarHeaderProp
         </SidebarMenu>
         <div className="ml-auto flex shrink-0 items-center gap-1">
           <SyncStatusIndicator />
-          {authEnabled && (
-            <form action={logoutAction}>
-              <Button type="submit" variant="ghost" size="icon-xs" title="Abmelden">
-                <LogOut />
-              </Button>
-            </form>
-          )}
+          {authEnabled && <LogoutButton />}
         </div>
       </div>
     </SidebarHeader>

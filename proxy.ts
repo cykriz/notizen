@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { AUTH_COOKIE_NAME, SHARE_CACHE_CONTROL, SHARE_PATH_PREFIX } from '@/lib/constants';
+import { AUTH_COOKIE_NAME, OFFLINE_PATH, SHARE_CACHE_CONTROL, SHARE_PATH_PREFIX } from '@/lib/constants';
 import { isAuthEnabled, getUser, getPasswordHashPrefix } from '@/lib/users';
 import { verifySessionCookie } from '@/lib/auth';
 
@@ -11,7 +11,7 @@ const PUBLIC_PREFIXES = [
   '/manifest.webmanifest',
   '/icons/',
   '/api/health',
-  '/offline',
+  OFFLINE_PATH,
   '/favicon.ico',
   SHARE_PATH_PREFIX,
 ];

@@ -1,4 +1,5 @@
-import { SHARE_PATH_PREFIX } from '@/lib/constants';
+import { OFFLINE_PATH, SHARE_PATH_PREFIX, SW_MSG_CLEAR_AUTH_CACHES } from '@/lib/constants';
+import { offlineHtmlResponse, offlineDataResponse } from './offlineFallback';
 
 declare const self: ServiceWorkerGlobalScope;
 
@@ -9,19 +10,37 @@ const CACHE = {
   misc: "misc-v1",
 } as const;
 
-const OFFLINE_FALLBACK = "/offline";
-const OFFLINE_RESPONSE = (): Response => new Response("Offline", { status: 503, headers: { "Content-Type": "text/plain" } });
+// /login is intentionally not precached: CLEAR_AUTH_CACHES wipes the pages
+// cache on logout, so any cached login page would be erased anyway.
+// Precache is best-effort: /notes redirects to /login (or /setup when no
+// users exist) on an unauthenticated SW install and will be skipped by
+// shouldCacheNavigation. The network-first navigation handler caches it on
+// the first authenticated visit.
+const PRECACHE_URLS = [OFFLINE_PATH, "/notes"];
+const PAGES_CACHE_MAX = 30;
+const API_CACHE_MAX = 20;
+const MISC_CACHE_MAX = 50;
 
 // ── Install ──────────────────────────────────────────────────────────
 self.addEventListener("install", (event) => {
   self.skipWaiting();
-  // Pre-cache app shell routes + offline fallback
-  event.waitUntil(
-    caches.open(CACHE.pages).then((cache) =>
-      cache.addAll([OFFLINE_FALLBACK, "/login"]),
-    ),
-  );
+  event.waitUntil(precacheRoutes());
 });
+
+async function precacheRoutes(): Promise<void> {
+  const cache = await caches.open(CACHE.pages);
+  // Individual cache.put calls inside Promise.allSettled so a single failure
+  // (e.g. /notes redirecting to /login for an unauthenticated SW install)
+  // doesn't abort the whole install like cache.addAll would.
+  await Promise.allSettled(
+    PRECACHE_URLS.map(async (url) => {
+      const response = await fetch(url, { credentials: "same-origin", redirect: "follow" });
+      if (shouldCacheNavigation(response)) {
+        await cache.put(url, response);
+      }
+    }),
+  );
+}
 
 // ── Activate ─────────────────────────────────────────────────────────
 self.addEventListener("activate", (event) => {
@@ -36,7 +55,7 @@ self.addEventListener("activate", (event) => {
 // ── Auth Cache Clearing ─────────────────────────────────────────────
 self.addEventListener("message", (event) => {
   const msgEvent = event as ExtendableMessageEvent;
-  if (msgEvent.data?.type === "CLEAR_AUTH_CACHES") {
+  if (msgEvent.data?.type === SW_MSG_CLEAR_AUTH_CACHES) {
     msgEvent.waitUntil(
       Promise.all([caches.delete(CACHE.api), caches.delete(CACHE.pages)]),
     );
@@ -48,20 +67,14 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Only handle same-origin requests
   if (url.origin !== self.location.origin) return;
-
-  // Skip non-GET (POST/PUT/DELETE go straight to network)
   if (request.method !== "GET") return;
 
   // Public share routes must never be cached by the SW: revocation/expiry
   // must take effect immediately, and the owner's device would otherwise
   // serve stale pages to anonymous viewers on the same device.
-  if (url.pathname.startsWith(SHARE_PATH_PREFIX)) {
-    return;
-  }
+  if (url.pathname.startsWith(SHARE_PATH_PREFIX)) return;
 
-  // Route to the right strategy
   if (request.mode === "navigate") {
     event.respondWith(networkFirstWithFallback(request, CACHE.pages));
   } else if (url.pathname.startsWith("/_next/static/")) {
@@ -87,21 +100,37 @@ async function trimCache(cacheName: string, maxEntries: number): Promise<void> {
 
 // ── Strategies ───────────────────────────────────────────────────────
 
+/**
+ * A navigation response is safe to cache only when it's a non-redirected 2xx
+ * for the requested URL. Redirected responses (e.g. /notes → /login when the
+ * session expires) would otherwise be stored under the original request URL
+ * with content for a different URL, serving stale auth UI to authenticated
+ * users on later visits.
+ */
+function shouldCacheNavigation(response: Response): boolean {
+  return response.ok && !response.redirected;
+}
+
 /** Navigation: network-first, fall back to cache, then offline page. */
 async function networkFirstWithFallback(request: Request, cacheName: string): Promise<Response> {
   try {
     const response = await fetch(request);
-    if (response.ok && !response.redirected) {
+    if (shouldCacheNavigation(response)) {
       const cache = await caches.open(cacheName);
-      cache.put(request, response.clone());
+      // Fire-and-forget; chain trim after put so the cap stays exact. Catch
+      // swallows rejection (e.g. browser refusing to cache a redirected
+      // response) so it doesn't surface as an unhandled rejection.
+      void cache.put(request, response.clone())
+        .then(() => trimCache(cacheName, PAGES_CACHE_MAX))
+        .catch(() => undefined);
     }
     return response;
   } catch {
     const cached = await caches.match(request);
     if (cached) return cached;
-    const fallback = await caches.match(OFFLINE_FALLBACK);
+    const fallback = await caches.match(OFFLINE_PATH);
     if (fallback) return fallback;
-    return OFFLINE_RESPONSE();
+    return offlineHtmlResponse();
   }
 }
 
@@ -111,13 +140,14 @@ async function networkFirst(request: Request, cacheName: string): Promise<Respon
     const response = await fetch(request);
     if (response.ok) {
       const cache = await caches.open(cacheName);
-      cache.put(request, response.clone());
-      void trimCache(cacheName, 20);
+      void cache.put(request, response.clone())
+        .then(() => trimCache(cacheName, API_CACHE_MAX))
+        .catch(() => undefined);
     }
     return response;
   } catch {
     const cached = await caches.match(request);
-    return cached ?? OFFLINE_RESPONSE();
+    return cached ?? offlineDataResponse();
   }
 }
 
@@ -129,11 +159,11 @@ async function cacheFirst(request: Request, cacheName: string): Promise<Response
     const response = await fetch(request);
     if (response.ok) {
       const cache = await caches.open(cacheName);
-      cache.put(request, response.clone());
+      void cache.put(request, response.clone()).catch(() => undefined);
     }
     return response;
   } catch {
-    return OFFLINE_RESPONSE();
+    return offlineDataResponse();
   }
 }
 
@@ -144,11 +174,12 @@ async function staleWhileRevalidate(request: Request, cacheName: string): Promis
 
   const fetchPromise = fetch(request).then((response) => {
     if (response.ok) {
-      cache.put(request, response.clone());
-      void trimCache(cacheName, 50);
+      void cache.put(request, response.clone())
+        .then(() => trimCache(cacheName, MISC_CACHE_MAX))
+        .catch(() => undefined);
     }
     return response;
   }).catch(() => undefined);
 
-  return cached ?? (await fetchPromise) ?? OFFLINE_RESPONSE();
+  return cached ?? (await fetchPromise) ?? offlineDataResponse();
 }

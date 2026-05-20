@@ -21,6 +21,8 @@ See `lib/types.ts` for full definitions. Key types:
 
 ## Core Functions
 
+- `lib/clearSwCaches.ts` — posts `SW_MSG_CLEAR_AUTH_CACHES` to the active SW (no-op outside browser / without `serviceWorker`)
+- `worker/offlineFallback.ts` — last-ditch SW responses (`offlineHtmlResponse`, `offlineDataResponse`) when even `/offline` isn't cached
 - `lib/fsNotes.ts` — CRUD for notes (listNotes, getNote, createNote, updateNote, deleteNote); re-exports attachment helpers
 - `lib/fsAttachments.ts` — attachment CRUD (listAttachments, saveAttachment, deleteAttachment, getAttachmentFilePath)
 - `lib/fsTodos.ts` — CRUD for todos (listTodos, getTodo, createTodo, updateTodo, deleteTodo)
@@ -80,7 +82,7 @@ A valid share token grants read access to the shared note AND every attachment o
 - `app/(app)/notes/page.tsx` — Empty state
 - `app/(app)/notes/[id]/page.tsx` — Note editor + attachments
 - `app/(app)/todos/page.tsx` — Eisenhower Matrix (2x2 grid)
-- `app/(app)/offline/page.tsx` — Offline fallback page
+- `app/offline/page.tsx` — Offline fallback page (top-level, no auth, no sidebar — SW caches and serves this when both network and the user-requested route are unavailable)
 - `app/(app)/error.tsx` — Error boundary
 - `app/share/[token]/page.tsx` — Public read-only shared note view (no `loading.tsx`: a Suspense boundary would flush 200 headers before `notFound()` could set 404)
 - `app/share/layout.tsx`, `app/share/error.tsx`, `app/share/not-found.tsx` — share segment overrides (suppress PWA metadata, render anonymous error / 404 UI)
@@ -101,7 +103,9 @@ A valid share token grants read access to the shared note AND every attachment o
 | NoteOutline | `components/NoteOutline.tsx` — heading-based outline, shared by editor and share view |
 | ThemeToggle | `components/ThemeToggle.tsx` — dark/light theme switch |
 | AppSidebar | `app/(app)/AppSidebar.tsx` — sidebar shell, double-click-to-create, swipe-back |
-| AppSidebarHeader | `app/(app)/AppSidebarHeader.tsx` — tabs (Notizen/Aufgaben), sync indicator, logout |
+| AppSidebarHeader | `app/(app)/AppSidebarHeader.tsx` — tabs (Notizen/Aufgaben), sync indicator, LogoutButton |
+| LogoutButton | `app/(app)/LogoutButton.tsx` — logout submit button; calls `clearSwCaches` before the server action so SW pages cache is purged pre-redirect |
+| OfflineReloadButton | `app/offline/OfflineReloadButton.tsx` — client island used by `/offline` for the "Erneut versuchen" reload button |
 | NotesSidebarContent | `app/(app)/NotesSidebarContent.tsx` — Tags/Alle toggle and main note list (pinned moved to PinnedNotesGroup) |
 | PinnedNotesGroup | `app/(app)/PinnedNotesGroup.tsx` — pinned-notes sidebar group, shown after SharedNotesEntry; caps at 40vh and scrolls internally |
 | TodosSidebarContent | `app/(app)/TodosSidebarContent.tsx` — todos sidebar content |

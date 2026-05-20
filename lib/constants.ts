@@ -10,6 +10,10 @@ export const USERNAME_RE = /^[a-z0-9_-]{1,32}$/;
 
 export const FEEDBACK_FLASH_MS = 1500;
 
+// SW protocol / paths handled by the service worker
+export const SW_MSG_CLEAR_AUTH_CACHES = 'CLEAR_AUTH_CACHES';
+export const OFFLINE_PATH = '/offline';
+
 export const SHARES_DIR = '.shares';
 export const SHARES_FILE = 'shares.json';
 export const SHARE_PATH_PREFIX = '/share/';
