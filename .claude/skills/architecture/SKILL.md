@@ -120,6 +120,7 @@ A valid share token grants read access to the shared note AND every attachment o
 | useFocusOnEditMode | `hooks/useFocusOnEditMode.ts` — focuses MarkdownEditor when preview switches to edit |
 | useAutoShowOutline | `hooks/useAutoShowOutline.ts` — opens the outline once content overflows the editor viewport |
 | ViewportEffects | `app/(app)/ViewportEffects.tsx` — mounts `useVisualViewportHeight` to expose `--app-h` and `data-keyboard-open` for the app shell |
+| useTagStateSync | `app/(app)/useTagStateSync.ts` — sidebar tag-path reconciliation (note open, tag edits, palette nav) |
 | CommandPalette | `app/(app)/CommandPalette.tsx` — Cmd+P search (@ prefix for tag navigation) |
 | tagNavigationStore | `app/(app)/tagNavigationStore.ts` — cross-component tag path navigation |
 | CommandPaletteClient | `app/(app)/CommandPaletteClient.tsx` — client-side command palette |

@@ -5,7 +5,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Sidebar, SidebarContent, useSidebar } from '@/components/ui/sidebar';
 import { DEFAULT_NOTE_TITLE } from '@/lib/constants';
 import { useSwipeBack } from '@/hooks/useSwipeBack';
-import { tagNavigationStore } from './tagNavigationStore';
 import { viewStore } from './viewStore';
 import { isTabActive } from './navTabs';
 import { AppSidebarHeader } from './AppSidebarHeader';
@@ -16,7 +15,7 @@ import { SharedNotesEntry } from './SharedNotesEntry';
 import { TagNavigation } from './TagNavigation';
 import { TodosSidebarContent } from './TodosSidebarContent';
 import { useData } from './DataProvider';
-import { extractNoteId, getNoteTagPath } from '@/lib/noteUtils';
+import { useTagStateSync } from './useTagStateSync';
 
 interface AppSidebarProps {
   authEnabled: boolean;
@@ -29,46 +28,10 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
   const router = useRouter();
   const isTodos = isTabActive('/todos', pathname);
 
-  const noteId = extractNoteId(pathname);
-  const [tagState, setTagState] = useState(() => ({
-    noteId,
-    tagNavVersion: 0,
-    path: getNoteTagPath(notes, pathname),
-  }));
+  const { currentTagPath, setCurrentTagPath, noteId } = useTagStateSync({ notes, pathname });
   const view = useSyncExternalStore(viewStore.subscribe, viewStore.getSnapshot, viewStore.getServerSnapshot);
-  const tagNav = useSyncExternalStore(
-    tagNavigationStore.subscribe,
-    tagNavigationStore.getSnapshot,
-    tagNavigationStore.getServerSnapshot,
-  );
   const [pending, setPending] = useState(false);
   const pendingRef = useRef(false);
-
-  // Render-time sync: when a different note is opened, jump to its tag folder —
-  // unless the sidebar is already on one of the note's tags (or a parent folder),
-  // in which case we stay put so the user keeps their browsing context.
-  if (noteId !== tagState.noteId) {
-    let path = tagState.path;
-    if (noteId !== null) {
-      const note = notes.find((n) => n.id === noteId);
-      const keep =
-        tagState.path !== '' &&
-        note?.tags.some((t) => t === tagState.path || t.startsWith(`${tagState.path}/`)) === true;
-      path = keep ? tagState.path : getNoteTagPath(notes, pathname);
-    }
-
-    setTagState({ noteId, tagNavVersion: tagState.tagNavVersion, path });
-  }
-
-  // Render-time sync: when a tag is selected from the command palette, navigate sidebar to that path.
-  if (tagNav.version > tagState.tagNavVersion) {
-    setTagState({ noteId: tagState.noteId, tagNavVersion: tagNav.version, path: tagNav.path });
-  }
-
-  const currentTagPath = tagState.path;
-  const setCurrentTagPath = useCallback((path: string) => {
-    setTagState((prev) => ({ ...prev, path }));
-  }, []);
 
   const [swipeEl, setSwipeEl] = useState<HTMLDivElement | null>(null);
   const handleTagBack = useCallback(() => {
