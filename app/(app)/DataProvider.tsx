@@ -31,8 +31,6 @@ import { useDataSync } from '@/hooks/useDataSync';
 import { DataContext } from './dataContext';
 import { sharedNotesStore } from './sharedNotesStore';
 
-export { useData } from './dataContext';
-
 interface DataProviderProps {
   initialNotes: NoteSummary[];
   initialTodos: Todo[];
@@ -50,7 +48,7 @@ export function DataProvider({ initialNotes, initialTodos, children }: DataProvi
   todosRef.current = todos;
   isOnlineRef.current = isOnline;
 
-  const { hasPendingSync, setHasPendingSync, failedSyncCount, clearFailed, refreshFromServer, syncPending } = useDataSync({
+  const { hasPendingSync, setHasPendingSync, failedSyncCount, failedSyncVersion, clearFailed, refreshFromServer, syncPending } = useDataSync({
     isOnline,
     isOnlineRef,
     setNotes,
@@ -156,6 +154,7 @@ export function DataProvider({ initialNotes, initialTodos, children }: DataProvi
         isOnline,
         hasPendingSync,
         failedSyncCount,
+        failedSyncVersion,
         clearFailedSync: clearFailed,
         createNote: handleCreateNote,
         updateNote: handleUpdateNote,

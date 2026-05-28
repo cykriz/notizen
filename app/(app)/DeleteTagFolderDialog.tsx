@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { stripFolderTags } from '@/lib/offlineTagFolder';
 import { getNotesUnderPath } from '@/lib/tagTree';
-import { useData } from './DataProvider';
+import { useData } from './dataContext';
 
 interface DeleteTagFolderDialogProps {
   path: string;

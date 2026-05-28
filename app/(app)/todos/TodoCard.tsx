@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { cn, formatDate } from '@/lib/utils';
-import { useData } from '../DataProvider';
+import { useData } from '../dataContext';
 import type { Todo } from '@/lib/fsTodos';
 import type { NoteSummary } from '@/lib/types';
 

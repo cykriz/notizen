@@ -11,6 +11,7 @@ export interface DataContextValue {
   isOnline: boolean;
   hasPendingSync: boolean;
   failedSyncCount: number;
+  failedSyncVersion: number;
   clearFailedSync: () => void;
   createNote: (input: CreateNoteInput) => Promise<Note>;
   updateNote: (id: string, input: UpdateNoteInput) => Promise<void>;

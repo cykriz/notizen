@@ -13,7 +13,7 @@ import type { Attachment, Note } from '@/lib/fsNotes';
 import type { NoteSummary, PreviewMode } from '@/lib/types';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { DeleteNoteDialog } from '../../DeleteNoteDialog';
-import { useData } from '../../DataProvider';
+import { useData } from '../../dataContext';
 import { NoteHeader } from './NoteHeader';
 import { SaveIndicator } from './SaveIndicator';
 import { NoteOutline, extractHeadings } from '@/components/NoteOutline';

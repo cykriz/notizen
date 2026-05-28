@@ -1,10 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Sidebar, SidebarContent, useSidebar } from '@/components/ui/sidebar';
-import { DEFAULT_NOTE_TITLE } from '@/lib/constants';
+import { DEFAULT_NOTE_TITLE, SYNC_ENTITY } from '@/lib/constants';
+import { getFailedSyncQueue } from '@/lib/failedSyncQueue';
 import { useSwipeBack } from '@/hooks/useSwipeBack';
+import { withFailedSyncTag } from './failedSyncTag';
 import { viewStore } from './viewStore';
 import { isTabActive } from './navTabs';
 import { AppSidebarHeader } from './AppSidebarHeader';
@@ -14,7 +16,7 @@ import { PinnedNotesGroup } from './PinnedNotesGroup';
 import { SharedNotesEntry } from './SharedNotesEntry';
 import { TagNavigation } from './TagNavigation';
 import { TodosSidebarContent } from './TodosSidebarContent';
-import { useData } from './DataProvider';
+import { useData } from './dataContext';
 import { useTagStateSync } from './useTagStateSync';
 
 interface AppSidebarProps {
@@ -22,11 +24,25 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ authEnabled }: AppSidebarProps) {
-  const { notes, todos, createNote } = useData();
+  const { notes, todos, createNote, failedSyncVersion } = useData();
   const { isMobile, setOpenMobile } = useSidebar();
   const pathname = usePathname();
   const router = useRouter();
   const isTodos = isTabActive('/todos', pathname);
+
+  // Augment notes with the synthetic FAILED_SYNC_TAG for sidebar display only.
+  // useTagStateSync gets the un-augmented `notes` so opening a failed-sync note
+  // never auto-jumps the sidebar into the sync-fehler folder.
+  // failedSyncVersion drives the memo — getFailedSyncQueue reads localStorage,
+  // which is invisible to React. Version bumps on every add/remove (not just
+  // count change), so a same-tick add+remove that nets to equal length still
+  // refreshes the set.
+  const failedNoteIds = useMemo(
+    () => new Set(getFailedSyncQueue().filter((e) => e.entityType === SYNC_ENTITY.NOTE).map((e) => e.entityId)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- failedSyncVersion is the reactive proxy for the queue contents
+    [failedSyncVersion],
+  );
+  const displayNotes = useMemo(() => withFailedSyncTag(notes, failedNoteIds), [notes, failedNoteIds]);
 
   const { currentTagPath, setCurrentTagPath, noteId } = useTagStateSync({ notes, pathname });
   const view = useSyncExternalStore(viewStore.subscribe, viewStore.getSnapshot, viewStore.getServerSnapshot);
@@ -126,7 +142,7 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
 
         {!isTodos && view === 'tags' && (
           <TagNavigation
-            notes={notes}
+            notes={displayNotes}
             currentPath={currentTagPath}
             setCurrentPath={setCurrentTagPath}
             onFolderDeleted={handleFolderDeleted}
@@ -138,7 +154,7 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
             <TodosSidebarContent todos={todos} />
           ) : (
             <NotesSidebarContent
-              notes={notes}
+              notes={displayNotes}
               currentTagPath={currentTagPath}
               view={view}
               handleCreate={handleCreate}

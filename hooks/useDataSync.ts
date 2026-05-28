@@ -17,6 +17,10 @@ interface UseDataSyncArgs {
 export function useDataSync({ isOnline, isOnlineRef, setNotes, setTodos }: UseDataSyncArgs) {
   const [hasPendingSync, setHasPendingSync] = useState(() => getPendingCount() > 0);
   const [failedSyncCount, setFailedSyncCount] = useState(() => getFailedSyncCount());
+  // Bumps whenever the failed queue is mutated, even when the count nets out
+  // to the same length (one removal + one addition in a single drain). Memo
+  // keys depending on queue *contents* should use this, not failedSyncCount.
+  const [failedSyncVersion, setFailedSyncVersion] = useState(0);
 
   const refreshFromServer = useCallback(async () => {
     if (!isOnlineRef.current) {
@@ -92,6 +96,7 @@ export function useDataSync({ isOnline, isOnlineRef, setNotes, setTodos }: UseDa
       }
 
       setFailedSyncCount(getFailedSyncCount());
+      setFailedSyncVersion((v) => v + 1);
       const remaining = getPendingCount();
       setHasPendingSync(remaining > 0);
 
@@ -131,6 +136,7 @@ export function useDataSync({ isOnline, isOnlineRef, setNotes, setTodos }: UseDa
         }
 
         setFailedSyncCount(getFailedSyncCount());
+        setFailedSyncVersion((v) => v + 1);
         const remaining = getPendingCount();
         setHasPendingSync(remaining > 0);
         if (remaining === 0) {
@@ -145,7 +151,13 @@ export function useDataSync({ isOnline, isOnlineRef, setNotes, setTodos }: UseDa
   const clearFailed = useCallback(() => {
     clearFailedSyncQueue();
     setFailedSyncCount(0);
-  }, []);
+    setFailedSyncVersion((v) => v + 1);
+    // Cache-only rows kept alive solely by failed entries (see mergeById) are
+    // now orphans. Refresh from server to drop them; when offline this is a
+    // no-op (refreshFromServer swallows its own errors) and the orphans
+    // linger until the next reconnect, matching the rest of the offline UX.
+    void refreshFromServer();
+  }, [refreshFromServer]);
 
-  return { hasPendingSync, setHasPendingSync, failedSyncCount, clearFailed, refreshFromServer, syncPending };
+  return { hasPendingSync, setHasPendingSync, failedSyncCount, failedSyncVersion, clearFailed, refreshFromServer, syncPending };
 }

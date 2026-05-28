@@ -62,6 +62,7 @@ export const SYNC_ACTION = {
 
 export const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
 export const SYNC_MAX_RETRIES = 5;
+export const FAILED_SYNC_TAG = 'sync-fehler';
 export const SYNC_HEALTH_POLL_MS = 10_000;
 export const SYNC_RETRY_INTERVAL_MS = 10_000;
 export const SYNC_RETRY_MAX_INTERVAL_MS = 5 * 60_000; // 5 min cap

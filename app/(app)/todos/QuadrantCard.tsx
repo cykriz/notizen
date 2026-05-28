@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { TodoCard } from './TodoCard';
-import { useData } from '../DataProvider';
+import { useData } from '../dataContext';
 import { QUADRANT, QUADRANT_META } from '@/lib/constants';
 import type { QuadrantMeta, NoteSummary } from '@/lib/types';
 import type { Todo, TodoQuadrant } from '@/lib/fsTodos';

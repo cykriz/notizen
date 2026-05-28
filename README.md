@@ -49,17 +49,17 @@ bun run user migrate <username>          # move legacy root-level data into user
 
 ### Environment Variables
 
-| Variable     | Default            | Description                    |
-| ------------ | ------------------ | ------------------------------ |
-| `NOTES_ROOT` | `./dev-notes`      | Root directory for note storage |
-| `PORT`       | `3000`             | Server port                    |
+| Variable     | Default       | Description                     |
+| ------------ | ------------- | ------------------------------- |
+| `NOTES_ROOT` | `./dev-notes` | Root directory for note storage |
+| `PORT`       | `3000`        | Server port                     |
 
 ## Deploy on Synology NAS
 
 ### Prerequisites
 
 - Synology DSM 7.x with **Container Manager** (Docker) installed
-- SSH access (host configured as `ds` in `~/.ssh/config`)
+- SSH access
 
 ### One-Command Deploy
 
@@ -103,7 +103,7 @@ In DSM → **Control Panel** → **Login Portal** → **Advanced** → **Reverse
 
 | Field       | Value                          |
 | ----------- | ------------------------------ |
-| Source       | `https://notes.yourdomain.com` |
+| Source      | `https://notes.yourdomain.com` |
 | Destination | `http://localhost:3000`        |
 
 ### Backup
@@ -338,12 +338,12 @@ All errors return:
 { "error": "Description of what went wrong" }
 ```
 
-| Status | Meaning           |
-| ------ | ----------------- |
-| 400    | Validation error  |
-| 401    | Unauthorized      |
-| 404    | Not found         |
-| 500    | Internal error    |
+| Status | Meaning          |
+| ------ | ---------------- |
+| 400    | Validation error |
+| 401    | Unauthorized     |
+| 404    | Not found        |
+| 500    | Internal error   |
 
 ## Tech Stack
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, Folder, Tag, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,6 +12,8 @@ import {
 } from '@/components/ui/sidebar';
 import { buildTagTree, getChildNodes } from '@/lib/tagTree';
 import type { NoteSummary } from '@/lib/types';
+import { FAILED_SYNC_TAG } from '@/lib/constants';
+import { ClearFailedSyncDialog } from './ClearFailedSyncDialog';
 import { DeleteTagFolderDialog } from './DeleteTagFolderDialog';
 
 interface TagNavigationProps {
@@ -23,6 +25,7 @@ interface TagNavigationProps {
 
 export function TagNavigation({ notes, currentPath, setCurrentPath, onFolderDeleted }: TagNavigationProps) {
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [clearFailedOpen, setClearFailedOpen] = useState(false);
   const tree = useMemo(() => buildTagTree(notes), [notes]);
   const children = useMemo(() => getChildNodes(tree, currentPath), [tree, currentPath]);
   const hasNotesAtLevel = useMemo(
@@ -31,6 +34,16 @@ export function TagNavigation({ notes, currentPath, setCurrentPath, onFolderDele
     [notes, currentPath],
   );
   const pathSegments = currentPath !== '' ? currentPath.split('/') : [];
+  const isFailedSyncTag = currentPath === FAILED_SYNC_TAG;
+
+  // Auto-pop when the synthetic sync-fehler folder vanishes via a background
+  // retry that cleared the last failed entry. The dialog flow already calls
+  // setCurrentPath('') from onCleared, so this only fires for the silent path.
+  useEffect(() => {
+    if (isFailedSyncTag && !notes.some((n) => n.tags.includes(FAILED_SYNC_TAG))) {
+      setCurrentPath('');
+    }
+  }, [isFailedSyncTag, notes, setCurrentPath]);
 
   const handleBack = () => {
     const parts = currentPath.split('/');
@@ -64,23 +77,48 @@ export function TagNavigation({ notes, currentPath, setCurrentPath, onFolderDele
               </Button>
             </span>
           ))}
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            onClick={() => {
-              setDeleteOpen(true);
-            }}
-            className="ml-auto shrink-0 text-destructive hover:text-destructive"
-            title="Ordner löschen"
-          >
-            <Trash2 />
-          </Button>
-          <DeleteTagFolderDialog
-            path={currentPath}
-            open={deleteOpen}
-            onOpenChange={setDeleteOpen}
-            onDeleted={onFolderDeleted}
-          />
+          {isFailedSyncTag ? (
+            <>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onClick={() => {
+                  setClearFailedOpen(true);
+                }}
+                className="ml-auto shrink-0 text-destructive hover:text-destructive"
+                title="Fehlgeschlagene Synchronisierungen löschen"
+              >
+                <Trash2 />
+              </Button>
+              <ClearFailedSyncDialog
+                open={clearFailedOpen}
+                onOpenChange={setClearFailedOpen}
+                onCleared={() => {
+                  setCurrentPath('');
+                }}
+              />
+            </>
+          ) : (
+            <>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onClick={() => {
+                  setDeleteOpen(true);
+                }}
+                className="ml-auto shrink-0 text-destructive hover:text-destructive"
+                title="Ordner löschen"
+              >
+                <Trash2 />
+              </Button>
+              <DeleteTagFolderDialog
+                path={currentPath}
+                open={deleteOpen}
+                onOpenChange={setDeleteOpen}
+                onDeleted={onFolderDeleted}
+              />
+            </>
+          )}
         </div>
       )}
 

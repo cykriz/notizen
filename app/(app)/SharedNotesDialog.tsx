@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { buildShareUrl } from '@/lib/shareFormat';
 import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
-import { useData } from './DataProvider';
+import { useData } from './dataContext';
 import { sharedNotesStore } from './sharedNotesStore';
 import { revokeShareLinkAction } from './shareActions';
 import { SharedNotesList } from './SharedNotesList';

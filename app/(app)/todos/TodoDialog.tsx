@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ClearableDateInput } from './ClearableDateInput';
 import { LinkedNotesField } from './LinkedNotesField';
-import { useData } from '../DataProvider';
+import { useData } from '../dataContext';
 import { QUADRANT_META } from '@/lib/constants';
 import type { Todo, TodoQuadrant } from '@/lib/fsTodos';
 import type { NoteSummary } from '@/lib/types';

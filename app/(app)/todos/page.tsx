@@ -1,6 +1,6 @@
 'use client';
 
-import { useData } from '@/app/(app)/DataProvider';
+import { useData } from '@/app/(app)/dataContext';
 import { EisenhowerMatrix } from './EisenhowerMatrix';
 
 export default function TodosPage() {

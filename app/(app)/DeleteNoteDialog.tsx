@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useData } from './DataProvider';
+import { useData } from './dataContext';
 
 interface DeleteNoteDialogProps {
   noteId: string;

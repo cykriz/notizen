@@ -45,6 +45,7 @@ See `lib/types.ts` for full definitions. Key types:
 - `lib/shareContent.ts` — rewrite attachment URLs in shared note bodies (rewriteAttachmentUrlsForShare)
 - `app/(app)/sharedNotesStore.ts` — client store (`refresh`, `upsert`, `removeByNoteId`) for the current user's active shares
 - `app/(app)/navTabs.ts` — shared `NAV_TABS` (route + label + icon) and `isTabActive(href, pathname)` used by sidebar header and mobile bottom nav
+- `app/(app)/failedSyncTag.ts` — render-time helper `withFailedSyncTag(notes, failedIds)` injects the reserved `FAILED_SYNC_TAG` (`sync-fehler`, see `lib/constants.ts`) onto notes whose sync permanently failed; sidebar-only, never persisted
 
 ## API Routes
 
@@ -113,6 +114,7 @@ A valid share token grants read access to the shared note AND every attachment o
 | DataProvider | `app/(app)/DataProvider.tsx` — client-side data context |
 | DeleteNoteDialog | `app/(app)/DeleteNoteDialog.tsx` — note deletion confirmation |
 | DeleteTagFolderDialog | `app/(app)/DeleteTagFolderDialog.tsx` — tag folder deletion confirmation |
+| ClearFailedSyncDialog | `app/(app)/ClearFailedSyncDialog.tsx` — confirms purge of the failed sync queue; opened from SyncStatusIndicator and from the sync-fehler TagNavigation toolbar |
 | NoteListItem | `app/(app)/NoteListItem.tsx` — note list entry |
 | MobileBottomNav | `app/(app)/MobileBottomNav.tsx` — bottom tab bar (`md:hidden`) |
 | useVisualViewportHeight | `hooks/useVisualViewportHeight.ts` — tracks `window.visualViewport`; sets `--app-h` on `<html>` and toggles `data-keyboard-open` so the app shell shrinks and mobile UI hides when the on-screen keyboard opens |

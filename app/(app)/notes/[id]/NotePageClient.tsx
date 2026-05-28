@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useReducer } from 'react';
-import { useData } from '@/app/(app)/DataProvider';
+import { useData } from '@/app/(app)/dataContext';
 import { setCachedNote } from '@/lib/localCache';
 import type { Note, NoteSummary } from '@/lib/types';
 import { NoteEditor } from './NoteEditor';

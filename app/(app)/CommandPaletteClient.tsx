@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useData } from './DataProvider';
+import { useData } from './dataContext';
 
 const CommandPalette = dynamic(
   () => import('./CommandPalette').then((m) => m.CommandPalette),

@@ -21,9 +21,11 @@ const TOMBSTONES_KEY = `${PREFIX}tombstones`;
 /**
  * Merge server (primary) and localStorage (cached) arrays by `id`.
  * For each item: pick whichever has the newer `updatedAt`.
- * Cache-only items are kept only if they have a pending sync action
- * (create/update); otherwise they were likely deleted externally and are dropped.
- * Items with a pending delete or a tombstone are excluded entirely.
+ * Cache-only items are kept only if they have a pending OR failed sync entry
+ * (failed CREATE/UPDATE stay visible until the user clears the failed queue);
+ * otherwise they were likely deleted externally and are dropped.
+ * Items with a pending delete or a tombstone are excluded entirely — this is
+ * why failed DELETEs never surface (the tombstone is added before the enqueue).
  */
 export function mergeById<T extends { id: string; updatedAt: string }>(
   primary: T[],
@@ -31,8 +33,7 @@ export function mergeById<T extends { id: string; updatedAt: string }>(
 ): T[] {
   const queue = getSyncQueue();
   const pendingDeletes = new Set(queue.filter((e) => e.action === 'delete').map((e) => e.entityId));
-  const failedNonDeletes = getFailedSyncQueue().filter((e) => e.action !== 'delete');
-  const pendingAll = new Set([...queue, ...failedNonDeletes].map((e) => e.entityId));
+  const pendingAll = new Set([...queue, ...getFailedSyncQueue()].map((e) => e.entityId));
   const tombstones = getTombstones();
   const cachedMap = new Map(cached.map((item) => [item.id, item]));
   const seen = new Set<string>();
@@ -50,12 +51,14 @@ export function mergeById<T extends { id: string; updatedAt: string }>(
     merged.push(localIsNewer ? localItem : serverItem);
   }
 
-  // Append items only in localStorage if they have pending actions.
-  // Items with no pending create/update/delete that are missing from the server
-  // were likely deleted externally — drop them (except those in pendingDeletes).
+  // Append cache-only items (not in `seen`) iff they have any pending or failed
+  // sync entry — failed CREATEs and UPDATEs stay visible until the user clears
+  // the failed queue. Failed DELETEs never surface: deleteNoteOffline /
+  // deleteTodoOffline always add a tombstone before enqueuing, and tombstones
+  // win over failed entries. Items with no pending/failed entry were likely
+  // deleted externally and are dropped.
   for (const item of cached) {
-    if (!seen.has(item.id) && !pendingDeletes.has(item.id)) {
-      // Keep if it has any pending sync action (create/update/failed recovery)
+    if (!seen.has(item.id) && !pendingDeletes.has(item.id) && !tombstones.has(item.id)) {
       if (pendingAll.has(item.id)) {
         merged.push(item);
       }
