@@ -4,10 +4,10 @@ import { offlineHtmlResponse, offlineDataResponse } from './offlineFallback';
 declare const self: ServiceWorkerGlobalScope;
 
 const CACHE = {
-  static: "static-v1",
-  pages: "pages-v2",
-  api: "api-v1",
-  misc: "misc-v1",
+  static: 'static-v1',
+  pages: 'pages-v2',
+  api: 'api-v1',
+  misc: 'misc-v1',
 } as const;
 
 // /login is intentionally not precached: CLEAR_AUTH_CACHES wipes the pages
@@ -16,13 +16,13 @@ const CACHE = {
 // users exist) on an unauthenticated SW install and will be skipped by
 // shouldCacheNavigation. The network-first navigation handler caches it on
 // the first authenticated visit.
-const PRECACHE_URLS = [OFFLINE_PATH, "/notes"];
+const PRECACHE_URLS = [OFFLINE_PATH, '/notes'];
 const PAGES_CACHE_MAX = 30;
 const API_CACHE_MAX = 20;
 const MISC_CACHE_MAX = 50;
 
 // ── Install ──────────────────────────────────────────────────────────
-self.addEventListener("install", (event) => {
+self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(precacheRoutes());
 });
@@ -34,7 +34,7 @@ async function precacheRoutes(): Promise<void> {
   // doesn't abort the whole install like cache.addAll would.
   await Promise.allSettled(
     PRECACHE_URLS.map(async (url) => {
-      const response = await fetch(url, { credentials: "same-origin", redirect: "follow" });
+      const response = await fetch(url, { credentials: 'same-origin', redirect: 'follow' });
       if (shouldCacheNavigation(response)) {
         await cache.put(url, response);
       }
@@ -43,43 +43,44 @@ async function precacheRoutes(): Promise<void> {
 }
 
 // ── Activate ─────────────────────────────────────────────────────────
-self.addEventListener("activate", (event) => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((names) => {
-      const valid = new Set<string>(Object.values(CACHE));
-      return Promise.all(names.filter((n) => !valid.has(n)).map((n) => caches.delete(n)));
-    }).then(() => self.clients.claim()),
+    caches
+      .keys()
+      .then((names) => {
+        const valid = new Set<string>(Object.values(CACHE));
+        return Promise.all(names.filter((n) => !valid.has(n)).map((n) => caches.delete(n)));
+      })
+      .then(() => self.clients.claim()),
   );
 });
 
 // ── Auth Cache Clearing ─────────────────────────────────────────────
-self.addEventListener("message", (event) => {
+self.addEventListener('message', (event) => {
   const msgEvent = event as ExtendableMessageEvent;
   if (msgEvent.data?.type === SW_MSG_CLEAR_AUTH_CACHES) {
-    msgEvent.waitUntil(
-      Promise.all([caches.delete(CACHE.api), caches.delete(CACHE.pages)]),
-    );
+    msgEvent.waitUntil(Promise.all([caches.delete(CACHE.api), caches.delete(CACHE.pages)]));
   }
 });
 
 // ── Fetch ────────────────────────────────────────────────────────────
-self.addEventListener("fetch", (event) => {
+self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
   if (url.origin !== self.location.origin) return;
-  if (request.method !== "GET") return;
+  if (request.method !== 'GET') return;
 
   // Public share routes must never be cached by the SW: revocation/expiry
   // must take effect immediately, and the owner's device would otherwise
   // serve stale pages to anonymous viewers on the same device.
   if (url.pathname.startsWith(SHARE_PATH_PREFIX)) return;
 
-  if (request.mode === "navigate") {
+  if (request.mode === 'navigate') {
     event.respondWith(networkFirstWithFallback(request, CACHE.pages));
-  } else if (url.pathname.startsWith("/_next/static/")) {
+  } else if (url.pathname.startsWith('/_next/static/')) {
     event.respondWith(cacheFirst(request, CACHE.static));
-  } else if (url.pathname.startsWith("/api/")) {
+  } else if (url.pathname.startsWith('/api/')) {
     event.respondWith(networkFirst(request, CACHE.api));
   } else {
     event.respondWith(staleWhileRevalidate(request, CACHE.misc));
@@ -120,7 +121,8 @@ async function networkFirstWithFallback(request: Request, cacheName: string): Pr
       // Fire-and-forget; chain trim after put so the cap stays exact. Catch
       // swallows rejection (e.g. browser refusing to cache a redirected
       // response) so it doesn't surface as an unhandled rejection.
-      void cache.put(request, response.clone())
+      void cache
+        .put(request, response.clone())
         .then(() => trimCache(cacheName, PAGES_CACHE_MAX))
         .catch(() => undefined);
     }
@@ -128,6 +130,16 @@ async function networkFirstWithFallback(request: Request, cacheName: string): Pr
   } catch {
     const cached = await caches.match(request);
     if (cached) return cached;
+    // PWA start_url is "/", which 307s to /notes. The redirect itself can't be
+    // cached under "/", so an offline cold-launch from the home-screen icon
+    // would otherwise fall through to /offline. Serve the cached /notes shell
+    // instead when it's available.
+    if (new URL(request.url).pathname === '/') {
+      const home = await caches.match('/notes');
+      if (home) {
+        return home;
+      }
+    }
     const fallback = await caches.match(OFFLINE_PATH);
     if (fallback) return fallback;
     return offlineHtmlResponse();
@@ -140,7 +152,8 @@ async function networkFirst(request: Request, cacheName: string): Promise<Respon
     const response = await fetch(request);
     if (response.ok) {
       const cache = await caches.open(cacheName);
-      void cache.put(request, response.clone())
+      void cache
+        .put(request, response.clone())
         .then(() => trimCache(cacheName, API_CACHE_MAX))
         .catch(() => undefined);
     }
@@ -172,14 +185,17 @@ async function staleWhileRevalidate(request: Request, cacheName: string): Promis
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
 
-  const fetchPromise = fetch(request).then((response) => {
-    if (response.ok) {
-      void cache.put(request, response.clone())
-        .then(() => trimCache(cacheName, MISC_CACHE_MAX))
-        .catch(() => undefined);
-    }
-    return response;
-  }).catch(() => undefined);
+  const fetchPromise = fetch(request)
+    .then((response) => {
+      if (response.ok) {
+        void cache
+          .put(request, response.clone())
+          .then(() => trimCache(cacheName, MISC_CACHE_MAX))
+          .catch(() => undefined);
+      }
+      return response;
+    })
+    .catch(() => undefined);
 
   return cached ?? (await fetchPromise) ?? offlineDataResponse();
 }
