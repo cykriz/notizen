@@ -24,9 +24,9 @@ export async function listAttachments(noteId: string, root: string): Promise<Att
     for (const file of files) {
       const filePath = path.join(attDir, file);
       const stat = await fs.stat(filePath);
-      const parts = file.split('_', 2);
-      const attId = parts[0];
-      const originalName = parts.length > 1 ? parts[1] : file;
+      const sep = file.indexOf('_');
+      const attId = sep !== -1 ? file.slice(0, sep) : file;
+      const originalName = sep !== -1 ? file.slice(sep + 1) : file;
 
       attachments.push({
         id: attId,
@@ -92,8 +92,8 @@ export async function getAttachmentFilePath(
     throw new NotFoundError(`Attachment not found: ${attId}`);
   }
 
-  const parts = target.split('_', 2);
-  const originalName = parts.length > 1 ? parts[1] : target;
+  const sep = target.indexOf('_');
+  const originalName = sep !== -1 ? target.slice(sep + 1) : target;
 
   return {
     filePath: path.join(attDir, target),

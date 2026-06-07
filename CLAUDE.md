@@ -22,6 +22,7 @@ Next.js 16 + React 19 + Bun + TypeScript (strict) + Tailwind v4 + shadcn/ui. Fil
 - `NOTES_ROOT` env var points to data directory
 - `revalidatePath()` after mutations (skip on `dynamic = 'force-dynamic'` pages — they rebuild every request)
 - No database, no experimental Next.js features, no new packages without updating this file
+  - Exception: `experimental.middlewareClientMaxBodySize` in `next.config.ts` is required to raise Next.js's default 10 MB middleware body buffer so large audio/video attachments (>10 MB) pass through intact.
 - When a missing type definition or API is needed, propose installing a proper package — never write manual shims or workarounds when a package exists. Update this file when adding a package.
 - Every imported package must be a **direct dependency** in `package.json` — never rely on transitive deps (they break in clean Docker installs)
 - Tags are hierarchical, slash-separated (e.g. `dev/python/fastapi`)

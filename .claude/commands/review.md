@@ -59,4 +59,4 @@ At the very end, add a short numbered list of all findings as actionable TODOs (
 
 ## Fix Plan
 
-If the review found any issues, create a markdown plan file (in `.claude/plans/`) that lists every issue as an actionable fix step — grouped by severity, with file paths, quoted problematic code, and the proposed fix. This allows the user to review all fixes at a glance and say "all" to apply them. Delete the plan file after all fixes have been implemented.
+If the review found any issues, output a markdown fix plan directly in the chat — do NOT write it to a file. Wrap the entire plan in ```` (four backticks) so nested code blocks render correctly. The plan should list every issue as an actionable fix step, grouped by severity, with file paths, quoted problematic code, and the proposed fix. This allows the user to review all fixes at a glance and say "all" to apply them.

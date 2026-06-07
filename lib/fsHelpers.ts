@@ -69,6 +69,15 @@ export function guessMimeType(filename: string): string {
     '.txt': 'text/plain',
     '.md': 'text/markdown',
     '.json': 'application/json',
+    '.m4a': 'audio/mp4',
+    '.mp3': 'audio/mpeg',
+    '.wav': 'audio/wav',
+    '.ogg': 'audio/ogg',
+    '.flac': 'audio/flac',
+    '.aac': 'audio/aac',
+    '.mp4': 'video/mp4',
+    '.mov': 'video/quicktime',
+    '.webm': 'video/webm',
   };
   return map[ext] ?? 'application/octet-stream';
 }

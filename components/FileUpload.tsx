@@ -35,6 +35,9 @@ export function FileUpload({ noteId, onUploaded }: FileUploadProps) {
           if (res.ok) {
             const att = (await res.json()) as Attachment;
             onUploaded?.(att);
+          } else {
+            setError('Upload fehlgeschlagen');
+            break;
           }
         }
       } catch {
