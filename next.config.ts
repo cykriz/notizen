@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   experimental: {
     // Proxy buffers request bodies before forwarding; default cap is 10 MB.
     // Raise this so large file uploads (audio/video attachments) pass through intact.
-    proxyClientMaxBodySize: 100 * 1024 * 1024, // 100 MB
+    proxyClientMaxBodySize: 500 * 1024 * 1024, // 500 MB
   },
 };
 
