@@ -44,7 +44,12 @@ echo "==> SSH-Verbindung herstellen (einmalige Passwort-Eingabe)..."
 ssh -fNM -p "$NAS_PORT" -o ControlMaster=yes "${SSH_OPTS[@]}" "$NAS"
 
 echo "==> Image bauen (linux/amd64)..."
-docker build --platform linux/amd64 -t "$IMAGE" .
+# Pin the SW cache version to the git commit: same commit = same pages-/static-
+# <id>, so a redeploy of the same commit doesn't needlessly re-warm caches, and
+# distinct commits rotate. Empty (no git) is fine — next.config.ts falls back to
+# a random id. Short SHA is hex-only, safe to interpolate.
+SW_BUILD_ID="$(git -C "$SCRIPT_DIR/.." rev-parse --short HEAD 2>/dev/null || true)"
+docker build --platform linux/amd64 --build-arg SW_BUILD_ID="$SW_BUILD_ID" -t "$IMAGE" .
 
 echo "==> Image exportieren..."
 docker save "$IMAGE" | gzip > "$ARCHIVE"

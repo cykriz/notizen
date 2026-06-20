@@ -45,18 +45,20 @@ For each changed file, verify it follows the rules defined in its matching skill
 
 ## Output Format
 
+Only include a section if it has at least one finding — omit any category that is empty (do not print empty headings or "none found"). Order the sections that do have findings as follows:
+
 1. **Critical** — bugs or broken behavior
 2. **Skill violations** — code that breaks a rule from a SKILL.md (cite the rule)
 3. **Next.js issues** — wrong patterns for the framework
 4. **Performance** — quick wins
 5. **Minor** — style, naming, cleanup
 
-Quote the problematic code and show the fix inline.
+Quote the problematic code and show the fix inline. If the review found no issues at all, say so in a single line.
 
 ## TODO Summary
 
 At the very end, add a short numbered list of all findings as actionable TODOs (one line each) so the user can quickly pick which ones to implement — or say "all".
 
-## Fix Plan
+## Copyable Fix Plan
 
 If the review found any issues, output a markdown fix plan directly in the chat — do NOT write it to a file. Wrap the entire plan in ```` (four backticks) so nested code blocks render correctly. The plan should list every issue as an actionable fix step, grouped by severity, with file paths, quoted problematic code, and the proposed fix. This allows the user to review all fixes at a glance and say "all" to apply them.

@@ -1,8 +1,18 @@
 import { createSerwistRoute } from '@serwist/turbopack';
 import type { NextRequest } from 'next/server';
 
+// An empty SW_BUILD_ID must fall back too (see next.config.ts). Explicit check
+// rather than `||` for the strict-boolean / prefer-nullish lint rules.
+const envBuildId = process.env.SW_BUILD_ID;
+const buildId = envBuildId !== undefined && envBuildId !== '' ? envBuildId : 'dev';
+
 const serwistRoute = createSerwistRoute({
   swSrc: 'worker/sw.ts',
+  esbuildOptions: {
+    define: {
+      'process.env.SW_BUILD_ID': JSON.stringify(buildId),
+    },
+  },
 });
 
 export const { dynamic, dynamicParams, revalidate } = serwistRoute;

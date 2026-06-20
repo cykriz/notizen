@@ -26,6 +26,8 @@ import {
 } from '@/lib/localCache';
 import { cleanExpiredEntries, mergeById } from '@/lib/localCacheMerge';
 import { getPendingCount } from '@/lib/syncQueue';
+import { OFFLINE_SHELL_PATH } from '@/lib/constants';
+import { warmPageCache } from '@/lib/warmPageCache';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useDataSync } from '@/hooks/useDataSync';
 import { DataContext } from './dataContext';
@@ -84,6 +86,14 @@ export function DataProvider({ initialNotes, initialTodos, children }: DataProvi
 
     cleanExpiredEntries();
     setHasPendingSync(getPendingCount() > 0);
+    // Not redundant with install-time precache: that only stores the shell
+    // HTML, NOT its `/notes/[id]` chunks. The static cache is build-versioned
+    // (static-<buildId>), so it's empty after every deploy until something
+    // warms it. This re-warm fills the shell's chunks into the new build's
+    // static cache (warmStaticAssets skips already-cached ones), so an offline
+    // nav to a never-cached note — e.g. one created offline — boots the SPA via
+    // the shell instead of hitting a missing chunk / the dead-end /offline page.
+    warmPageCache(OFFLINE_SHELL_PATH);
     const ttlTimer = setTimeout(() => {
       cleanExpiredEntries();
     }, 24 * 60 * 60 * 1000);

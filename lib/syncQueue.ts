@@ -92,7 +92,12 @@ export async function processSyncQueue(): Promise<void> {
       try {
         const result = await replayMutation(entry);
 
-        if (result === 'discard') {
+        if (result === 'offline') {
+          // Network unreachable (offline) — pause WITHOUT consuming the retry
+          // budget. Offline is not a failure; the mutation must wait for
+          // reconnection, not be declared failed after N futile offline polls.
+          break;
+        } else if (result === 'discard') {
           console.error('Sync entry not retryable, moving to failed:', entry);
           addToFailedSync(entry);
           removeHeadIfMatches(entry);
@@ -122,7 +127,7 @@ export async function processSyncQueue(): Promise<void> {
   }
 }
 
-async function replayMutation(entry: SyncQueueEntry): Promise<'ok' | 'discard' | 'retry'> {
+async function replayMutation(entry: SyncQueueEntry): Promise<'ok' | 'discard' | 'retry' | 'offline'> {
   const { entityType, entityId, action, payload } = entry;
   const baseUrl = entityType === SYNC_ENTITY.NOTE ? '/api/notes' : '/api/todos';
 
@@ -158,11 +163,19 @@ async function replayMutation(entry: SyncQueueEntry): Promise<'ok' | 'discard' |
 
   // No X-Expected-UpdatedAt header: queue-replayed mutations skip conflict
   // detection since they are sequential writes from the same user.
-  const res = await fetch(url, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    body,
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    });
+  } catch {
+    // fetch throws only on network errors (offline). Signal 'offline' so the
+    // caller pauses without counting this against SYNC_MAX_RETRIES — otherwise
+    // a long-enough offline period would wrongly tag the note 'sync-fehler'.
+    return 'offline';
+  }
 
   if (!res.ok) {
     const text = await res.text().catch(() => '');

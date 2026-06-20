@@ -10,6 +10,11 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+# Pins the SW cache version (pages-/static-<id>) at build time so each deploy
+# rotates caches deterministically. Empty/unset falls back to a random id per
+# build in next.config.ts. Passed via deploy.sh's --build-arg (git short SHA).
+ARG SW_BUILD_ID
+ENV SW_BUILD_ID=${SW_BUILD_ID}
 RUN bun --bun next build
 
 # Stage 3: Production runner

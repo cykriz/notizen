@@ -10,8 +10,31 @@ export const USERNAME_RE = /^[a-z0-9_-]{1,32}$/;
 
 export const FEEDBACK_FLASH_MS = 1500;
 
+// Used by app/(app)/error.tsx to keep error messaging consistent.
+// app/global-error.tsx must stay import-free (root error boundary constraint)
+// and inlines its own copy of these strings.
+export const ERROR_OFFLINE_TITLE = 'Keine Verbindung';
+export const ERROR_OFFLINE_BODY = 'Diese Seite wurde noch nicht für die Offline-Nutzung zwischengespeichert.';
+export const ERROR_GENERIC_TITLE = 'Etwas ist schiefgelaufen';
+export const ERROR_GENERIC_BODY = 'Ein unerwarteter Fehler ist aufgetreten.';
+export const ERROR_RETRY_LABEL = 'Erneut versuchen';
+
+// Reserved note id used to precache a generic note-detail "shell" document
+// (getNote returns null for it, so page.tsx server-renders with note=null).
+// The SW serves this shell for offline navigations to notes whose own HTML was
+// never cached — e.g. notes created while offline — so the SPA still boots; the
+// client then reads the real id from the address bar and renders the note from
+// localStorage. Not a UUID, so it can never collide with a real note id.
+export const OFFLINE_SHELL_ID = '__offline_shell__';
+export const OFFLINE_SHELL_PATH = `/notes/${OFFLINE_SHELL_ID}`;
+
 // SW protocol / paths handled by the service worker
 export const SW_MSG_CLEAR_AUTH_CACHES = 'CLEAR_AUTH_CACHES';
+export const SW_MSG_WARM_PAGE_CACHE = 'WARM_PAGE_CACHE';
+// Header set on the SW's internal warm fetch so the fetch listener can skip
+// re-intercepting it (otherwise the warm response would also land in misc-v1
+// via staleWhileRevalidate).
+export const SW_INTERNAL_HEADER = 'x-sw-internal';
 export const OFFLINE_PATH = '/offline';
 
 export const SHARES_DIR = '.shares';
