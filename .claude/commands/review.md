@@ -45,20 +45,19 @@ For each changed file, verify it follows the rules defined in its matching skill
 
 ## Output Format
 
-Only include a section if it has at least one finding — omit any category that is empty (do not print empty headings or "none found"). Order the sections that do have findings as follows:
+Keep the text before the copyable fix plan as short as possible. No prose, no code quotes, no severity headings, no introduction. The details belong exclusively in the copyable plan.
 
-1. **Critical** — bugs or broken behavior
-2. **Skill violations** — code that breaks a rule from a SKILL.md (cite the rule)
-3. **Next.js issues** — wrong patterns for the framework
-4. **Performance** — quick wins
-5. **Minor** — style, naming, cleanup
+If there are no findings: say so in **one** line and stop.
 
-Quote the problematic code and show the fix inline. If the review found no issues at all, say so in a single line.
+Otherwise: output only a compact list — **one line per item** that should be changed, in this form:
 
-## TODO Summary
+`- [severity] file: what to change — why, in plain words`
 
-At the very end, add a short numbered list of all findings as actionable TODOs (one line each) so the user can quickly pick which ones to implement — or say "all".
+Rules:
+- One line per finding. No code, no inline fixes, no paragraphs.
+- Sorted by severity (Critical first, Minor last).
+- Keep the "why" short and free of jargon.
 
 ## Copyable Fix Plan
 
-If the review found any issues, output a markdown fix plan directly in the chat — do NOT write it to a file. Wrap the entire plan in ```` (four backticks) so nested code blocks render correctly. The plan should list every issue as an actionable fix step, grouped by severity, with file paths, quoted problematic code, and the proposed fix. This allows the user to review all fixes at a glance and say "all" to apply them.
+If the review has findings, then output a markdown fix plan directly in the chat — do NOT write it to a file. Wrap the entire plan in ```` (four backticks) so that nested code blocks render correctly. This is where **all** the details belong: one actionable fix step per finding, grouped by severity, with file paths, quoted problem code, and a proposed fix. This lets the user review everything at a glance and say "all".
