@@ -82,14 +82,14 @@ Build and transfer the image yourself:
 ```bash
 docker build --platform linux/amd64 -t notizen .
 docker save notizen | gzip > notizen.tar.gz
-scp notizen.tar.gz user@nas:/tmp/
+scp notizen.tar.gz <user>@<nas-host>:/tmp/
 ```
 
 Then on the NAS:
 
 ```bash
 docker load -i /tmp/notizen.tar.gz
-cd /volume1/docker/app
+cd /volume1/docker/<app>
 docker compose up -d --force-recreate
 ```
 
@@ -114,7 +114,7 @@ After the container starts, create a user:
 docker exec -it notizen bun run user add myuser
 ```
 
-Notes are plain files in `/volume1/docker/app/data/`. Back up with Hyper Backup or any file sync tool.
+Notes are plain files in `/volume1/docker/<app>/data/`. Back up with Hyper Backup or any file sync tool.
 
 ## File Structure
 
