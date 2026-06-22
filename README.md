@@ -58,8 +58,10 @@ bun run user migrate <username>          # move legacy root-level data into user
 
 ### Prerequisites
 
-- Synology DSM 7.x with **Container Manager** (Docker) installed
-- SSH access
+- Docker with the **buildx** plugin on your machine (Docker Desktop includes it)
+- Synology DSM 7.x with **Container Manager** (Docker) installed on the NAS
+- SSH access to the NAS
+- `scripts/deploy.env` — copy `scripts/deploy.env.example` and fill in your values
 
 ### One-Command Deploy
 
@@ -69,29 +71,30 @@ bun run deploy
 
 This runs `scripts/deploy.sh`, which:
 
-1. Builds the Docker image for `linux/amd64`
-2. Transfers it to the NAS via SCP
-3. Copies `docker-compose.yml` to the NAS
-4. Runs `docker compose up -d --force-recreate`
-5. Cleans up local build artifacts
+1. Opens one SSH connection to the NAS (single password prompt)
+2. Builds the image **natively on the NAS** via BuildKit — a `buildx` builder on
+   the NAS's Docker daemon over an SSH remote context (no local cross-compilation,
+   so no Rosetta/QEMU on Apple Silicon)
+3. Loads the built image into the NAS's Docker daemon
+4. Copies `docker-compose.yml` to the NAS
+5. Runs `docker compose up -d --force-recreate`
 
-### Manual Deploy
+On macOS the script re-execs itself under `caffeinate`, so the laptop going to
+sleep can't abort the deploy mid-build — keep the lid open during the run.
 
-Build and transfer the image yourself:
+Optional flags:
 
-```bash
-docker build --platform linux/amd64 -t notizen .
-docker save notizen | gzip > notizen.tar.gz
-scp notizen.tar.gz <user>@<nas-host>:/tmp/
-```
+- `RECREATE_BUILDER=1 bun run deploy` — recreate the NAS BuildKit builder (after
+  changing `NAS`/`NAS_PORT`, or to apply a new cache-GC config)
+- `PRUNE_CACHE=1 bun run deploy` — trim the NAS BuildKit cache to ~5 GB
 
-Then on the NAS:
+### How the build works
 
-```bash
-docker load -i /tmp/notizen.tar.gz
-cd /volume1/docker/<app>
-docker compose up -d --force-recreate
-```
+The image is built **on the NAS** by a persistent BuildKit `buildx` builder that
+the script reaches over SSH (`DOCKER_HOST=ssh://…`). Because Synology's
+non-interactive shell doesn't have `docker` on its `PATH`, the script wraps `ssh`
+to inject it — so there are no manual build/transfer steps to run. Just use
+`bun run deploy`.
 
 ### Access the App
 
