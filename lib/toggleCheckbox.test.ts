@@ -82,6 +82,32 @@ describe('toggleBlockCheckboxes', () => {
     const src = '- [ ] a';
     expect(toggleBlockCheckboxes(src, -1)).toBe(src);
   });
+
+  test('toggles only same-indent siblings, not parent or other levels', () => {
+    const src = '- [ ] A\n  - [ ] A1\n  - [ ] A2\n- [ ] B';
+    // Click A1 (bracket at offset 12) → only A1 + A2 (indent "  ") toggle
+    expect(toggleBlockCheckboxes(src, 12)).toBe('- [ ] A\n  - [x] A1\n  - [x] A2\n- [ ] B');
+  });
+
+  test('clicking a top-level item toggles only top-level items, not children', () => {
+    const src = '- [ ] A\n  - [ ] A1\n  - [ ] A2\n- [ ] B';
+    // Click A (bracket at offset 2) → only A + B (indent "") toggle
+    expect(toggleBlockCheckboxes(src, 2)).toBe('- [x] A\n  - [ ] A1\n  - [ ] A2\n- [x] B');
+  });
+
+  test('direction is driven by the clicked item among same-level siblings', () => {
+    const src = '- [ ] A\n  - [x] A1\n  - [ ] A2';
+    // Click A1 (checked, offset 12) → unchecks same-level siblings
+    expect(toggleBlockCheckboxes(src, 12)).toBe('- [ ] A\n  - [ ] A1\n  - [ ] A2');
+  });
+
+  test('same indent across different parents in one block toggles together', () => {
+    const src = '- [ ] A\n  - [ ] A1\n  - [ ] A2\n- [ ] B\n  - [ ] B1';
+    // No blank line → single block. Click A1 (offset 12) → all indent "  " toggle, incl. B1
+    expect(toggleBlockCheckboxes(src, 12)).toBe(
+      '- [ ] A\n  - [x] A1\n  - [x] A2\n- [ ] B\n  - [x] B1',
+    );
+  });
 });
 
 describe('transformLineToCheckbox', () => {

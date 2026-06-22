@@ -72,9 +72,11 @@ export function toggleCheckboxAtOffset(source: string, bracketOffset: number): s
 }
 
 /**
- * Toggles all checkboxes in the same "block" (consecutive non-blank lines)
- * as the given offset. The clicked checkbox determines the direction:
- * if it's unchecked, all become checked — and vice versa.
+ * Toggles all checkboxes on the same indentation level within the same
+ * "block" (consecutive non-blank lines) as the given offset. The clicked
+ * checkbox determines the direction: if it's unchecked, all become checked
+ * — and vice versa. Checkboxes at a different indentation (parents, nested
+ * children) are left untouched.
  */
 export function toggleBlockCheckboxes(source: string, bracketOffset: number): string {
   if (bracketOffset < 0 || bracketOffset + 3 > source.length) {
@@ -110,9 +112,14 @@ export function toggleBlockCheckboxes(source: string, bracketOffset: number): st
     blockEnd++;
   }
 
+  const clickedIndent = INDENT_RE.exec(lines[clickedLine])?.[1] ?? '';
+
   const replacement = shouldCheck ? '[x]' : '[ ]';
   for (let i = blockStart; i <= blockEnd; i++) {
-    lines[i] = lines[i].replace(CHECKBOX_LINE_RE, `$1${replacement}`);
+    const indent = INDENT_RE.exec(lines[i])?.[1] ?? '';
+    if (indent === clickedIndent) {
+      lines[i] = lines[i].replace(CHECKBOX_LINE_RE, `$1${replacement}`);
+    }
   }
 
   return lines.join('\n');
