@@ -5,13 +5,11 @@ import { useData } from '@/app/(app)/dataContext';
 import { OFFLINE_SHELL_ID } from '@/lib/constants';
 import { setCachedNote } from '@/lib/localCache';
 import { warmPageCache } from '@/lib/warmPageCache';
-import type { Note, NoteSummary } from '@/lib/types';
+import type { Note } from '@/lib/types';
 import { NoteEditor } from './NoteEditor';
 
 interface NotePageClientProps {
   note: Note | null;
-  allTags: string[];
-  otherNotes: NoteSummary[];
   noteId: string;
 }
 
@@ -41,8 +39,6 @@ function cacheReducer(state: Note | null, cached: Note): Note | null {
 
 export function NotePageClient({
   note,
-  allTags,
-  otherNotes,
   noteId,
 }: NotePageClientProps) {
   const { getCachedNoteContent, notes } = useData();
@@ -111,15 +107,12 @@ export function NotePageClient({
     );
   }
 
-  const serverDataAvailable = note !== null;
-
-  const effectiveTags = serverDataAvailable
-    ? allTags
-    : [...new Set(notes.flatMap((n) => n.tags))].sort();
-
-  const effectiveOtherNotes = serverDataAvailable
-    ? otherNotes
-    : notes.filter((n) => n.id !== resolvedId);
+  // Always derive from the reactive `notes` state (seeded by the layout's
+  // server listNotes(), then kept in sync by client mutations). Using static
+  // server props here would freeze the tag suggestions / note links, so a
+  // deleted tag would linger in the dropdown.
+  const effectiveTags = [...new Set(notes.flatMap((n) => n.tags))].sort();
+  const effectiveOtherNotes = notes.filter((n) => n.id !== resolvedId);
 
   return (
     <NoteEditor
