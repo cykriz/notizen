@@ -43,7 +43,7 @@ export const NoteListItem = memo(function NoteListItem({
       try {
         await updateNote(note.id, { pinned: !note.pinned });
       } catch {
-        // Netzwerkfehler — wird beim nächsten Sync erneut versucht
+        // Network error — retried on the next sync
       }
     });
   };

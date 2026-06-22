@@ -80,7 +80,7 @@ export function useFileDrop({ noteId, viewRef, onFileUploaded, wrapperRef }: Use
               insertLinks(view, links);
             })
             .catch(() => {
-              // Netzwerkfehler — Einfügen ignoriert
+              // Network error — insertion ignored
             })
             .finally(() => {
               setUploading(false);
