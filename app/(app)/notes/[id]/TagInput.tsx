@@ -2,16 +2,12 @@
 
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 import { Input } from '@/components/ui/input';
-import { FAILED_SYNC_TAG } from '@/lib/constants';
+import { pathHasReservedSegment } from '@/lib/constants';
+import { normalizeTagPath } from '@/lib/tagTree';
 import { cn } from '@/lib/utils';
 import { Tag } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { TagBadge } from './TagBadge';
-
-// Reserved client-only markers injected at render time (e.g. by
-// `withFailedSyncTag`) — users must not be able to author them as real tags.
-const RESERVED_TAGS = new Set<string>([FAILED_SYNC_TAG]);
-const isReservedTag = (t: string): boolean => RESERVED_TAGS.has(t);
 
 interface TagInputProps {
   tags: string[];
@@ -41,8 +37,8 @@ export function TagInput({ tags, allTags, onChange, className, compact, onCollap
   }, [query, allTags, tagsLower]);
 
   const addTag = (tag: string) => {
-    const trimmed = tag.trim().toLowerCase().replace(/\/+$/, '');
-    if (trimmed === '' || isReservedTag(trimmed) || tags.some((t) => t.toLowerCase() === trimmed)) {
+    const trimmed = normalizeTagPath(tag);
+    if (trimmed === '' || pathHasReservedSegment(trimmed) || tags.some((t) => t.toLowerCase() === trimmed)) {
       return;
     }
 
@@ -57,9 +53,9 @@ export function TagInput({ tags, allTags, onChange, className, compact, onCollap
   };
 
   const replaceTag = (index: number, value: string) => {
-    const trimmed = value.trim().toLowerCase().replace(/\/+$/, '');
+    const trimmed = normalizeTagPath(value);
     const original = tags[index];
-    if (trimmed === '' || isReservedTag(trimmed) || (trimmed !== original.toLowerCase() && tags.some((t) => t.toLowerCase() === trimmed))) {
+    if (trimmed === '' || pathHasReservedSegment(trimmed) || (trimmed !== original.toLowerCase() && tags.some((t) => t.toLowerCase() === trimmed))) {
       return;
     }
 

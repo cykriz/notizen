@@ -1,21 +1,23 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Sidebar, SidebarContent, useSidebar } from '@/components/ui/sidebar';
-import { DEFAULT_NOTE_TITLE, SYNC_ENTITY } from '@/lib/constants';
+import { FAILED_SYNC_TAG, SYNC_ENTITY } from '@/lib/constants';
 import { getFailedSyncQueue } from '@/lib/failedSyncQueue';
 import { useSwipeBack } from '@/hooks/useSwipeBack';
 import { withFailedSyncTag } from './failedSyncTag';
 import { viewStore } from './viewStore';
 import { isTabActive } from './navTabs';
 import { AppSidebarHeader } from './AppSidebarHeader';
+import { CreateTagFolderDialog } from './CreateTagFolderDialog';
 import { NotesSidebarContent } from './NotesSidebarContent';
 import { NotesSidebarFooter } from './NotesSidebarFooter';
 import { PinnedNotesGroup } from './PinnedNotesGroup';
 import { SharedNotesEntry } from './SharedNotesEntry';
 import { TagNavigation } from './TagNavigation';
 import { TodosSidebarContent } from './TodosSidebarContent';
+import { useCreateNote } from './useCreateNote';
 import { useData } from './dataContext';
 import { useTagStateSync } from './useTagStateSync';
 
@@ -24,8 +26,8 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ authEnabled }: AppSidebarProps) {
-  const { notes, todos, createNote, failedSyncVersion } = useData();
-  const { isMobile, setOpenMobile } = useSidebar();
+  const { notes, todos, failedSyncVersion } = useData();
+  const { isMobile } = useSidebar();
   const pathname = usePathname();
   const router = useRouter();
   const isTodos = isTabActive('/todos', pathname);
@@ -46,8 +48,11 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
 
   const { currentTagPath, setCurrentTagPath, noteId } = useTagStateSync({ notes, pathname });
   const view = useSyncExternalStore(viewStore.subscribe, viewStore.getSnapshot, viewStore.getServerSnapshot);
-  const [pending, setPending] = useState(false);
-  const pendingRef = useRef(false);
+  const { pending, createNoteWithTags } = useCreateNote();
+  const [folderOpen, setFolderOpen] = useState(false);
+
+  // Folder = tag prefix; never create under the synthetic sync-fehler folder.
+  const folderParent = currentTagPath !== '' && currentTagPath !== FAILED_SYNC_TAG ? currentTagPath : '';
 
   const [swipeEl, setSwipeEl] = useState<HTMLDivElement | null>(null);
   const handleTagBack = useCallback(() => {
@@ -65,25 +70,18 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
   }, [handleTagBack, noteId, notes, router]);
 
   const handleCreate = useCallback(() => {
-    if (pendingRef.current) {
-      return;
-    }
+    createNoteWithTags(folderParent !== '' ? [folderParent] : []);
+  }, [createNoteWithTags, folderParent]);
 
-    pendingRef.current = true;
-    setPending(true);
-    const tags = currentTagPath !== '' ? [currentTagPath] : [];
-    void createNote({ title: DEFAULT_NOTE_TITLE, content: '', tags })
-      .then((note) => {
-        if (note.slug !== '') {
-          setOpenMobile(false);
-          router.push(`/notes/${note.id}`);
-        }
-      })
-      .finally(() => {
-        pendingRef.current = false;
-        setPending(false);
-      });
-  }, [createNote, router, currentTagPath, setOpenMobile]);
+  const handleCreateFolder = useCallback(
+    (folderName: string) => {
+      const newPath = folderParent !== '' ? `${folderParent}/${folderName}` : folderName;
+      viewStore.set('tags');
+      setCurrentTagPath(newPath);
+      createNoteWithTags([newPath]);
+    },
+    [createNoteWithTags, folderParent, setCurrentTagPath],
+  );
 
   const handleSidebarDoubleClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -164,7 +162,23 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
         </SidebarContent>
       </div>
 
-      {!isTodos && <NotesSidebarFooter view={view} handleCreate={handleCreate} pending={pending} />}
+      {!isTodos && (
+        <NotesSidebarFooter
+          view={view}
+          handleCreate={handleCreate}
+          onCreateFolder={() => {
+            setFolderOpen(true);
+          }}
+          pending={pending}
+        />
+      )}
+
+      <CreateTagFolderDialog
+        parentPath={folderParent}
+        open={folderOpen}
+        onOpenChange={setFolderOpen}
+        onCreate={handleCreateFolder}
+      />
     </Sidebar>
   );
 }

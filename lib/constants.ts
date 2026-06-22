@@ -86,6 +86,16 @@ export const SYNC_ACTION = {
 export const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
 export const SYNC_MAX_RETRIES = 5;
 export const FAILED_SYNC_TAG = 'sync-fehler';
+
+// Reserved client-only tag markers injected at render time (e.g. by
+// `withFailedSyncTag`) — users must not be able to author them as real tags.
+export const RESERVED_TAGS = new Set<string>([FAILED_SYNC_TAG]);
+export const isReservedTag = (t: string): boolean => RESERVED_TAGS.has(t);
+// True if any slash-separated segment of the path is a reserved marker, e.g.
+// 'sync-fehler/foo' — blocks authoring tags that collide with synthetic folders.
+export const pathHasReservedSegment = (path: string): boolean => path.split('/').some(isReservedTag);
+
+export const NEW_FOLDER_LABEL = 'Neuer Ordner';
 export const SYNC_HEALTH_POLL_MS = 10_000;
 export const SYNC_RETRY_INTERVAL_MS = 10_000;
 export const SYNC_RETRY_MAX_INTERVAL_MS = 5 * 60_000; // 5 min cap

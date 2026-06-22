@@ -7,6 +7,16 @@ export interface TagNode {
   children: TagNode[];
 }
 
+// Normalizes a user-entered folder/tag path: lowercases and trims each segment,
+// drops empty segments. 'A//B/' -> 'a/b', ' x ' -> 'x', '/' -> ''.
+export function normalizeTagPath(raw: string): string {
+  return raw
+    .split('/')
+    .map((s) => s.trim().toLowerCase())
+    .filter((s) => s !== '')
+    .join('/');
+}
+
 export function buildTagTree(notes: NoteSummary[]): TagNode[] {
   const root: TagNode[] = [];
 

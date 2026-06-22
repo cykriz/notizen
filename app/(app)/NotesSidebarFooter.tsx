@@ -1,19 +1,21 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { Plus, Tags, List } from 'lucide-react';
+import { Plus, FolderPlus, Tags, List } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { SidebarFooter } from '@/components/ui/sidebar';
+import { NEW_FOLDER_LABEL } from '@/lib/constants';
 import { viewStore, type SidebarView } from './viewStore';
 
 interface NotesSidebarFooterProps {
   view: SidebarView;
   handleCreate: () => void;
+  onCreateFolder: () => void;
   pending: boolean;
 }
 
-export function NotesSidebarFooter({ view, handleCreate, pending }: NotesSidebarFooterProps) {
+export function NotesSidebarFooter({ view, handleCreate, onCreateFolder, pending }: NotesSidebarFooterProps) {
   const pendingRef = useRef(pending);
 
   useEffect(() => {
@@ -42,6 +44,15 @@ export function NotesSidebarFooter({ view, handleCreate, pending }: NotesSidebar
         <Button size="sm" variant="ghost" onClick={handleCreate} disabled={pending} className="flex-1 justify-start">
           <Plus />
           Neue Notiz
+        </Button>
+        <Button
+          size="icon-xs"
+          variant="ghost"
+          onClick={onCreateFolder}
+          disabled={pending}
+          title={NEW_FOLDER_LABEL}
+        >
+          <FolderPlus />
         </Button>
         <Button
           size="icon-xs"

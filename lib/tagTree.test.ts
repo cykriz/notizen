@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
 import type { NoteSummary } from './types';
-import { buildTagTree, getChildNodes, getNotesAtPath, getNotesUnderPath } from './tagTree';
+import { buildTagTree, getChildNodes, getNotesAtPath, getNotesUnderPath, normalizeTagPath } from './tagTree';
 
 describe('tagTree', () => {
   const notes: NoteSummary[] = [
@@ -34,5 +34,13 @@ describe('tagTree', () => {
 
   test('getNotesUnderPath — includes descendants', () => {
     expect(getNotesUnderPath(notes, 'dev')).toHaveLength(2);
+  });
+
+  test('normalizeTagPath — lowercases, trims, collapses slashes', () => {
+    expect(normalizeTagPath('A//B/')).toBe('a/b');
+    expect(normalizeTagPath(' x ')).toBe('x');
+    expect(normalizeTagPath('/')).toBe('');
+    expect(normalizeTagPath('Projekte/2026')).toBe('projekte/2026');
+    expect(normalizeTagPath('')).toBe('');
   });
 });
