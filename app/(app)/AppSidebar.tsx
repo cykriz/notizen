@@ -6,6 +6,7 @@ import { Sidebar, SidebarContent, useSidebar } from '@/components/ui/sidebar';
 import { FAILED_SYNC_TAG, SYNC_ENTITY } from '@/lib/constants';
 import { getFailedSyncQueue } from '@/lib/failedSyncQueue';
 import { useSwipeBack } from '@/hooks/useSwipeBack';
+import { useFinePointer } from '@/hooks/useFinePointer';
 import { withFailedSyncTag } from './failedSyncTag';
 import { viewStore } from './viewStore';
 import { isTabActive } from './navTabs';
@@ -28,6 +29,7 @@ interface AppSidebarProps {
 export function AppSidebar({ authEnabled }: AppSidebarProps) {
   const { notes, todos, failedSyncVersion } = useData();
   const { isMobile } = useSidebar();
+  const finePointer = useFinePointer();
   const pathname = usePathname();
   const router = useRouter();
   const isTodos = isTabActive('/todos', pathname);
@@ -131,7 +133,7 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
 
       <div
         ref={setSwipeEl}
-        onDoubleClick={isTodos || isMobile ? undefined : handleSidebarDoubleClick}
+        onDoubleClick={isTodos || !finePointer ? undefined : handleSidebarDoubleClick}
         className="flex min-h-0 flex-1 flex-col gap-2"
       >
         <SharedNotesEntry hidden={isTodos} />
