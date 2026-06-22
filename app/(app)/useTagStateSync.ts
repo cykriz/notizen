@@ -26,8 +26,8 @@ interface UseTagStateSyncArgs {
 
 export function useTagStateSync({ notes, pathname }: UseTagStateSyncArgs) {
   const noteId = extractNoteId(pathname);
-  const currentTags =
-    noteId !== null ? (notes.find((n) => n.id === noteId)?.tags ?? []) : [];
+  const note = noteId !== null ? notes.find((n) => n.id === noteId) : undefined;
+  const currentTags = note?.tags ?? [];
 
   const [tagState, setTagState] = useState<TagState>(() => ({
     lastSeenNoteTags: currentTags,
@@ -43,7 +43,10 @@ export function useTagStateSync({ notes, pathname }: UseTagStateSyncArgs) {
 
   // Render-time sync: a different note was opened — keep parent folder if it
   // already matches one of the note's tags, otherwise jump to the note's tag.
-  if (noteId !== null && !sameTags(currentTags, tagState.lastSeenNoteTags)) {
+  // Guard on the note actually existing: when noteId is set but the note is gone
+  // (just deleted) or not yet loaded (offline/initial), keep the current path so
+  // the sidebar doesn't snap back to root.
+  if (note !== undefined && !sameTags(currentTags, tagState.lastSeenNoteTags)) {
     // Tags changed (new note or same note with different tags) — refresh the baseline.
     // Re-target when the note gains its first tag (root-create-then-tag flow) or when
     // the current sidebar path has been orphaned; otherwise keep the user's browsing context.
