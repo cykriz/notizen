@@ -3,6 +3,7 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import matter from 'gray-matter';
 import { USERS_DATA_DIR } from './constants';
+import type { AUDIO_EXTENSIONS, VIDEO_EXTENSIONS } from './mediaTypes';
 
 export class NotFoundError extends Error {
   constructor(message: string) {
@@ -56,6 +57,25 @@ export function attachmentsDir(slug: string, root: string): string {
   return path.join(noteDir(slug, root), 'attachments');
 }
 
+// Specific MIME per audio/video extension. `satisfies Record<extension, string>`
+// makes these maps fail to compile if AUDIO_EXTENSIONS/VIDEO_EXTENSIONS gain an
+// entry without a MIME here — so the supported extensions stay single-sourced
+// in lib/mediaTypes.ts while the concrete MIME values live next to the lookup.
+const AUDIO_MIME = {
+  '.m4a': 'audio/mp4',
+  '.mp3': 'audio/mpeg',
+  '.wav': 'audio/wav',
+  '.ogg': 'audio/ogg',
+  '.flac': 'audio/flac',
+  '.aac': 'audio/aac',
+} satisfies Record<(typeof AUDIO_EXTENSIONS)[number], string>;
+
+const VIDEO_MIME = {
+  '.mp4': 'video/mp4',
+  '.mov': 'video/quicktime',
+  '.webm': 'video/webm',
+} satisfies Record<(typeof VIDEO_EXTENSIONS)[number], string>;
+
 export function guessMimeType(filename: string): string {
   const ext = path.extname(filename).toLowerCase();
   const map: Record<string, string> = {
@@ -69,15 +89,8 @@ export function guessMimeType(filename: string): string {
     '.txt': 'text/plain',
     '.md': 'text/markdown',
     '.json': 'application/json',
-    '.m4a': 'audio/mp4',
-    '.mp3': 'audio/mpeg',
-    '.wav': 'audio/wav',
-    '.ogg': 'audio/ogg',
-    '.flac': 'audio/flac',
-    '.aac': 'audio/aac',
-    '.mp4': 'video/mp4',
-    '.mov': 'video/quicktime',
-    '.webm': 'video/webm',
+    ...AUDIO_MIME,
+    ...VIDEO_MIME,
   };
   return map[ext] ?? 'application/octet-stream';
 }

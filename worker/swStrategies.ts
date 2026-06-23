@@ -25,6 +25,13 @@ export const PAGES_CACHE_MAX = 100;
 export const API_CACHE_MAX = 20;
 export const MISC_CACHE_MAX = 50;
 
+// Responses larger than this (e.g. video/audio attachments) are not written to
+// the api cache: they would flood the 20-entry FIFO and evict note data. Small
+// attachments fetched without a Range header (the <a download> path) stay
+// cached for offline download. Inline media playback always sends a Range
+// header → 206, which is never cached (the Cache API rejects partials anyway).
+export const API_CACHE_MAX_BYTES = 5 * 1024 * 1024;
+
 /**
  * A navigation response is safe to cache only when it's a non-redirected 2xx
  * for the requested URL. Redirected responses (e.g. /notes → /login when the
@@ -99,11 +106,22 @@ export async function networkFirstWithFallback(
   }
 }
 
+/**
+ * A 2xx response is safe to store only when it isn't a partial (206 — the Cache
+ * API rejects those) and isn't a large media file (would evict note data from
+ * the small FIFO api cache). Missing Content-Length → treat as small.
+ */
+function isCacheableApiResponse(response: Response): boolean {
+  if (!response.ok || response.status === 206) return false;
+  const len = response.headers.get('content-length');
+  return len === null || Number(len) <= API_CACHE_MAX_BYTES;
+}
+
 /** API / data: network-first, fall back to cache. Never cache 401s. */
 export async function networkFirst(request: Request, cacheName: string): Promise<Response> {
   try {
     const response = await fetch(request);
-    if (response.ok) {
+    if (isCacheableApiResponse(response)) {
       const cache = await caches.open(cacheName);
       void cache
         .put(request, response.clone())
