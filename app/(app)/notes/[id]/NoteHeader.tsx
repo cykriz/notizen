@@ -9,6 +9,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { PREVIEW_EDIT } from '@/lib/constants';
 import type { PreviewMode } from '@/lib/types';
 import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
+import type { Attachment } from '@/lib/fsNotes';
+import { AttachmentUploadButton } from './AttachmentUploadButton';
 import { TagInput } from './TagInput';
 import { ShareNoteButton } from './ShareNoteButton';
 
@@ -26,6 +28,8 @@ interface NoteHeaderProps {
   tags: string[];
   allTags: string[];
   onTagsChange: (tags: string[]) => void;
+  onFileUploaded: (attachment: Attachment) => void;
+  onInsertLinks: (links: string[]) => void;
 }
 
 export const NoteHeader = memo(function NoteHeader({
@@ -40,6 +44,8 @@ export const NoteHeader = memo(function NoteHeader({
   tags,
   allTags,
   onTagsChange,
+  onFileUploaded,
+  onInsertLinks,
 }: NoteHeaderProps) {
   const [tagsExpanded, setTagsExpanded] = useState(false);
   const { copiedKey, copy } = useCopyToClipboard();
@@ -103,6 +109,7 @@ export const NoteHeader = memo(function NoteHeader({
           <Button onClick={onTogglePreview} size="icon-xs" variant="ghost">
             {preview === PREVIEW_EDIT ? <Eye /> : <Pencil />}
           </Button>
+          <AttachmentUploadButton noteId={noteId} onUploaded={onFileUploaded} onInsertLinks={onInsertLinks} />
           <ShareNoteButton noteId={noteId} key={noteId} />
           <Button
             onClick={handleCopy}

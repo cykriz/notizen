@@ -70,6 +70,8 @@ export const MarkdownEditor = memo(
       viewRef,
       onFileUploaded,
       wrapperRef,
+      valueRef,
+      onChange,
     });
     const { increaseHeading, addOrToggleCheckbox } = useLineTransform(viewRef);
     const { pickerOpen, setPickerOpen, handleNoteSelect, checkLinkTrigger, noteLinkExtension } = useNoteLinkPicker({

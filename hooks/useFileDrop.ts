@@ -1,34 +1,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo, type RefObject } from 'react';
 import { EditorView } from '@codemirror/view';
 import type { Attachment } from '@/lib/fsNotes';
-
-function buildMarkdownLink(att: Attachment, noteId: string): string {
-  const url = `/api/notes/${noteId}/attachments/${att.id}/download`;
-  if (att.mimeType.startsWith('image/')) {
-    return `![${att.originalName}](${url})`;
-  }
-
-  return `[${att.originalName}](${url})`;
-}
-
-async function uploadFiles(
-  files: File[],
-  noteId: string,
-  onFileUploadedRef: React.RefObject<((att: Attachment) => void) | undefined>,
-): Promise<string[]> {
-  const links: string[] = [];
-  for (const file of files) {
-    const form = new FormData();
-    form.append('file', file);
-    const res = await fetch(`/api/notes/${noteId}/attachments`, { method: 'POST', body: form });
-    if (res.ok) {
-      const att = (await res.json()) as Attachment;
-      onFileUploadedRef.current?.(att);
-      links.push(buildMarkdownLink(att, noteId));
-    }
-  }
-  return links;
-}
+import { appendLinks, uploadFiles } from '@/lib/attachmentUpload';
 
 function insertLinks(view: EditorView, links: string[]) {
   if (links.length === 0) {
@@ -46,9 +19,13 @@ interface UseFileDropOptions {
   viewRef: RefObject<EditorView | null>;
   onFileUploaded?: (attachment: Attachment) => void;
   wrapperRef: RefObject<HTMLDivElement | null>;
+  // Current editor content + onChange — used to append links when no CodeMirror
+  // view exists (i.e. in preview mode, where uploads must still work).
+  valueRef?: RefObject<string>;
+  onChange?: (value: string) => void;
 }
 
-export function useFileDrop({ noteId, viewRef, onFileUploaded, wrapperRef }: UseFileDropOptions) {
+export function useFileDrop({ noteId, viewRef, onFileUploaded, wrapperRef, valueRef, onChange }: UseFileDropOptions) {
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -59,6 +36,10 @@ export function useFileDrop({ noteId, viewRef, onFileUploaded, wrapperRef }: Use
     noteIdRef.current = noteId;
     onFileUploadedRef.current = onFileUploaded;
   }, [noteId, onFileUploaded]);
+
+  const notifyUploaded = useCallback((att: Attachment) => {
+    onFileUploadedRef.current?.(att);
+  }, []);
 
   // CM6 extension that intercepts image paste events before the editor processes them
   const fileDropExtension = useMemo(
@@ -75,8 +56,8 @@ export function useFileDrop({ noteId, viewRef, onFileUploaded, wrapperRef }: Use
 
           event.preventDefault();
           setUploading(true);
-          void uploadFiles(imageFiles, noteIdRef.current, onFileUploadedRef)
-            .then((links) => {
+          void uploadFiles(imageFiles, noteIdRef.current, notifyUploaded)
+            .then(({ links }) => {
               insertLinks(view, links);
             })
             .catch(() => {
@@ -88,7 +69,7 @@ export function useFileDrop({ noteId, viewRef, onFileUploaded, wrapperRef }: Use
           return true;
         },
       }),
-    [],
+    [notifyUploaded],
   );
 
   const handleDrop = useCallback(
@@ -101,22 +82,24 @@ export function useFileDrop({ noteId, viewRef, onFileUploaded, wrapperRef }: Use
         return;
       }
 
-      const view = viewRef.current;
-      if (!view) {
-        return;
-      }
-
       setUploading(true);
       try {
-        const links = await uploadFiles(Array.from(e.dataTransfer.files), id, onFileUploadedRef);
-        insertLinks(view, links);
+        const { links } = await uploadFiles(Array.from(e.dataTransfer.files), id, notifyUploaded);
+        const view = viewRef.current;
+        if (view) {
+          // Edit mode: insert at the cursor.
+          insertLinks(view, links);
+        } else if (onChange && valueRef) {
+          // Preview mode: no editor view — append to the end of the content.
+          onChange(appendLinks(valueRef.current, links));
+        }
       } catch {
         // Netzwerkfehler — Upload ignoriert
       } finally {
         setUploading(false);
       }
     },
-    [viewRef],
+    [viewRef, notifyUploaded, onChange, valueRef],
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {

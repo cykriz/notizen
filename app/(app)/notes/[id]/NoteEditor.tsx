@@ -8,6 +8,7 @@ import { useDraft } from '@/hooks/useDraft';
 import { useFocusOnEditMode } from '@/hooks/useFocusOnEditMode';
 import { useNoteInitialState } from '@/hooks/useNoteInitialState';
 import { useNoteKeyboardShortcuts } from '@/hooks/useNoteKeyboardShortcuts';
+import { appendLinks } from '@/lib/attachmentUpload';
 import { PREVIEW_EDIT, PREVIEW_PREVIEW } from '@/lib/constants';
 import type { Attachment, Note } from '@/lib/fsNotes';
 import type { NoteSummary, PreviewMode } from '@/lib/types';
@@ -115,6 +116,13 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
     setAttachments((prev) => [...prev, att]);
   }, []);
 
+  const handleInsertLinks = useCallback(
+    (links: string[]) => {
+      handleContentChange(appendLinks(contentRef.current, links));
+    },
+    [handleContentChange],
+  );
+
   const handleAttachmentDeleted = useCallback((attId: string) => {
     setAttachments((prev) => prev.filter((a) => a.id !== attId));
   }, []);
@@ -156,6 +164,8 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
         tags={tags}
         allTags={allTags}
         onTagsChange={handleTagsChange}
+        onFileUploaded={handleUploaded}
+        onInsertLinks={handleInsertLinks}
       />
       <div className="relative flex flex-1 min-h-0 overflow-hidden">
         {outlineVisible && (
