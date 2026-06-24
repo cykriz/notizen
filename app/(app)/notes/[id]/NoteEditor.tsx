@@ -6,11 +6,11 @@ import { useAutoSave } from '@/hooks/useAutoSave';
 import { useAutoShowOutline } from '@/hooks/useAutoShowOutline';
 import { useDraft } from '@/hooks/useDraft';
 import { useFocusOnEditMode } from '@/hooks/useFocusOnEditMode';
+import { useNoteAttachments } from '@/hooks/useNoteAttachments';
 import { useNoteInitialState } from '@/hooks/useNoteInitialState';
 import { useNoteKeyboardShortcuts } from '@/hooks/useNoteKeyboardShortcuts';
-import { appendLinks } from '@/lib/attachmentUpload';
 import { PREVIEW_EDIT, PREVIEW_PREVIEW } from '@/lib/constants';
-import type { Attachment, Note } from '@/lib/fsNotes';
+import type { Note } from '@/lib/fsNotes';
 import type { NoteSummary, PreviewMode } from '@/lib/types';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { DeleteNoteDialog } from '../../DeleteNoteDialog';
@@ -30,7 +30,6 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
   const initial = useNoteInitialState(note);
   const [title, setTitle] = useState(initial.title);
   const [content, setContent] = useState(initial.content);
-  const [attachments, setAttachments] = useState<Attachment[]>(note.attachments);
   const [preview, setPreview] = useState<PreviewMode>(initial.preview);
   const [tags, setTags] = useState<string[]>(note.tags);
   const [outlineVisible, setOutlineVisible] = useState(initial.outlineVisible);
@@ -38,7 +37,6 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
 
   const deferredContent = useDeferredValue(content);
   const headings = useMemo(() => extractHeadings(deferredContent), [deferredContent]);
-  const nonImageAttachments = useMemo(() => attachments.filter((a) => !a.mimeType.startsWith('image/')), [attachments]);
 
   // Avoid passing live `content` to memoized NoteHeader — it would re-render on every keystroke.
   const contentRef = useRef(content);
@@ -112,20 +110,12 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
     [handleSavedReset, draftContent],
   );
 
-  const handleUploaded = useCallback((att: Attachment) => {
-    setAttachments((prev) => [...prev, att]);
-  }, []);
-
-  const handleInsertLinks = useCallback(
-    (links: string[]) => {
-      handleContentChange(appendLinks(contentRef.current, links));
-    },
-    [handleContentChange],
-  );
-
-  const handleAttachmentDeleted = useCallback((attId: string) => {
-    setAttachments((prev) => prev.filter((a) => a.id !== attId));
-  }, []);
+  const { nonImageAttachments, handleUploaded, handleInsertLinks, handleAttachmentDeleted } = useNoteAttachments({
+    noteId: note.id,
+    initialAttachments: note.attachments,
+    contentRef,
+    onContentChange: handleContentChange,
+  });
 
   const editorRef = useRef<MarkdownEditorHandle>(null);
 
