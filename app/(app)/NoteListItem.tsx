@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { SidebarMenuItem, SidebarMenuButton, SidebarMenuBadge } from '@/components/ui/sidebar';
 import { useData } from './dataContext';
 import { DeleteNoteDialog } from './DeleteNoteDialog';
+import { LinkLoadingReporter } from './LinkLoadingReporter';
 import type { NoteSummary } from '@/lib/types';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -52,6 +53,7 @@ export const NoteListItem = memo(function NoteListItem({
     <SidebarMenuItem>
       <SidebarMenuButton asChild isActive={isActive} className="h-auto py-2 pr-18 md:pr-2">
         <Link href={`/notes/${note.id}`} onClick={onNavigate}>
+          <LinkLoadingReporter />
           <div className="flex min-w-0 flex-col gap-0.5 leading-tight">
             <span className="truncate font-medium">{note.title}</span>
             {showDate && <span className="text-xs text-sidebar-foreground/60">{formatDate(note.updatedAt)}</span>}

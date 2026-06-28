@@ -12,6 +12,7 @@ import {
 import { buildShareUrl } from '@/lib/shareFormat';
 import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
 import { useData } from './dataContext';
+import { useReportedTransition } from './navigationLoading';
 import { sharedNotesStore } from './sharedNotesStore';
 import { revokeShareLinkAction } from './shareActions';
 import { SharedNotesList } from './SharedNotesList';
@@ -23,6 +24,7 @@ interface SharedNotesDialogProps {
 
 export function SharedNotesDialog({ open, onOpenChange }: SharedNotesDialogProps) {
   const router = useRouter();
+  const startNavigation = useReportedTransition();
   const { notes } = useData();
   const shares = useSyncExternalStore(
     sharedNotesStore.subscribe,
@@ -66,9 +68,11 @@ export function SharedNotesDialog({ open, onOpenChange }: SharedNotesDialogProps
   const handleOpen = useCallback(
     (noteId: string) => {
       onOpenChange(false);
-      router.push(`/notes/${noteId}`);
+      startNavigation(() => {
+        router.push(`/notes/${noteId}`);
+      });
     },
-    [onOpenChange, router],
+    [onOpenChange, router, startNavigation],
   );
 
   const handleCopy = useCallback(

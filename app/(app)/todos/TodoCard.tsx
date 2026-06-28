@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { cn, formatDate } from '@/lib/utils';
 import { useData } from '../dataContext';
+import { useReportedTransition } from '../navigationLoading';
 import type { Todo } from '@/lib/fsTodos';
 import type { NoteSummary } from '@/lib/types';
 
@@ -24,6 +25,7 @@ function isOverdue(dueDate: string): boolean {
 export const TodoCard = memo(function TodoCard({ todo, onEdit, notes }: TodoCardProps) {
   const { updateTodo, deleteTodo } = useData();
   const router = useRouter();
+  const startNavigation = useReportedTransition();
   const [isDragging, setIsDragging] = useState(false);
 
   const handleToggle = (checked: boolean) => {
@@ -106,7 +108,9 @@ export const TodoCard = memo(function TodoCard({ todo, onEdit, notes }: TodoCard
                 className="text-xs px-1.5 py-0 gap-0.5 cursor-pointer hover:bg-accent"
                 onClick={(e) => {
                   e.stopPropagation();
-                  router.push(`/notes/${n.id}`);
+                  startNavigation(() => {
+                    router.push(`/notes/${n.id}`);
+                  });
                 }}
               >
                 <FileText className="h-2.5 w-2.5" />

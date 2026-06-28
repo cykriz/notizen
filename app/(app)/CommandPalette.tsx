@@ -14,6 +14,7 @@ import {
   CommandItem,
 } from '@/components/ui/command';
 import { listAllTagPaths } from '@/lib/tagTree';
+import { useReportedTransition } from './navigationLoading';
 import { viewStore } from './viewStore';
 import { tagNavigationStore } from './tagNavigationStore';
 import type { NoteSummary, Todo } from '@/lib/types';
@@ -27,6 +28,7 @@ export function CommandPalette({ notes, todos }: CommandPaletteProps) {
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const router = useRouter();
+  const startNavigation = useReportedTransition();
 
   const isTagMode = inputValue.startsWith('@');
   const tagQuery = isTagMode ? inputValue.slice(1).toLowerCase() : '';
@@ -62,9 +64,11 @@ export function CommandPalette({ notes, todos }: CommandPaletteProps) {
     (path: string) => {
       setOpen(false);
       setInputValue('');
-      router.push(path);
+      startNavigation(() => {
+        router.push(path);
+      });
     },
-    [router],
+    [router, startNavigation],
   );
 
   const handleTagSelect = useCallback(
@@ -73,9 +77,11 @@ export function CommandPalette({ notes, todos }: CommandPaletteProps) {
       setInputValue('');
       tagNavigationStore.navigateTo(path);
       viewStore.set('tags');
-      router.push('/notes');
+      startNavigation(() => {
+        router.push('/notes');
+      });
     },
-    [router],
+    [router, startNavigation],
   );
 
   const handleOpenChange = useCallback((v: boolean) => {
