@@ -9,6 +9,7 @@ import { SidebarMenuItem, SidebarMenuButton, SidebarMenuBadge } from '@/componen
 import { useData } from './dataContext';
 import { DeleteNoteDialog } from './DeleteNoteDialog';
 import { LinkLoadingReporter } from './LinkLoadingReporter';
+import { NOTE_DRAG_MIME } from '@/lib/constants';
 import type { NoteSummary } from '@/lib/types';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -20,6 +21,7 @@ interface NoteListItemProps {
   isActive: boolean;
   onNavigate: () => void;
   showDate?: boolean;
+  draggable?: boolean;
 }
 
 export const NoteListItem = memo(function NoteListItem({
@@ -27,10 +29,12 @@ export const NoteListItem = memo(function NoteListItem({
   isActive,
   onNavigate,
   showDate = true,
+  draggable = false,
 }: NoteListItemProps) {
   const { updateNote } = useData();
   const [pinning, startPinning] = useTransition();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const mounted = useSyncExternalStore(
     emptySubscribe,
     () => true,
@@ -49,10 +53,26 @@ export const NoteListItem = memo(function NoteListItem({
     });
   };
 
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData(NOTE_DRAG_MIME, note.id);
+    e.dataTransfer.effectAllowed = 'move';
+    setIsDragging(true);
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
   return (
-    <SidebarMenuItem>
+    <SidebarMenuItem className={cn({ 'opacity-50': isDragging })}>
       <SidebarMenuButton asChild isActive={isActive} className="h-auto py-2 pr-18 md:pr-2">
-        <Link href={`/notes/${note.id}`} onClick={onNavigate}>
+        <Link
+          href={`/notes/${note.id}`}
+          onClick={onNavigate}
+          draggable={draggable}
+          onDragStart={draggable ? handleDragStart : undefined}
+          onDragEnd={draggable ? handleDragEnd : undefined}
+        >
           <LinkLoadingReporter />
           <div className="flex min-w-0 flex-col gap-0.5 leading-tight">
             <span className="truncate font-medium">{note.title}</span>

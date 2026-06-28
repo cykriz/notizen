@@ -95,6 +95,9 @@ export const isReservedTag = (t: string): boolean => RESERVED_TAGS.has(t);
 // 'sync-fehler/foo' — blocks authoring tags that collide with synthetic folders.
 export const pathHasReservedSegment = (path: string): boolean => path.split('/').some(isReservedTag);
 
+// dataTransfer MIME used when dragging a note row onto a tag folder in the sidebar.
+export const NOTE_DRAG_MIME = 'application/x-note-id';
+
 export const NEW_FOLDER_LABEL = 'Neuer Ordner';
 export const SYNC_HEALTH_POLL_MS = 10_000;
 export const SYNC_RETRY_INTERVAL_MS = 10_000;

@@ -1,17 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
 import { Sidebar, SidebarContent, useSidebar } from '@/components/ui/sidebar';
+import { useFinePointer } from '@/hooks/useFinePointer';
+import { useSwipeBack } from '@/hooks/useSwipeBack';
 import { FAILED_SYNC_TAG, SYNC_ENTITY } from '@/lib/constants';
 import { getFailedSyncQueue } from '@/lib/failedSyncQueue';
-import { useSwipeBack } from '@/hooks/useSwipeBack';
-import { useFinePointer } from '@/hooks/useFinePointer';
-import { withFailedSyncTag } from './failedSyncTag';
-import { viewStore } from './viewStore';
-import { isTabActive } from './navTabs';
+import { usePathname, useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { AppSidebarHeader } from './AppSidebarHeader';
 import { CreateTagFolderDialog } from './CreateTagFolderDialog';
+import { useData } from './dataContext';
+import { withFailedSyncTag } from './failedSyncTag';
+import { isTabActive } from './navTabs';
 import { NotesSidebarContent } from './NotesSidebarContent';
 import { NotesSidebarFooter } from './NotesSidebarFooter';
 import { PinnedNotesGroup } from './PinnedNotesGroup';
@@ -19,8 +19,8 @@ import { SharedNotesEntry } from './SharedNotesEntry';
 import { TagNavigation } from './TagNavigation';
 import { TodosSidebarContent } from './TodosSidebarContent';
 import { useCreateNote } from './useCreateNote';
-import { useData } from './dataContext';
 import { useTagStateSync } from './useTagStateSync';
+import { viewStore } from './viewStore';
 
 interface AppSidebarProps {
   authEnabled: boolean;
@@ -42,7 +42,12 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
   // count change), so a same-tick add+remove that nets to equal length still
   // refreshes the set.
   const failedNoteIds = useMemo(
-    () => new Set(getFailedSyncQueue().filter((e) => e.entityType === SYNC_ENTITY.NOTE).map((e) => e.entityId)),
+    () =>
+      new Set(
+        getFailedSyncQueue()
+          .filter((e) => e.entityType === SYNC_ENTITY.NOTE)
+          .map((e) => e.entityId),
+      ),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- failedSyncVersion is the reactive proxy for the queue contents
     [failedSyncVersion],
   );

@@ -36,6 +36,7 @@ export function TagNoteList({ notes, currentPath, onNavigate }: TagNoteListProps
               note={note}
               isActive={pathname === `/notes/${note.id}`}
               onNavigate={onNavigate}
+              draggable
             />
           ))}
         </SidebarMenu>

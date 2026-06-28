@@ -1,7 +1,5 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, Folder, Tag, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   SidebarMenu,
@@ -10,10 +8,14 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from '@/components/ui/sidebar';
-import { buildTagTree, getChildNodes } from '@/lib/tagTree';
+import { FAILED_SYNC_TAG, NOTE_DRAG_MIME, pathHasReservedSegment } from '@/lib/constants';
+import { buildTagTree, getChildNodes, moveNoteToFolder } from '@/lib/tagTree';
 import type { NoteSummary } from '@/lib/types';
-import { FAILED_SYNC_TAG } from '@/lib/constants';
+import { cn } from '@/lib/utils';
+import { ChevronLeft, Folder, Tag, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { ClearFailedSyncDialog } from './ClearFailedSyncDialog';
+import { useData } from './dataContext';
 import { DeleteTagFolderDialog } from './DeleteTagFolderDialog';
 
 interface TagNavigationProps {
@@ -24,8 +26,10 @@ interface TagNavigationProps {
 }
 
 export function TagNavigation({ notes, currentPath, setCurrentPath, onFolderDeleted }: TagNavigationProps) {
+  const { updateNote } = useData();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [clearFailedOpen, setClearFailedOpen] = useState(false);
+  const [dragOverPath, setDragOverPath] = useState<string | null>(null);
   const tree = useMemo(() => buildTagTree(notes), [notes]);
   const children = useMemo(() => getChildNodes(tree, currentPath), [tree, currentPath]);
   const hasNotesAtLevel = useMemo(
@@ -51,12 +55,52 @@ export function TagNavigation({ notes, currentPath, setCurrentPath, onFolderDele
     setCurrentPath(parts.join('/'));
   };
 
+  const handleDragOverFolder = (e: React.DragEvent, path: string) => {
+    if (!e.dataTransfer.types.includes(NOTE_DRAG_MIME) || pathHasReservedSegment(path)) {
+      // Non-droppable target (wrong payload or reserved folder) — drop any
+      // highlight left over from a previously-hovered valid folder.
+      setDragOverPath(null);
+      return;
+    }
+
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverPath(path);
+  };
+
+  const handleContainerDragLeave = (e: React.DragEvent) => {
+    // dragleave bubbles — ignore moves between children, only clear on actual exit
+    if (e.relatedTarget instanceof Node && e.currentTarget.contains(e.relatedTarget)) {
+      return;
+    }
+
+    setDragOverPath(null);
+  };
+
+  const handleDropOnFolder = (e: React.DragEvent, target: string) => {
+    e.preventDefault();
+    setDragOverPath(null);
+    const noteId = e.dataTransfer.getData(NOTE_DRAG_MIME);
+    const note = notes.find((n) => n.id === noteId);
+    const next = note ? moveNoteToFolder(note.tags, currentPath, target) : null;
+    if (!next) {
+      return;
+    }
+
+    void updateNote(noteId, { tags: next }).catch(() => {
+      // Network error — retried on the next sync
+    });
+  };
+
   if (children.length === 0 && currentPath === '') {
     return null;
   }
 
   return (
-    <div className="flex max-h-[calc(0.5*var(--app-h))] flex-col gap-1 overflow-y-auto">
+    <div
+      className="flex max-h-[calc(0.5*var(--app-h))] flex-col gap-1 overflow-y-auto"
+      onDragLeave={handleContainerDragLeave}
+    >
       {currentPath !== '' && (
         <div className="flex min-w-0 items-center gap-1 overflow-hidden text-xs text-sidebar-foreground/70">
           <Button variant="ghost" size="icon-xs" onClick={handleBack} className="shrink-0">
@@ -130,7 +174,15 @@ export function TagNavigation({ notes, currentPath, setCurrentPath, onFolderDele
                 onClick={() => {
                   setCurrentPath(node.fullPath);
                 }}
-                className="h-auto"
+                onDragOver={(e) => {
+                  handleDragOverFolder(e, node.fullPath);
+                }}
+                onDrop={(e) => {
+                  handleDropOnFolder(e, node.fullPath);
+                }}
+                className={cn('h-auto', {
+                  'bg-primary/10 ring-2 ring-inset ring-primary/60': dragOverPath === node.fullPath,
+                })}
               >
                 {node.children.length > 0 ? <Folder className="shrink-0" /> : <Tag className="shrink-0" />}
                 <span className="truncate">{node.segment}</span>

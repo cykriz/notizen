@@ -1,3 +1,4 @@
+import { FAILED_SYNC_TAG, pathHasReservedSegment } from './constants';
 import type { NoteSummary } from './types';
 
 export interface TagNode {
@@ -69,6 +70,21 @@ export function getChildNodes(tree: TagNode[], path: string): TagNode[] {
   return level;
 }
 
+// Computes the new tag list when a note is dragged from the `from` folder onto
+// the `target` folder: drops the source folder tag and the synthetic sync-fehler
+// tag (never persisted), then adds the target. Returns null if nothing changed.
+export function moveNoteToFolder(tags: string[], from: string, target: string): string[] | null {
+  // Never persist a reserved/synthetic tag (e.g. the render-only sync-fehler folder).
+  if (pathHasReservedSegment(target)) {
+    return null;
+  }
+
+  const next = tags.filter((t) => t !== from && t !== target && t !== FAILED_SYNC_TAG);
+  next.push(target);
+  const unchanged = next.length === tags.length && next.every((t) => tags.includes(t));
+  return unchanged ? null : next;
+}
+
 export function getNotesAtPath(notes: NoteSummary[], path: string): NoteSummary[] {
   if (path === '') {
     return notes.filter((n) => n.tags.length === 0);
@@ -83,9 +99,7 @@ export function getNotesUnderPath(notes: NoteSummary[], path: string): NoteSumma
   }
 
   const prefix = `${path}/`;
-  return notes.filter((n) =>
-    n.tags.some((t) => t === path || t.startsWith(prefix))
-  );
+  return notes.filter((n) => n.tags.some((t) => t === path || t.startsWith(prefix)));
 }
 
 export function listAllTags(notes: NoteSummary[]): string[] {
