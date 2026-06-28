@@ -124,10 +124,8 @@ export function TagInput({ tags, allTags, onChange, className, compact, onCollap
             setOpen(true);
           }}
           onBlur={() => {
-            setTimeout(() => {
-              setOpen(false);
-              onCollapse?.();
-            }, 150);
+            setOpen(false);
+            onCollapse?.();
           }}
           onKeyDown={handleKeyDown}
           placeholder="Tags…"
@@ -135,7 +133,13 @@ export function TagInput({ tags, allTags, onChange, className, compact, onCollap
           className="h-7 md:h-6 border-none bg-transparent px-1 text-sm md:text-xs shadow-none focus-visible:ring-0"
         />
         {showSuggestions && (
-          <div className="absolute left-0 top-full mt-1 z-50 w-56 rounded-md border bg-popover shadow-md">
+          <div
+            className="absolute left-0 top-full mt-1 z-50 w-56 rounded-md border bg-popover shadow-md"
+            // Keep input focus on click so the blur-close doesn't beat the selection.
+            onMouseDown={(e) => {
+              e.preventDefault();
+            }}
+          >
             <CommandList>
               <CommandGroup>
                 {suggestions.slice(0, 8).map((tag) => (

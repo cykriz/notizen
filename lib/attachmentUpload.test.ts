@@ -1,7 +1,13 @@
 import { describe, expect, test } from 'bun:test';
 
 import type { Attachment } from './fsNotes';
-import { appendLinks, buildMarkdownLink, removeAttachmentLink } from './attachmentUpload';
+import {
+  appendLinks,
+  buildMarkdownLink,
+  computeUploadPercent,
+  formatUploadLabel,
+  removeAttachmentLink,
+} from './attachmentUpload';
 
 const att = (over: Partial<Attachment>): Attachment => ({
   id: 'abc123',
@@ -92,5 +98,36 @@ describe('removeAttachmentLink', () => {
   test('content without a matching link is unchanged', () => {
     const content = 'just some text\nwith lines';
     expect(removeAttachmentLink(content, id, noteId)).toBe(content);
+  });
+});
+
+describe('computeUploadPercent', () => {
+  test('total of 0 → 0', () => {
+    expect(computeUploadPercent(0, 0, 0, 0, 0)).toBe(0);
+  });
+
+  test('single file half-way', () => {
+    expect(computeUploadPercent(0, 100, 50, 100, 100)).toBe(50);
+  });
+
+  test('second of two files, first done, current half-way → overall 75', () => {
+    expect(computeUploadPercent(100, 100, 50, 100, 200)).toBe(75);
+  });
+
+  test('multipart overhead (loaded > file bytes) clamps fraction → never over 100', () => {
+    // event total is the multipart body (110) > file.size (100); loaded=110 → frac 1
+    expect(computeUploadPercent(0, 100, 110, 110, 100)).toBe(100);
+  });
+
+  test('eventTotal 0 → no current-file contribution', () => {
+    expect(computeUploadPercent(100, 100, 0, 0, 200)).toBe(50);
+  });
+});
+
+describe('formatUploadLabel', () => {
+  test('formats index, count and name', () => {
+    expect(formatUploadLabel({ fileIndex: 2, fileCount: 3, fileName: 'clip.mp4', percent: 40 })).toBe(
+      'Datei 2/3: clip.mp4',
+    );
   });
 });

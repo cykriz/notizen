@@ -8,6 +8,7 @@ import { MarkdownEditorToolbar } from '@/components/MarkdownEditorToolbar';
 import { MarkdownPreview } from '@/components/MarkdownPreview';
 import { NoteLinkPicker } from '@/components/NoteLinkPicker';
 import { PreviewCheckboxContext } from '@/components/PreviewCheckbox';
+import { UploadOverlay } from '@/components/UploadOverlay';
 import { editorBasicSetup, staticExtensions } from '@/components/markdownEditorSetup';
 import { useClientMounted } from '@/hooks/useClientMounted';
 import { useFileDrop } from '@/hooks/useFileDrop';
@@ -65,7 +66,7 @@ export const MarkdownEditor = memo(
       valueRef.current = value;
     }, [value]);
 
-    const { dragging, uploading, fileDropExtension, handleDrop, handleDragOver, handleDragLeave } = useFileDrop({
+    const { dragging, uploadProgress, fileDropExtension, handleDrop, handleDragOver, handleDragLeave } = useFileDrop({
       noteId,
       viewRef,
       onFileUploaded,
@@ -227,11 +228,7 @@ export const MarkdownEditor = memo(
             <p className="text-sm font-medium text-accent-foreground">Loslassen zum Hochladen</p>
           </div>
         )}
-        {uploading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/60 pointer-events-none z-10">
-            <p className="text-sm font-medium text-muted-foreground">Wird hochgeladen…</p>
-          </div>
-        )}
+        <UploadOverlay progress={uploadProgress} />
         {notes && (
           <NoteLinkPicker notes={notes} open={pickerOpen} onOpenChange={setPickerOpen} onSelect={handleNoteSelect} />
         )}

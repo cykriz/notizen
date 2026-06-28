@@ -17,6 +17,8 @@ Next.js 16 + React 19 + Bun + TypeScript (strict) + Tailwind v4 + shadcn/ui. Fil
 
 ## Key Rules
 
+- **Always Bun**: use `bun` / `bunx` for all package management and scripts — never `npm`, `npx`, `yarn`, or `pnpm`. Only documented exceptions (need Node's module loader): `npx shadcn@latest add <name>` and `npx playwright` for E2E.
+- **Always Radix for UI primitives**: build interactive UI on Radix (via the unified `radix-ui` package, imported as `import { X as XPrimitive } from 'radix-ui'`) through shadcn wrappers in `components/ui/`. Never hand-roll tooltips, popovers, dropdowns/menus, dialogs, progress bars, switches/toggles, tabs, etc. — add the shadcn component (`npx shadcn@latest add <name>`) or compose the Radix primitive instead.
 - All user-facing text in **German**
 - Max 200 lines per file — split if exceeded (excludes test files: `*.spec.ts`, `*.test.ts`)
 - `NOTES_ROOT` env var points to data directory

@@ -21,31 +21,122 @@ export interface UploadResult {
   failed: number;
 }
 
+export interface UploadProgress {
+  fileIndex: number; // 1-based, for the "Datei i/n" label
+  fileCount: number;
+  fileName: string;
+  percent: number; // overall progress across all files, 0–100 (clamped)
+}
+
+export interface UploadOptions {
+  onUploaded?: (att: Attachment) => void;
+  onProgress?: (progress: UploadProgress) => void;
+}
+
+// Overall percent, byte-weighted. Uses the event fraction (loaded/total of the
+// multipart body, which includes overhead) weighted by file.size, and clamps
+// to [0,100] so multipart overhead can never push it past 100.
+export function computeUploadPercent(
+  completedBytes: number,
+  currentSize: number,
+  eventLoaded: number,
+  eventTotal: number,
+  totalBytes: number,
+): number {
+  if (totalBytes <= 0) {
+    return 0;
+  }
+
+  const frac = eventTotal > 0 ? Math.min(eventLoaded / eventTotal, 1) : 0;
+  const done = completedBytes + currentSize * frac;
+  return Math.min(100, Math.max(0, Math.round((done / totalBytes) * 100)));
+}
+
+// Single source of the repeated status literal (constants rule).
+export function formatUploadLabel(p: UploadProgress): string {
+  return `Datei ${String(p.fileIndex)}/${String(p.fileCount)}: ${p.fileName}`;
+}
+
+// Uploads a single file via XMLHttpRequest (fetch lacks upload progress events).
+// Resolves to the created Attachment, or null on any non-2xx / network error.
+function uploadOne(
+  file: File,
+  noteId: string,
+  onByteProgress: (loaded: number, total: number) => void,
+): Promise<Attachment | null> {
+  return new Promise((resolve) => {
+    const form = new FormData();
+    form.append('file', file);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `/api/notes/${noteId}/attachments`);
+    // Do not set Content-Type — the browser adds the multipart boundary.
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        onByteProgress(e.loaded, e.total);
+      }
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          resolve(JSON.parse(xhr.responseText) as Attachment);
+        } catch {
+          resolve(null);
+        }
+      } else {
+        // Server responded but rejected (e.g. 413 payload too large).
+        resolve(null);
+      }
+    };
+    xhr.onerror = () => {
+      resolve(null);
+    };
+    xhr.onabort = () => {
+      resolve(null);
+    };
+    xhr.send(form);
+  });
+}
+
 export async function uploadFiles(
   files: File[],
   noteId: string,
-  onUploaded?: (att: Attachment) => void,
+  options?: UploadOptions,
 ): Promise<UploadResult> {
   const links: string[] = [];
   let failed = 0;
-  for (const file of files) {
-    const form = new FormData();
-    form.append('file', file);
-    try {
-      const res = await fetch(`/api/notes/${noteId}/attachments`, { method: 'POST', body: form });
-      if (res.ok) {
-        const att = (await res.json()) as Attachment;
-        onUploaded?.(att);
-        links.push(buildMarkdownLink(att, noteId));
-      } else {
-        // Server responded but rejected (e.g. 413 payload too large).
-        failed += 1;
+  const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
+  let completedBytes = 0;
+  // Avoid redundant React state churn: only emit when the rounded percent or
+  // the current file changes (the latter so a per-file label switch at an
+  // unchanged overall percent is not swallowed).
+  let lastPercent = -1;
+  let lastIndex = -1;
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const report = (loaded: number, total: number) => {
+      const percent = computeUploadPercent(completedBytes, file.size, loaded, total, totalBytes);
+      if (percent === lastPercent && i === lastIndex) {
+        return;
       }
-    } catch {
-      // Network-level failure.
+
+      lastPercent = percent;
+      lastIndex = i;
+      options?.onProgress?.({ fileIndex: i + 1, fileCount: files.length, fileName: file.name, percent });
+    };
+
+    const att = await uploadOne(file, noteId, report);
+    if (att !== null) {
+      options?.onUploaded?.(att);
+      links.push(buildMarkdownLink(att, noteId));
+    } else {
       failed += 1;
     }
+
+    completedBytes += file.size;
   }
+
   return { links, failed };
 }
 

@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo, type RefObject } from 'react';
 import { EditorView } from '@codemirror/view';
 import type { Attachment } from '@/lib/fsNotes';
-import { appendLinks, uploadFiles } from '@/lib/attachmentUpload';
+import { appendLinks, uploadFiles, type UploadProgress } from '@/lib/attachmentUpload';
 
 function insertLinks(view: EditorView, links: string[]) {
   if (links.length === 0) {
@@ -27,7 +27,11 @@ interface UseFileDropOptions {
 
 export function useFileDrop({ noteId, viewRef, onFileUploaded, wrapperRef, valueRef, onChange }: UseFileDropOptions) {
   const [dragging, setDragging] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
+
+  const startProgress = useCallback((files: File[]) => {
+    setUploadProgress({ fileIndex: 1, fileCount: files.length, fileName: files[0].name, percent: 0 });
+  }, []);
 
   const noteIdRef = useRef(noteId);
   const onFileUploadedRef = useRef(onFileUploaded);
@@ -55,8 +59,11 @@ export function useFileDrop({ noteId, viewRef, onFileUploaded, wrapperRef, value
           }
 
           event.preventDefault();
-          setUploading(true);
-          void uploadFiles(imageFiles, noteIdRef.current, notifyUploaded)
+          startProgress(imageFiles);
+          void uploadFiles(imageFiles, noteIdRef.current, {
+            onUploaded: notifyUploaded,
+            onProgress: setUploadProgress,
+          })
             .then(({ links }) => {
               insertLinks(view, links);
             })
@@ -64,12 +71,12 @@ export function useFileDrop({ noteId, viewRef, onFileUploaded, wrapperRef, value
               // Network error — insertion ignored
             })
             .finally(() => {
-              setUploading(false);
+              setUploadProgress(null);
             });
           return true;
         },
       }),
-    [notifyUploaded],
+    [notifyUploaded, startProgress],
   );
 
   const handleDrop = useCallback(
@@ -82,9 +89,13 @@ export function useFileDrop({ noteId, viewRef, onFileUploaded, wrapperRef, value
         return;
       }
 
-      setUploading(true);
+      const files = Array.from(e.dataTransfer.files);
+      startProgress(files);
       try {
-        const { links } = await uploadFiles(Array.from(e.dataTransfer.files), id, notifyUploaded);
+        const { links } = await uploadFiles(files, id, {
+          onUploaded: notifyUploaded,
+          onProgress: setUploadProgress,
+        });
         const view = viewRef.current;
         if (view) {
           // Edit mode: insert at the cursor.
@@ -94,12 +105,12 @@ export function useFileDrop({ noteId, viewRef, onFileUploaded, wrapperRef, value
           onChange(appendLinks(valueRef.current, links));
         }
       } catch {
-        // Netzwerkfehler — Upload ignoriert
+        // Network error — upload ignored
       } finally {
-        setUploading(false);
+        setUploadProgress(null);
       }
     },
-    [viewRef, notifyUploaded, onChange, valueRef],
+    [viewRef, notifyUploaded, onChange, valueRef, startProgress],
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -119,5 +130,5 @@ export function useFileDrop({ noteId, viewRef, onFileUploaded, wrapperRef, value
     [wrapperRef],
   );
 
-  return { dragging, uploading, fileDropExtension, handleDrop, handleDragOver, handleDragLeave };
+  return { dragging, uploadProgress, fileDropExtension, handleDrop, handleDragOver, handleDragLeave };
 }

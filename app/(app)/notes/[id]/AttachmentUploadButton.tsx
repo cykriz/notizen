@@ -3,7 +3,8 @@
 import { useCallback, useRef, useState } from 'react';
 import { Loader2, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { uploadFiles } from '@/lib/attachmentUpload';
+import { Progress } from '@/components/ui/progress';
+import { formatUploadLabel, uploadFiles, type UploadProgress } from '@/lib/attachmentUpload';
 import type { Attachment } from '@/lib/fsNotes';
 
 interface AttachmentUploadButtonProps {
@@ -14,7 +15,7 @@ interface AttachmentUploadButtonProps {
 
 export function AttachmentUploadButton({ noteId, onUploaded, onInsertLinks }: AttachmentUploadButtonProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState<UploadProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleChange = useCallback(
@@ -24,10 +25,11 @@ export function AttachmentUploadButton({ noteId, onUploaded, onInsertLinks }: At
         return;
       }
 
-      setUploading(true);
+      const list = Array.from(files);
+      setProgress({ fileIndex: 1, fileCount: list.length, fileName: list[0].name, percent: 0 });
       setError(null);
       try {
-        const { links, failed } = await uploadFiles(Array.from(files), noteId, onUploaded);
+        const { links, failed } = await uploadFiles(list, noteId, { onUploaded, onProgress: setProgress });
         onInsertLinks(links);
         if (failed > 0) {
           setError('Upload fehlgeschlagen');
@@ -35,7 +37,7 @@ export function AttachmentUploadButton({ noteId, onUploaded, onInsertLinks }: At
       } catch {
         setError('Upload fehlgeschlagen');
       } finally {
-        setUploading(false);
+        setProgress(null);
         // Reset so selecting the same file again re-triggers onChange.
         e.target.value = '';
       }
@@ -43,8 +45,10 @@ export function AttachmentUploadButton({ noteId, onUploaded, onInsertLinks }: At
     [noteId, onUploaded, onInsertLinks],
   );
 
+  const uploading = progress !== null;
+
   return (
-    <>
+    <span className="relative inline-flex">
       <Button
         onClick={() => {
           inputRef.current?.click();
@@ -52,11 +56,18 @@ export function AttachmentUploadButton({ noteId, onUploaded, onInsertLinks }: At
         size="icon-xs"
         variant="ghost"
         disabled={uploading}
-        aria-label="Datei anhängen"
+        aria-label={progress ? formatUploadLabel(progress) : 'Datei anhängen'}
         title={error ?? 'Datei anhängen'}
       >
         {uploading ? <Loader2 className="animate-spin" /> : <Paperclip />}
       </Button>
+      {/* Rendered outside the Button so it is not faded by disabled:opacity-50. */}
+      {progress && (
+        <Progress
+          value={progress.percent}
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 rounded-none bg-transparent"
+        />
+      )}
       <input
         ref={inputRef}
         type="file"
@@ -66,6 +77,6 @@ export function AttachmentUploadButton({ noteId, onUploaded, onInsertLinks }: At
           void handleChange(e);
         }}
       />
-    </>
+    </span>
   );
 }
