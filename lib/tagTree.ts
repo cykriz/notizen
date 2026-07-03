@@ -70,19 +70,28 @@ export function getChildNodes(tree: TagNode[], path: string): TagNode[] {
   return level;
 }
 
-// Computes the new tag list when a note is dragged from the `from` folder onto
-// the `target` folder: drops the source folder tag and the synthetic sync-fehler
-// tag (never persisted), then adds the target. Returns null if nothing changed.
-export function moveNoteToFolder(tags: string[], from: string, target: string): string[] | null {
-  // Never persist a reserved/synthetic tag (e.g. the render-only sync-fehler folder).
-  if (pathHasReservedSegment(target)) {
+// Replaces the `from` folder tag with `targets` (reserved/synthetic targets like
+// sync-fehler are dropped, never persisted), leaving all other tags untouched, and
+// also strips the synthetic FAILED_SYNC_TAG. With from='' this is a pure add.
+// Returns null if nothing changed. If every target is reserved, returns null so the
+// op aborts (preserves the old moveNoteToFolder reserved-target behavior).
+export function replaceFolderTag(tags: string[], from: string, targets: string[]): string[] | null {
+  const cleanTargets = targets.filter((t) => !pathHasReservedSegment(t));
+  if (targets.length > 0 && cleanTargets.length === 0) {
     return null;
   }
 
-  const next = tags.filter((t) => t !== from && t !== target && t !== FAILED_SYNC_TAG);
-  next.push(target);
+  const next = tags.filter((t) => t !== from && !cleanTargets.includes(t) && t !== FAILED_SYNC_TAG);
+  next.push(...cleanTargets);
   const unchanged = next.length === tags.length && next.every((t) => tags.includes(t));
   return unchanged ? null : next;
+}
+
+// Computes the new tag list when a note is dragged from the `from` folder onto the
+// `target` folder: drops the source folder tag and the synthetic sync-fehler tag,
+// then adds the target. Returns null if nothing changed.
+export function moveNoteToFolder(tags: string[], from: string, target: string): string[] | null {
+  return replaceFolderTag(tags, from, [target]);
 }
 
 export function getNotesAtPath(notes: NoteSummary[], path: string): NoteSummary[] {

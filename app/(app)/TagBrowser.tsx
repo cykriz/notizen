@@ -5,15 +5,17 @@ import { usePathname } from 'next/navigation';
 import { SidebarMenu } from '@/components/ui/sidebar';
 import { getNotesAtPath } from '@/lib/tagTree';
 import { NoteListItem } from './NoteListItem';
+import type { NoteSelection } from './useNoteSelection';
 import type { NoteSummary } from '@/lib/types';
 
 interface TagNoteListProps {
   notes: NoteSummary[];
   currentPath: string;
   onNavigate: () => void;
+  selection: NoteSelection;
 }
 
-export function TagNoteList({ notes, currentPath, onNavigate }: TagNoteListProps) {
+export function TagNoteList({ notes, currentPath, onNavigate, selection }: TagNoteListProps) {
   const pathname = usePathname();
 
   const notesAtLevel = useMemo(() => getNotesAtPath(notes, currentPath), [notes, currentPath]);
@@ -37,6 +39,7 @@ export function TagNoteList({ notes, currentPath, onNavigate }: TagNoteListProps
               isActive={pathname === `/notes/${note.id}`}
               onNavigate={onNavigate}
               draggable
+              selection={selection}
             />
           ))}
         </SidebarMenu>

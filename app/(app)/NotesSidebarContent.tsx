@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { SidebarGroup, SidebarGroupContent, SidebarMenu, useSidebar } from '@/components/ui/sidebar';
 import { TagNoteList } from './TagBrowser';
 import { NoteListItem } from './NoteListItem';
+import type { NoteSelection } from './useNoteSelection';
 import type { SidebarView } from './viewStore';
 import type { NoteSummary } from '@/lib/types';
 
@@ -16,9 +17,10 @@ interface NotesSidebarContentProps {
   view: SidebarView;
   handleCreate: () => void;
   pending: boolean;
+  selection: NoteSelection;
 }
 
-export function NotesSidebarContent({ notes, currentTagPath, view, handleCreate, pending }: NotesSidebarContentProps) {
+export function NotesSidebarContent({ notes, currentTagPath, view, handleCreate, pending, selection }: NotesSidebarContentProps) {
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
 
@@ -41,7 +43,9 @@ export function NotesSidebarContent({ notes, currentTagPath, view, handleCreate,
       {notes.length > 0 && (
         <SidebarGroup>
           <SidebarGroupContent>
-            {view === 'tags' && <TagNoteList notes={notes} currentPath={currentTagPath} onNavigate={onNavigate} />}
+            {view === 'tags' && (
+              <TagNoteList notes={notes} currentPath={currentTagPath} onNavigate={onNavigate} selection={selection} />
+            )}
             {view === 'all' && (
               <SidebarMenu>
                 {notes.map((note) => (
@@ -50,6 +54,7 @@ export function NotesSidebarContent({ notes, currentTagPath, view, handleCreate,
                     note={note}
                     isActive={pathname === `/notes/${note.id}`}
                     onNavigate={onNavigate}
+                    selection={selection}
                   />
                 ))}
               </SidebarMenu>

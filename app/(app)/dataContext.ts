@@ -15,6 +15,7 @@ export interface DataContextValue {
   clearFailedSync: () => void;
   createNote: (input: CreateNoteInput) => Promise<Note>;
   updateNote: (id: string, input: UpdateNoteInput) => Promise<void>;
+  updateNotes: (updates: { id: string; input: UpdateNoteInput }[]) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   deleteTagFolder: (path: string) => Promise<void>;
   createTodo: (input: CreateTodoInput) => Promise<Todo>;

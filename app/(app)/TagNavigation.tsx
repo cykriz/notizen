@@ -8,25 +8,26 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from '@/components/ui/sidebar';
-import { FAILED_SYNC_TAG, NOTE_DRAG_MIME, pathHasReservedSegment } from '@/lib/constants';
-import { buildTagTree, getChildNodes, moveNoteToFolder } from '@/lib/tagTree';
+import { FAILED_SYNC_TAG, NOTE_DRAG_MIME, NOTE_IDS_DRAG_MIME, pathHasReservedSegment } from '@/lib/constants';
+import { buildTagTree, getChildNodes } from '@/lib/tagTree';
 import type { NoteSummary } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ChevronLeft, Folder, Tag, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { ClearFailedSyncDialog } from './ClearFailedSyncDialog';
-import { useData } from './dataContext';
 import { DeleteTagFolderDialog } from './DeleteTagFolderDialog';
+import { useBatchTags } from './useBatchTags';
 
 interface TagNavigationProps {
   notes: NoteSummary[];
   currentPath: string;
   setCurrentPath: (path: string) => void;
   onFolderDeleted: () => void;
+  exitSelection?: () => void;
 }
 
-export function TagNavigation({ notes, currentPath, setCurrentPath, onFolderDeleted }: TagNavigationProps) {
-  const { updateNote } = useData();
+export function TagNavigation({ notes, currentPath, setCurrentPath, onFolderDeleted, exitSelection }: TagNavigationProps) {
+  const { applyFolderTag } = useBatchTags();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [clearFailedOpen, setClearFailedOpen] = useState(false);
   const [dragOverPath, setDragOverPath] = useState<string | null>(null);
@@ -80,16 +81,14 @@ export function TagNavigation({ notes, currentPath, setCurrentPath, onFolderDele
   const handleDropOnFolder = (e: React.DragEvent, target: string) => {
     e.preventDefault();
     setDragOverPath(null);
-    const noteId = e.dataTransfer.getData(NOTE_DRAG_MIME);
-    const note = notes.find((n) => n.id === noteId);
-    const next = note ? moveNoteToFolder(note.tags, currentPath, target) : null;
-    if (!next) {
-      return;
+    const multi = e.dataTransfer.getData(NOTE_IDS_DRAG_MIME);
+    const ids = multi !== '' ? (JSON.parse(multi) as string[]) : [e.dataTransfer.getData(NOTE_DRAG_MIME)];
+    applyFolderTag(ids, currentPath, [target]);
+    if (multi !== '') {
+      // Only leave selection mode after a real batch drop — dragging a single
+      // unselected note in selection mode keeps the in-progress selection.
+      exitSelection?.();
     }
-
-    void updateNote(noteId, { tags: next }).catch(() => {
-      // Network error — retried on the next sync
-    });
   };
 
   if (children.length === 0 && currentPath === '') {

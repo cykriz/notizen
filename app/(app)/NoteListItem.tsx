@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { Paperclip, Pin, Trash2, Loader2 } from 'lucide-react';
 import { cn, formatDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { SidebarMenuItem, SidebarMenuButton, SidebarMenuBadge } from '@/components/ui/sidebar';
 import { useData } from './dataContext';
 import { DeleteNoteDialog } from './DeleteNoteDialog';
 import { LinkLoadingReporter } from './LinkLoadingReporter';
-import { NOTE_DRAG_MIME } from '@/lib/constants';
+import { NOTE_DRAG_MIME, NOTE_IDS_DRAG_MIME } from '@/lib/constants';
+import type { NoteSelection } from './useNoteSelection';
 import type { NoteSummary } from '@/lib/types';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -22,6 +24,7 @@ interface NoteListItemProps {
   onNavigate: () => void;
   showDate?: boolean;
   draggable?: boolean;
+  selection?: NoteSelection;
 }
 
 export const NoteListItem = memo(function NoteListItem({
@@ -30,6 +33,7 @@ export const NoteListItem = memo(function NoteListItem({
   onNavigate,
   showDate = true,
   draggable = false,
+  selection,
 }: NoteListItemProps) {
   const { updateNote } = useData();
   const [pinning, startPinning] = useTransition();
@@ -40,6 +44,9 @@ export const NoteListItem = memo(function NoteListItem({
     () => true,
     () => false,
   );
+
+  const selectionMode = selection?.selectionMode ?? false;
+  const selected = selection?.selectedIds.has(note.id) ?? false;
 
   const handleTogglePin = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -54,9 +61,25 @@ export const NoteListItem = memo(function NoteListItem({
   };
 
   const handleDragStart = (e: React.DragEvent) => {
+    // Always set the single-id MIME so the folder dragover gate (types.includes)
+    // stays valid; add the multi-id payload only when dragging a selected note.
     e.dataTransfer.setData(NOTE_DRAG_MIME, note.id);
+    if (selectionMode && selected && selection) {
+      e.dataTransfer.setData(NOTE_IDS_DRAG_MIME, JSON.stringify([...selection.selectedIds]));
+    }
+
     e.dataTransfer.effectAllowed = 'move';
     setIsDragging(true);
+  };
+
+  const handleLinkClick = (e: React.MouseEvent) => {
+    if (selectionMode) {
+      e.preventDefault();
+      selection?.toggleSelected(note.id);
+      return;
+    }
+
+    onNavigate();
   };
 
   const handleDragEnd = () => {
@@ -65,10 +88,22 @@ export const NoteListItem = memo(function NoteListItem({
 
   return (
     <SidebarMenuItem className={cn({ 'opacity-50': isDragging })}>
-      <SidebarMenuButton asChild isActive={isActive} className="h-auto py-2 pr-18 md:pr-2">
+      {selectionMode && (
+        <Checkbox
+          checked={selected}
+          onCheckedChange={() => selection?.toggleSelected(note.id)}
+          aria-label="Notiz auswählen"
+          className="absolute left-2 top-1/2 z-10 -translate-y-1/2"
+        />
+      )}
+      <SidebarMenuButton
+        asChild
+        isActive={isActive}
+        className={cn('h-auto py-2 pr-18 md:pr-2', { 'pl-9': selectionMode })}
+      >
         <Link
           href={`/notes/${note.id}`}
-          onClick={onNavigate}
+          onClick={handleLinkClick}
           draggable={draggable}
           onDragStart={draggable ? handleDragStart : undefined}
           onDragEnd={draggable ? handleDragEnd : undefined}
@@ -88,51 +123,53 @@ export const NoteListItem = memo(function NoteListItem({
         </SidebarMenuBadge>
       )}
 
-      <div
-        className={cn(
-          'absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5',
-          'md:opacity-0 md:group-hover/menu-item:opacity-100 md:group-focus-within/menu-item:opacity-100',
-          'transition-opacity',
-        )}
-      >
-        {note.attachmentCount > 0 && (
-          <span className="md:hidden flex items-center gap-0.5 text-xs text-sidebar-foreground/60 mr-0.5">
-            <Paperclip className="h-3 w-3" />
-            {note.attachmentCount}
-          </span>
-        )}
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={handleTogglePin}
-          disabled={pinning}
-          aria-label={note.pinned ? 'Notiz lösen' : 'Notiz anheften'}
-          className={cn('h-5 w-5 [&>svg]:size-3', { 'bg-accent': note.pinned })}
+      {!selectionMode && (
+        <div
+          className={cn(
+            'absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5',
+            'md:opacity-0 md:group-hover/menu-item:opacity-100 md:group-focus-within/menu-item:opacity-100',
+            'transition-opacity',
+          )}
         >
-          {pinning ? <Loader2 className="animate-spin" /> : <Pin />}
-        </Button>
+          {note.attachmentCount > 0 && (
+            <span className="md:hidden flex items-center gap-0.5 text-xs text-sidebar-foreground/60 mr-0.5">
+              <Paperclip className="h-3 w-3" />
+              {note.attachmentCount}
+            </span>
+          )}
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={handleTogglePin}
+            disabled={pinning}
+            aria-label={note.pinned ? 'Notiz lösen' : 'Notiz anheften'}
+            className={cn('h-5 w-5 [&>svg]:size-3', { 'bg-accent': note.pinned })}
+          >
+            {pinning ? <Loader2 className="animate-spin" /> : <Pin />}
+          </Button>
 
-        {mounted ? (
-          <>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              aria-label="Notiz löschen"
-              className="h-5 w-5 [&>svg]:size-3"
-              onClick={() => {
-                setDeleteOpen(true);
-              }}
-            >
+          {mounted ? (
+            <>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                aria-label="Notiz löschen"
+                className="h-5 w-5 [&>svg]:size-3"
+                onClick={() => {
+                  setDeleteOpen(true);
+                }}
+              >
+                <Trash2 />
+              </Button>
+              <DeleteNoteDialog noteId={note.id} noteTitle={note.title} open={deleteOpen} onOpenChange={setDeleteOpen} />
+            </>
+          ) : (
+            <Button variant="ghost" size="icon-xs" disabled aria-label="Notiz löschen" className="h-5 w-5 [&>svg]:size-3">
               <Trash2 />
             </Button>
-            <DeleteNoteDialog noteId={note.id} noteTitle={note.title} open={deleteOpen} onOpenChange={setDeleteOpen} />
-          </>
-        ) : (
-          <Button variant="ghost" size="icon-xs" disabled aria-label="Notiz löschen" className="h-5 w-5 [&>svg]:size-3">
-            <Trash2 />
-          </Button>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </SidebarMenuItem>
   );
 });

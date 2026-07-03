@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { Plus, FolderPlus, Tags, List } from 'lucide-react';
+import { Plus, FolderPlus, Tags, List, ListChecks, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { SidebarFooter } from '@/components/ui/sidebar';
-import { NEW_FOLDER_LABEL } from '@/lib/constants';
+import { CANCEL_LABEL, NEW_FOLDER_LABEL, SELECT_NOTES_LABEL, SELECTED_COUNT_SUFFIX } from '@/lib/constants';
+import { AssignTagsPopover } from './AssignTagsPopover';
+import type { NoteSelection } from './useNoteSelection';
 import { viewStore, type SidebarView } from './viewStore';
 
 interface NotesSidebarFooterProps {
@@ -13,9 +15,18 @@ interface NotesSidebarFooterProps {
   handleCreate: () => void;
   onCreateFolder: () => void;
   pending: boolean;
+  selection: NoteSelection;
+  currentTagPath: string;
 }
 
-export function NotesSidebarFooter({ view, handleCreate, onCreateFolder, pending }: NotesSidebarFooterProps) {
+export function NotesSidebarFooter({
+  view,
+  handleCreate,
+  onCreateFolder,
+  pending,
+  selection,
+  currentTagPath,
+}: NotesSidebarFooterProps) {
   const pendingRef = useRef(pending);
 
   useEffect(() => {
@@ -74,7 +85,40 @@ export function NotesSidebarFooter({ view, handleCreate, onCreateFolder, pending
         >
           <List />
         </Button>
+        <Button
+          size="icon-xs"
+          variant="ghost"
+          onClick={() => {
+            if (selection.selectionMode) {
+              selection.exitSelection();
+            } else {
+              selection.enterSelection();
+            }
+          }}
+          title={SELECT_NOTES_LABEL}
+          className={cn({ 'bg-accent': selection.selectionMode })}
+        >
+          <ListChecks />
+        </Button>
       </div>
+
+      {selection.selectionMode && (
+        <div className="flex items-center gap-1">
+          <span className="min-w-0 flex-1 truncate px-1 text-xs text-muted-foreground">
+            {selection.selectedIds.size} {SELECTED_COUNT_SUFFIX}
+          </span>
+          <AssignTagsPopover selection={selection} view={view} currentTagPath={currentTagPath} />
+          <Button
+            size="icon-xs"
+            variant="ghost"
+            onClick={selection.exitSelection}
+            title={CANCEL_LABEL}
+            className="shrink-0"
+          >
+            <X />
+          </Button>
+        </div>
+      )}
     </SidebarFooter>
   );
 }

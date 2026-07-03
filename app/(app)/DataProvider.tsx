@@ -9,6 +9,7 @@ import {
   deleteNoteOffline,
   updateNoteOffline,
 } from '@/lib/offlineNotes';
+import { batchUpdateNotesOffline, foldNoteUpdates } from '@/lib/offlineNotesBatch';
 import { deleteTagFolderOffline } from '@/lib/offlineTagFolder';
 import {
   type CreateTodoInput,
@@ -115,6 +116,14 @@ export function DataProvider({ initialNotes, initialTodos, children }: DataProvi
     syncPending();
   }, [syncPending]);
 
+  const handleUpdateNotes = useCallback(async (updates: { id: string; input: UpdateNoteInput }[]) => {
+    // Show the optimistic result immediately, then reconcile with the settled list
+    // once the sequential per-note network calls resolve (both fold from the same base).
+    setNotes(foldNoteUpdates(updates, notesRef.current));
+    setNotes(await batchUpdateNotesOffline(updates, notesRef.current, isOnlineRef.current));
+    syncPending();
+  }, [syncPending]);
+
   const handleDeleteNote = useCallback(async (id: string) => {
     setNotes(await deleteNoteOffline(id, notesRef.current, isOnlineRef.current));
     sharedNotesStore.removeByNoteId(id);
@@ -168,6 +177,7 @@ export function DataProvider({ initialNotes, initialTodos, children }: DataProvi
         clearFailedSync: clearFailed,
         createNote: handleCreateNote,
         updateNote: handleUpdateNote,
+        updateNotes: handleUpdateNotes,
         deleteNote: handleDeleteNote,
         deleteTagFolder: handleDeleteTagFolder,
         createTodo: handleCreateTodo,

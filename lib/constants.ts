@@ -97,6 +97,16 @@ export const pathHasReservedSegment = (path: string): boolean => path.split('/')
 
 // dataTransfer MIME used when dragging a note row onto a tag folder in the sidebar.
 export const NOTE_DRAG_MIME = 'application/x-note-id';
+// dataTransfer MIME for dragging a multi-note selection onto a tag folder.
+// Payload is JSON.stringify(string[]) of the selected note ids.
+export const NOTE_IDS_DRAG_MIME = 'application/x-note-ids';
+
+// Sidebar multi-select labels
+export const SELECT_NOTES_LABEL = 'Auswählen';
+export const ASSIGN_TAGS_LABEL = 'Tags vergeben';
+export const APPLY_LABEL = 'Übernehmen';
+export const CANCEL_LABEL = 'Abbrechen';
+export const SELECTED_COUNT_SUFFIX = 'ausgewählt'; // rendered as `${n} ausgewählt`
 
 export const NEW_FOLDER_LABEL = 'Neuer Ordner';
 export const SYNC_HEALTH_POLL_MS = 10_000;

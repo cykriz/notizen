@@ -19,6 +19,7 @@ import { SharedNotesEntry } from './SharedNotesEntry';
 import { TagNavigation } from './TagNavigation';
 import { TodosSidebarContent } from './TodosSidebarContent';
 import { useCreateNote } from './useCreateNote';
+import { useNoteSelection } from './useNoteSelection';
 import { useTagStateSync } from './useTagStateSync';
 import { viewStore } from './viewStore';
 
@@ -57,6 +58,7 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
   const view = useSyncExternalStore(viewStore.subscribe, viewStore.getSnapshot, viewStore.getServerSnapshot);
   const { pending, createNoteWithTags } = useCreateNote();
   const [folderOpen, setFolderOpen] = useState(false);
+  const selection = useNoteSelection();
 
   // Folder = tag prefix; never create under the synthetic sync-fehler folder.
   const folderParent = currentTagPath !== '' && currentTagPath !== FAILED_SYNC_TAG ? currentTagPath : '';
@@ -151,6 +153,7 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
             currentPath={currentTagPath}
             setCurrentPath={setCurrentTagPath}
             onFolderDeleted={handleFolderDeleted}
+            exitSelection={selection.exitSelection}
           />
         )}
 
@@ -164,6 +167,7 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
               view={view}
               handleCreate={handleCreate}
               pending={pending}
+              selection={selection}
             />
           )}
         </SidebarContent>
@@ -177,6 +181,8 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
             setFolderOpen(true);
           }}
           pending={pending}
+          selection={selection}
+          currentTagPath={currentTagPath}
         />
       )}
 
