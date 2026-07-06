@@ -1,11 +1,20 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { Plus, FolderPlus, Tags, List, ListChecks, X } from 'lucide-react';
+import { Plus, FolderPlus, Tags, List, ListChecks, Trash2, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { SidebarFooter } from '@/components/ui/sidebar';
-import { CANCEL_LABEL, NEW_FOLDER_LABEL, SELECT_NOTES_LABEL, SELECTED_COUNT_SUFFIX } from '@/lib/constants';
+import {
+  CANCEL_LABEL,
+  NEW_FOLDER_LABEL,
+  PAPIERKORB_LABEL,
+  SELECT_NOTES_LABEL,
+  SELECTED_COUNT_SUFFIX,
+  TRASH_CLOSE_LABEL,
+  VIEW_ALL_LABEL,
+  VIEW_TAGS_LABEL,
+} from '@/lib/constants';
 import { AssignTagsPopover } from './AssignTagsPopover';
 import type { NoteSelection } from './useNoteSelection';
 import { viewStore, type SidebarView } from './viewStore';
@@ -37,7 +46,8 @@ export function NotesSidebarFooter({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'n' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        if (!pendingRef.current) {
+        // No note creation while browsing the trash.
+        if (!pendingRef.current && viewStore.getSnapshot() !== 'trash') {
           handleCreate();
         }
       }
@@ -49,6 +59,46 @@ export function NotesSidebarFooter({
     };
   }, [handleCreate]);
 
+  // Trash view: just show where you are and the way back out.
+  if (view === 'trash') {
+    return (
+      <SidebarFooter>
+        <div className="flex items-center gap-2 px-2">
+          <Trash2 className="size-3.5 shrink-0 text-muted-foreground" />
+          <span className="sidebar-label">{PAPIERKORB_LABEL}</span>
+          <Button
+            size="icon-xs"
+            variant="ghost"
+            onClick={() => {
+              viewStore.toggleTrash();
+            }}
+            title={TRASH_CLOSE_LABEL}
+          >
+            <ArrowLeft />
+          </Button>
+        </div>
+      </SidebarFooter>
+    );
+  }
+
+  // Selection mode: hide the browse controls; show the count, the tag action and
+  // a back arrow to leave — same pattern as the trash footer.
+  if (selection.selectionMode) {
+    return (
+      <SidebarFooter>
+        <div className="flex items-center gap-1">
+          <span className="sidebar-label">
+            {selection.selectedIds.size} {SELECTED_COUNT_SUFFIX}
+          </span>
+          <AssignTagsPopover selection={selection} view={view} currentTagPath={currentTagPath} />
+          <Button size="icon-xs" variant="ghost" onClick={selection.exitSelection} title={CANCEL_LABEL}>
+            <ArrowLeft />
+          </Button>
+        </div>
+      </SidebarFooter>
+    );
+  }
+
   return (
     <SidebarFooter>
       <div className="flex items-center gap-1">
@@ -56,34 +106,28 @@ export function NotesSidebarFooter({
           <Plus />
           Neue Notiz
         </Button>
-        <Button
-          size="icon-xs"
-          variant="ghost"
-          onClick={onCreateFolder}
-          disabled={pending}
-          title={NEW_FOLDER_LABEL}
-        >
+        <Button size="icon-xs" variant="ghost" onClick={onCreateFolder} disabled={pending} title={NEW_FOLDER_LABEL}>
           <FolderPlus />
         </Button>
         <Button
           size="icon-xs"
           variant="ghost"
           onClick={() => {
-            viewStore.set('tags');
+            viewStore.set(view === 'tags' ? 'all' : 'tags');
           }}
-          className={cn({ 'bg-accent': view === 'tags' })}
+          title={view === 'tags' ? VIEW_ALL_LABEL : VIEW_TAGS_LABEL}
         >
-          <Tags />
+          {view === 'tags' ? <List /> : <Tags />}
         </Button>
         <Button
           size="icon-xs"
           variant="ghost"
           onClick={() => {
-            viewStore.set('all');
+            viewStore.toggleTrash();
           }}
-          className={cn({ 'bg-accent': view === 'all' })}
+          title={PAPIERKORB_LABEL}
         >
-          <List />
+          <Trash2 />
         </Button>
         <Button
           size="icon-xs"
@@ -101,24 +145,6 @@ export function NotesSidebarFooter({
           <ListChecks />
         </Button>
       </div>
-
-      {selection.selectionMode && (
-        <div className="flex items-center gap-1">
-          <span className="min-w-0 flex-1 truncate px-1 text-xs text-muted-foreground">
-            {selection.selectedIds.size} {SELECTED_COUNT_SUFFIX}
-          </span>
-          <AssignTagsPopover selection={selection} view={view} currentTagPath={currentTagPath} />
-          <Button
-            size="icon-xs"
-            variant="ghost"
-            onClick={selection.exitSelection}
-            title={CANCEL_LABEL}
-            className="shrink-0"
-          >
-            <X />
-          </Button>
-        </div>
-      )}
     </SidebarFooter>
   );
 }

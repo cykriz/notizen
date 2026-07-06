@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import matter from 'gray-matter';
-import { USERS_DATA_DIR } from './constants';
+import { USERS_DATA_DIR, TRASH_DIR, TRASH_NOTES_DIR } from './constants';
 import type { AUDIO_EXTENSIONS, VIDEO_EXTENSIONS } from './mediaTypes';
 
 export class NotFoundError extends Error {
@@ -57,6 +57,24 @@ export function attachmentsDir(slug: string, root: string): string {
   return path.join(noteDir(slug, root), 'attachments');
 }
 
+// Trash lives at {root}/.trash/ (sibling of notes/), so it is invisible to
+// notesDir-based reads. Trashed notes keep the same {slug}/note.md structure.
+export function trashDir(root: string): string {
+  return path.join(root, TRASH_DIR);
+}
+
+export function trashNotesDir(root: string): string {
+  return path.join(trashDir(root), TRASH_NOTES_DIR);
+}
+
+export function trashedNoteDir(slug: string, root: string): string {
+  return path.join(trashNotesDir(root), slug);
+}
+
+export function trashedNoteMdPath(slug: string, root: string): string {
+  return path.join(trashedNoteDir(slug, root), 'note.md');
+}
+
 // Specific MIME per audio/video extension. `satisfies Record<extension, string>`
 // makes these maps fail to compile if AUDIO_EXTENSIONS/VIDEO_EXTENSIONS gain an
 // entry without a MIME here — so the supported extensions stay single-sourced
@@ -99,17 +117,23 @@ export async function ensureDir(dir: string): Promise<void> {
   await fs.mkdir(dir, { recursive: true });
 }
 
-export async function readNoteFrontmatter(
-  slug: string,
-  root: string,
+export async function readFrontmatterFile(
+  mdPath: string,
 ): Promise<{ data: Record<string, unknown>; content: string } | null> {
   try {
-    const raw = await fs.readFile(noteMdPath(slug, root), 'utf-8');
+    const raw = await fs.readFile(mdPath, 'utf-8');
     const parsed = matter(raw);
     return { data: parsed.data as Record<string, unknown>, content: parsed.content };
   } catch {
     return null;
   }
+}
+
+export async function readNoteFrontmatter(
+  slug: string,
+  root: string,
+): Promise<{ data: Record<string, unknown>; content: string } | null> {
+  return await readFrontmatterFile(noteMdPath(slug, root));
 }
 
 export async function countAttachments(slug: string, root: string): Promise<number> {

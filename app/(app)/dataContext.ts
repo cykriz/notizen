@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext } from 'react';
-import type { Note, NoteSummary, Todo } from '@/lib/types';
+import type { Note, NoteSummary, SyncEntityType, Todo } from '@/lib/types';
 import type { CreateNoteInput, UpdateNoteInput } from '@/lib/offlineNotes';
 import type { CreateTodoInput, UpdateTodoInput } from '@/lib/offlineTodos';
 
@@ -21,6 +21,9 @@ export interface DataContextValue {
   createTodo: (input: CreateTodoInput) => Promise<Todo>;
   updateTodo: (id: string, input: UpdateTodoInput) => Promise<void>;
   deleteTodo: (id: string) => Promise<void>;
+  // Restore a trashed note/todo (online-only): clears the tombstone + any queued
+  // delete for the id, then re-pulls the active lists from the server.
+  restoreFromTrash: (type: SyncEntityType, id: string) => Promise<void>;
   getCachedNoteContent: (id: string) => Note | null;
   refreshFromServer: () => Promise<void>;
 }

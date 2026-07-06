@@ -2,6 +2,7 @@ import {
   OFFLINE_PATH,
   OFFLINE_SHELL_PATH,
   SHARE_PATH_PREFIX,
+  SW_BYPASS_API_PREFIXES,
   SW_INTERNAL_HEADER,
   SW_MSG_CLEAR_AUTH_CACHES,
   SW_MSG_WARM_PAGE_CACHE,
@@ -107,6 +108,10 @@ self.addEventListener('fetch', (event) => {
 
   // Public share routes must never be cached by the SW.
   if (url.pathname.startsWith(SHARE_PATH_PREFIX)) return;
+
+  // Online-only endpoints (trash management, user settings) bypass the SW so
+  // they always hit the network and never serve stale data or evict note data.
+  if (SW_BYPASS_API_PREFIXES.some((p) => url.pathname.startsWith(p))) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(networkFirstWithFallback(request, CACHE.pages, PROTECTED_PAGE_PATHS, OFFLINE_SHELL_PATH));

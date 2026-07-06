@@ -49,4 +49,21 @@ export interface Todo {
   completed: boolean;
   createdAt: string;
   updatedAt: string;
+  // ISO timestamp set when the todo is moved to the trash (soft-delete flag).
+  // listTodos/getTodo hide entries carrying it, so it never reaches the active client cache.
+  trashedAt?: string;
+}
+
+// Items in the trash always carry a trashedAt timestamp (used for display + auto-purge).
+export type TrashedNote = NoteSummary & { trashedAt: string };
+export type TrashedTodo = Todo & { trashedAt: string };
+
+export interface UserSettings {
+  retentionDays: number;
+}
+
+export interface TrashResponse {
+  retentionDays: number;
+  notes: TrashedNote[];
+  todos: TrashedTodo[];
 }

@@ -77,6 +77,16 @@ export function addTombstone(id: string): void {
   safeSetJson(TOMBSTONES_KEY, map);
 }
 
+// Clear a tombstone — used on restore-from-trash so mergeById stops hiding the
+// id and the restored note/todo reappears in the active list.
+export function removeTombstone(id: string): void {
+  const map = getTombstoneMap();
+  if (id in map) {
+    const { [id]: _drop, ...rest } = map;
+    safeSetJson(TOMBSTONES_KEY, rest);
+  }
+}
+
 function getTombstoneMap(): Record<string, number> {
   const raw = safeGetJson(TOMBSTONES_KEY);
   if (raw !== null && typeof raw === 'object' && !Array.isArray(raw)) {

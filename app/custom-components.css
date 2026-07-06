@@ -10,6 +10,12 @@
   @apply border-0 gap-2 overflow-hidden;
 }
 
+/* Non-clickable text label inside a sidebar row (e.g. footer state labels like
+   "Papierkorb" or the selection count). Fills the row and truncates. */
+.sidebar-label {
+  @apply min-w-0 flex-1 truncate px-1 text-xs text-muted-foreground;
+}
+
 .card-base {
   @apply rounded-xl shadow-sm;
 }

@@ -37,6 +37,11 @@ export const SW_MSG_WARM_PAGE_CACHE = 'WARM_PAGE_CACHE';
 export const SW_INTERNAL_HEADER = 'x-sw-internal';
 export const OFFLINE_PATH = '/offline';
 
+// API routes the service worker must NOT touch: online-only trash management +
+// per-user settings. Bypassing keeps them out of the small api-v1 FIFO (so they
+// never evict note/todo data) and prevents serving stale trash offline.
+export const SW_BYPASS_API_PREFIXES = ['/api/trash', '/api/user/settings'] as const;
+
 export const SHARES_DIR = '.shares';
 export const SHARES_FILE = 'shares.json';
 export const SHARE_PATH_PREFIX = '/share/';
@@ -131,3 +136,39 @@ export const QUADRANT_META: readonly QuadrantMeta[] = [
   { key: QUADRANT.DELEGATE, label: 'Delegieren', description: 'Nicht wichtig & Dringend' },
   { key: QUADRANT.PLANNED, label: 'Eingeplant', description: 'Nicht wichtig & Nicht dringend' },
 ];
+
+// --- Papierkorb (Trash) & per-user settings ---
+// Per-user trash lives at {userRoot}/.trash/ (sibling of notes/ and todos.json),
+// so listNotes/findSlugByNoteId (which only read root/notes) never see it.
+export const TRASH_DIR = '.trash';
+export const TRASH_NOTES_DIR = 'notes';
+export const SETTINGS_FILE = 'settings.json';
+
+// Auto-purge is OPPORTUNISTIC (no scheduler/cron in this DB-less app): it runs
+// when the trash is opened (GET /api/trash) and when the retention is changed.
+// A trash that is never reopened is not purged until the next visit — accepted.
+export const DEFAULT_TRASH_RETENTION_DAYS = 30;
+export const MIN_TRASH_RETENTION_DAYS = 1;
+export const MAX_TRASH_RETENTION_DAYS = 365;
+export const TRASH_RETENTION_OPTIONS: readonly { days: number; label: string }[] = [
+  { days: 7, label: '7 Tage' },
+  { days: 14, label: '14 Tage' },
+  { days: 30, label: '30 Tage' },
+  { days: 90, label: '90 Tage' },
+];
+
+// German UI strings (single-sourced, never inline in components).
+export const PAPIERKORB_LABEL = 'Papierkorb';
+export const TRASH_CLOSE_LABEL = 'Papierkorb schließen';
+export const VIEW_TAGS_LABEL = 'Nach Tags';
+export const VIEW_ALL_LABEL = 'Alle Notizen';
+export const TODOS_OVERVIEW_LABEL = 'Übersicht';
+export const TRASH_EMPTY_ACTION_LABEL = 'Papierkorb leeren';
+export const TRASH_RESTORE_LABEL = 'Wiederherstellen';
+export const TRASH_DELETE_PERMANENT_LABEL = 'Endgültig löschen';
+export const TRASH_ONLINE_ONLY_MESSAGE = 'Der Papierkorb ist nur online verfügbar.';
+export const TRASH_EMPTY_STATE_MESSAGE = 'Der Papierkorb ist leer.';
+export const TRASH_LOAD_ERROR_MESSAGE = 'Der Papierkorb konnte nicht geladen werden.';
+export const TRASH_NOTES_SECTION_LABEL = 'Notizen';
+export const TRASH_TODOS_SECTION_LABEL = 'Aufgaben';
+export const TRASH_RETENTION_LABEL = 'Automatisch löschen nach';

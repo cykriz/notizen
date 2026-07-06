@@ -32,6 +32,7 @@ import { warmPageCache } from '@/lib/warmPageCache';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useDataSync } from '@/hooks/useDataSync';
 import { DataContext } from './dataContext';
+import { useRestoreFromTrash } from './useRestoreFromTrash';
 import { sharedNotesStore } from './sharedNotesStore';
 
 interface DataProviderProps {
@@ -165,6 +166,8 @@ export function DataProvider({ initialNotes, initialTodos, children }: DataProvi
     syncPending();
   }, [syncPending]);
 
+  const restoreFromTrash = useRestoreFromTrash(refreshFromServer);
+
   return (
     <DataContext.Provider
       value={{
@@ -183,6 +186,7 @@ export function DataProvider({ initialNotes, initialTodos, children }: DataProvi
         createTodo: handleCreateTodo,
         updateTodo: handleUpdateTodo,
         deleteTodo: handleDeleteTodo,
+        restoreFromTrash,
         getCachedNoteContent: getCachedNote,
         refreshFromServer,
       }}

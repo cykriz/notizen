@@ -7,11 +7,11 @@ import {
   listNotes,
   getNote,
   updateNote,
-  deleteNote,
   listAttachments,
   saveAttachment,
   deleteAttachment,
 } from './fsNotes';
+import { moveNoteToTrash } from './fsTrash';
 import { listAllTags } from './tagTree';
 
 describe('fsNotes', () => {
@@ -65,7 +65,7 @@ describe('fsNotes', () => {
     await deleteAttachment(note.id, att.id, testRoot);
     expect(await listAttachments(note.id, testRoot)).toHaveLength(0);
 
-    await deleteNote(note.id, testRoot);
+    await moveNoteToTrash(note.id, testRoot);
     expect(await listNotes(testRoot)).toHaveLength(0);
   });
 });

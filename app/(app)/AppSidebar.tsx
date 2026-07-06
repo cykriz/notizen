@@ -1,23 +1,23 @@
 'use client';
 
-import { Sidebar, SidebarContent, useSidebar } from '@/components/ui/sidebar';
+import { Sidebar, useSidebar } from '@/components/ui/sidebar';
 import { useFinePointer } from '@/hooks/useFinePointer';
 import { useSwipeBack } from '@/hooks/useSwipeBack';
 import { FAILED_SYNC_TAG, SYNC_ENTITY } from '@/lib/constants';
 import { getFailedSyncQueue } from '@/lib/failedSyncQueue';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { AppSidebarBody } from './AppSidebarBody';
 import { AppSidebarHeader } from './AppSidebarHeader';
 import { CreateTagFolderDialog } from './CreateTagFolderDialog';
 import { useData } from './dataContext';
 import { withFailedSyncTag } from './failedSyncTag';
 import { isTabActive } from './navTabs';
-import { NotesSidebarContent } from './NotesSidebarContent';
 import { NotesSidebarFooter } from './NotesSidebarFooter';
 import { PinnedNotesGroup } from './PinnedNotesGroup';
 import { SharedNotesEntry } from './SharedNotesEntry';
 import { TagNavigation } from './TagNavigation';
-import { TodosSidebarContent } from './TodosSidebarContent';
+import { TodosSidebarFooter } from './TodosSidebarFooter';
 import { useCreateNote } from './useCreateNote';
 import { useNoteSelection } from './useNoteSelection';
 import { useTagStateSync } from './useTagStateSync';
@@ -140,12 +140,12 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
 
       <div
         ref={setSwipeEl}
-        onDoubleClick={isTodos || !finePointer ? undefined : handleSidebarDoubleClick}
+        onDoubleClick={isTodos || view === 'trash' || !finePointer ? undefined : handleSidebarDoubleClick}
         className="flex min-h-0 flex-1 flex-col gap-2"
       >
-        <SharedNotesEntry hidden={isTodos} />
+        <SharedNotesEntry hidden={isTodos || view === 'trash'} />
 
-        {!isTodos && <PinnedNotesGroup notes={notes} />}
+        {!isTodos && view !== 'trash' && <PinnedNotesGroup notes={notes} />}
 
         {!isTodos && view === 'tags' && (
           <TagNavigation
@@ -157,23 +157,21 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
           />
         )}
 
-        <SidebarContent>
-          {isTodos ? (
-            <TodosSidebarContent todos={todos} />
-          ) : (
-            <NotesSidebarContent
-              notes={displayNotes}
-              currentTagPath={currentTagPath}
-              view={view}
-              handleCreate={handleCreate}
-              pending={pending}
-              selection={selection}
-            />
-          )}
-        </SidebarContent>
+        <AppSidebarBody
+          isTodos={isTodos}
+          view={view}
+          notes={displayNotes}
+          todos={todos}
+          currentTagPath={currentTagPath}
+          handleCreate={handleCreate}
+          pending={pending}
+          selection={selection}
+        />
       </div>
 
-      {!isTodos && (
+      {isTodos ? (
+        <TodosSidebarFooter />
+      ) : (
         <NotesSidebarFooter
           view={view}
           handleCreate={handleCreate}

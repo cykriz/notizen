@@ -5,8 +5,10 @@ import { usePathname } from 'next/navigation';
 import { Plus, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SidebarGroup, SidebarGroupContent, SidebarMenu, useSidebar } from '@/components/ui/sidebar';
+import { SYNC_ENTITY } from '@/lib/constants';
 import { TagNoteList } from './TagBrowser';
 import { NoteListItem } from './NoteListItem';
+import { TrashView } from './TrashView';
 import type { NoteSelection } from './useNoteSelection';
 import type { SidebarView } from './viewStore';
 import type { NoteSummary } from '@/lib/types';
@@ -27,6 +29,10 @@ export function NotesSidebarContent({ notes, currentTagPath, view, handleCreate,
   const onNavigate = useCallback(() => {
     setOpenMobile(false);
   }, [setOpenMobile]);
+
+  if (view === 'trash') {
+    return <TrashView kind={SYNC_ENTITY.NOTE} />;
+  }
 
   return (
     <>

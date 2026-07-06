@@ -46,3 +46,15 @@ export const ConflictResponseSchema = z.object({
 });
 export const TodoArraySchema = z.array(TodoSchema);
 export const TodoResponseSchema = TodoSchema;
+
+// --- Papierkorb (Trash) ---
+// The /api/trash response is fetched directly by TrashView (not through the
+// active-list merge), so it needs its own schema carrying `trashedAt`.
+const TrashedNoteSchema = NoteSummarySchema.extend({ trashedAt: z.string() });
+const TrashedTodoSchema = TodoSchema.extend({ trashedAt: z.string() });
+export const TrashResponseSchema = z.object({
+  retentionDays: z.number(),
+  notes: z.array(TrashedNoteSchema),
+  todos: z.array(TrashedTodoSchema),
+});
+export const UserSettingsSchema = z.object({ retentionDays: z.number() });

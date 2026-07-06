@@ -2,7 +2,17 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 
 import fs from 'fs/promises';
 import path from 'path';
-import { createTodo, listTodos, getTodo, updateTodo, deleteTodo } from './fsTodos';
+import {
+  createTodo,
+  listTodos,
+  getTodo,
+  updateTodo,
+  deleteTodo,
+  restoreTodo,
+  permanentlyDeleteTodo,
+  listTrashedTodos,
+  purgeExpiredTodos,
+} from './fsTodos';
 
 describe('fsTodos', () => {
   const originalRoot = process.env.NOTES_ROOT;
@@ -46,9 +56,34 @@ describe('fsTodos', () => {
     expect(updated.completed).toBe(true);
   });
 
-  test('deleteTodo — todo removed', async () => {
+  test('deleteTodo — moved to trash (soft delete)', async () => {
     await deleteTodo(todo.id, testRoot);
-    const afterDelete = await listTodos(testRoot);
-    expect(afterDelete).toHaveLength(0);
+    expect(await listTodos(testRoot)).toHaveLength(0);
+    expect(await getTodo(todo.id, testRoot)).toBeNull();
+    const trashed = await listTrashedTodos(testRoot);
+    expect(trashed).toHaveLength(1);
+    expect(trashed[0].id).toBe(todo.id);
+  });
+
+  test('restoreTodo — back in active list', async () => {
+    await restoreTodo(todo.id, testRoot);
+    expect(await listTodos(testRoot)).toHaveLength(1);
+    expect(await listTrashedTodos(testRoot)).toHaveLength(0);
+  });
+
+  test('permanentlyDeleteTodo — gone for good', async () => {
+    await deleteTodo(todo.id, testRoot);
+    await permanentlyDeleteTodo(todo.id, testRoot);
+    expect(await listTodos(testRoot)).toHaveLength(0);
+    expect(await listTrashedTodos(testRoot)).toHaveLength(0);
+  });
+
+  test('purgeExpiredTodos — removes expired trashed todos', async () => {
+    const t = await createTodo({ title: 'PurgeMe', quadrant: 'do' }, testRoot);
+    await deleteTodo(t.id, testRoot);
+    expect(await listTrashedTodos(testRoot)).toHaveLength(1);
+    const removed = await purgeExpiredTodos(testRoot, 0);
+    expect(removed).toBe(1);
+    expect(await listTrashedTodos(testRoot)).toHaveLength(0);
   });
 });

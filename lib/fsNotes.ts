@@ -190,14 +190,7 @@ export async function updateNote(
   });
 }
 
-export async function deleteNote(id: string, root: string): Promise<void> {
-  await withNoteLock(id, async () => {
-    const existing = await getNote(id, root);
-    if (!existing) {
-      throw new NotFoundError(`Note not found: ${id}`);
-    }
-
-    await fs.rm(noteDir(existing.slug, root), { recursive: true, force: true });
-  });
-}
+// Note: there is intentionally no hard-delete for an active note. Deleting a
+// note routes through moveNoteToTrash (lib/fsTrash.ts); the trash is hard-deleted
+// only from its own dir via permanentlyDeleteNote / emptyNotesTrash.
 

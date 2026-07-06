@@ -1,7 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import { getNote, NotFoundError } from '@/lib/fsNotes';
+import { getNote, listNotes, NotFoundError } from '@/lib/fsNotes';
 import { requireAuthSession } from '@/lib/auth';
 import { upsertShare, getShareByNote, revokeShare } from '@/lib/fsShares';
 import { listSharesByUsername } from '@/lib/fsSharesQuery';
@@ -47,6 +47,11 @@ export async function getShareInfoForNoteAction(noteId: string): Promise<ShareRe
 }
 
 export async function listSharedNotesAction(): Promise<UserShareRecord[]> {
-  const { username } = await requireAuthSession();
-  return await listSharesByUsername(username);
+  const { root, username } = await requireAuthSession();
+  const shares = await listSharesByUsername(username);
+  // Hide shares whose note is currently in the trash: its share page resolves to
+  // notFound(), so it must not appear as a live link here. The record is kept
+  // (not revoked) until permanent delete, so it reappears on restore.
+  const activeIds = new Set((await listNotes(root)).map((n) => n.id));
+  return shares.filter((s) => activeIds.has(s.noteId));
 }

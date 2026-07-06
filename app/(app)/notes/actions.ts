@@ -1,9 +1,9 @@
 'use server';
 
 import { DEFAULT_NOTE_TITLE } from '@/lib/constants';
-import { createNote, updateNote, deleteNote } from '@/lib/fsNotes';
-import { requireAuth, requireAuthSession } from '@/lib/auth';
-import { revokeShare } from '@/lib/fsShares';
+import { createNote, updateNote } from '@/lib/fsNotes';
+import { moveNoteToTrash } from '@/lib/fsTrash';
+import { requireAuth } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -29,11 +29,8 @@ export async function updateNoteAction(
 }
 
 export async function deleteNoteAction(id: string) {
-  const { root, username } = await requireAuthSession();
-  await deleteNote(id, root);
-  await revokeShare(username, id).catch((err: unknown) => {
-    console.error('revokeShare failed', err);
-  });
+  const root = await requireAuth();
+  await moveNoteToTrash(id, root);
   revalidatePath('/notes');
   redirect('/notes');
 }

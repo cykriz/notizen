@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { APPLY_LABEL, ASSIGN_TAGS_LABEL, pathHasReservedSegment } from '@/lib/constants';
+import { APPLY_LABEL, ASSIGN_TAGS_LABEL, FAILED_SYNC_TAG, pathHasReservedSegment } from '@/lib/constants';
 import { Tags } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useData } from './dataContext';
@@ -19,36 +19,53 @@ interface AssignTagsPopoverProps {
 
 export function AssignTagsPopover({ selection, view, currentTagPath }: AssignTagsPopoverProps) {
   const { notes } = useData();
-  const { applyFolderTag } = useBatchTags();
+  const { applyTagDiff } = useBatchTags();
   const [pendingTags, setPendingTags] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
 
   const allTags = useMemo(() => [...new Set(notes.flatMap((n) => n.tags))].sort(), [notes]);
 
-  // In the tags view the browsed folder tag is pre-filled so it can be kept,
-  // replaced, or removed (abwählen). The synthetic sync-fehler folder is excluded.
-  const currentFolderTag =
-    view === 'tags' && currentTagPath !== '' && !pathHasReservedSegment(currentTagPath) ? currentTagPath : null;
+  // Base = the tags actually assigned to (shared by) the selected notes, per their
+  // frontmatter — NOT the sidebar position. These are pre-filled so they can be kept
+  // or removed (abwählen). In the tags view the browsed folder tag is always offered
+  // too, so it works even on nested-tag notes. Synthetic/reserved tags are excluded.
+  const baseTags = useMemo(() => {
+    const selected = notes.filter((n) => selection.selectedIds.has(n.id));
+    let shared = selected[0]?.tags.filter((t) => t !== FAILED_SYNC_TAG && !pathHasReservedSegment(t)) ?? [];
+    shared = shared.filter((t) => selected.every((n) => n.tags.includes(t)));
+
+    if (
+      view === 'tags' &&
+      currentTagPath !== '' &&
+      !pathHasReservedSegment(currentTagPath) &&
+      !shared.includes(currentTagPath)
+    ) {
+      shared = [currentTagPath, ...shared];
+    }
+
+    return shared;
+  }, [notes, selection.selectedIds, view, currentTagPath]);
 
   const handleOpenChange = (next: boolean) => {
     if (next) {
-      setPendingTags(currentFolderTag !== null ? [currentFolderTag] : []);
+      setPendingTags(baseTags);
     }
 
     setOpen(next);
   };
 
   const handleApply = () => {
-    // tags view: replace the browsed-folder tag; all view: pure add (from='')
-    const from = view === 'tags' ? currentTagPath : '';
-    applyFolderTag([...selection.selectedIds], from, pendingTags);
+    const remove = baseTags.filter((t) => !pendingTags.includes(t));
+    const add = pendingTags.filter((t) => !baseTags.includes(t));
+    applyTagDiff([...selection.selectedIds], remove, add);
     setPendingTags([]);
     setOpen(false);
     selection.exitSelection();
   };
 
-  // In a folder, applying an empty list removes that folder tag, so allow it there.
-  const canApply = currentFolderTag !== null || pendingTags.length > 0;
+  // Enabled whenever the pending set differs from the assigned base (add or remove).
+  const canApply =
+    baseTags.some((t) => !pendingTags.includes(t)) || pendingTags.some((t) => !baseTags.includes(t));
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>

@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { getNote, updateNote, deleteNote } from '@/lib/fsNotes';
+import { getNote, updateNote } from '@/lib/fsNotes';
+import { moveNoteToTrash } from '@/lib/fsTrash';
 import { getUserSession } from '@/lib/auth';
-import { revokeShare } from '@/lib/fsShares';
 import { checkConflict, errorResponse, formatZodError, idempotentDelete } from '@/lib/apiHelpers';
 
 const UpdateNoteSchema = z.object({
@@ -61,18 +61,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
-    const { root, username } = await getUserSession();
+    const { root } = await getUserSession();
     const { id } = await params;
-    const response = await idempotentDelete(() => deleteNote(id, root));
-    // 200 covers both success and idempotent-not-found; both are fine to
-    // revoke for. Skip 5xx so a transient I/O error doesn't drop a still-
-    // valid share.
-    if (response.status === 200) {
-      await revokeShare(username, id).catch((err: unknown) => {
-        console.error('revokeShare failed', err);
-      });
-    }
-
+    // Move to trash instead of hard-deleting. The share stays intact (a trashed
+    // note resolves to null, so its share page shows a fallback); it is only
+    // revoked on permanent delete / empty trash.
+    const response = await idempotentDelete(() => moveNoteToTrash(id, root));
     revalidatePath('/notes');
     return response;
   } catch (err) {

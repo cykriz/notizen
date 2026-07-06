@@ -34,7 +34,8 @@ export function DeleteNoteDialog({ noteId, noteTitle, open, onOpenChange }: Dele
         <DialogHeader>
           <DialogTitle>Notiz löschen?</DialogTitle>
           <DialogDescription>
-            &quot;{noteTitle}&quot; und alle Anhänge werden unwiderruflich gelöscht.
+            &quot;{noteTitle}&quot; wird mit allen Anhängen in den Papierkorb verschoben und kann dort
+            wiederhergestellt werden.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -60,7 +61,7 @@ export function DeleteNoteDialog({ noteId, noteTitle, open, onOpenChange }: Dele
             autoFocus
           >
             {deleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
-            Endgültig löschen
+            In den Papierkorb
           </Button>
         </DialogFooter>
       </DialogContent>
