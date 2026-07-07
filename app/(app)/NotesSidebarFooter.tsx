@@ -16,6 +16,7 @@ import {
   VIEW_TAGS_LABEL,
 } from '@/lib/constants';
 import { AssignTagsPopover } from './AssignTagsPopover';
+import { TrashOffIcon } from './TrashOffIcon';
 import type { NoteSelection } from './useNoteSelection';
 import { viewStore, type SidebarView } from './viewStore';
 
@@ -59,30 +60,8 @@ export function NotesSidebarFooter({
     };
   }, [handleCreate]);
 
-  // Trash view: just show where you are and the way back out.
-  if (view === 'trash') {
-    return (
-      <SidebarFooter>
-        <div className="flex items-center gap-2 px-2">
-          <Trash2 className="size-3.5 shrink-0 text-muted-foreground" />
-          <span className="sidebar-label">{PAPIERKORB_LABEL}</span>
-          <Button
-            size="icon-xs"
-            variant="ghost"
-            onClick={() => {
-              viewStore.toggleTrash();
-            }}
-            title={TRASH_CLOSE_LABEL}
-          >
-            <ArrowLeft />
-          </Button>
-        </div>
-      </SidebarFooter>
-    );
-  }
-
   // Selection mode: hide the browse controls; show the count, the tag action and
-  // a back arrow to leave — same pattern as the trash footer.
+  // a back arrow to leave.
   if (selection.selectionMode) {
     return (
       <SidebarFooter>
@@ -102,11 +81,23 @@ export function NotesSidebarFooter({
   return (
     <SidebarFooter>
       <div className="flex items-center gap-1">
-        <Button size="sm" variant="ghost" onClick={handleCreate} disabled={pending} className="flex-1 justify-start">
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={handleCreate}
+          disabled={pending || view === 'trash'}
+          className="flex-1 justify-start"
+        >
           <Plus />
           Neue Notiz
         </Button>
-        <Button size="icon-xs" variant="ghost" onClick={onCreateFolder} disabled={pending} title={NEW_FOLDER_LABEL}>
+        <Button
+          size="icon-xs"
+          variant="ghost"
+          onClick={onCreateFolder}
+          disabled={pending || view === 'trash'}
+          title={NEW_FOLDER_LABEL}
+        >
           <FolderPlus />
         </Button>
         <Button
@@ -115,6 +106,7 @@ export function NotesSidebarFooter({
           onClick={() => {
             viewStore.set(view === 'tags' ? 'all' : 'tags');
           }}
+          disabled={view === 'trash'}
           title={view === 'tags' ? VIEW_ALL_LABEL : VIEW_TAGS_LABEL}
         >
           {view === 'tags' ? <List /> : <Tags />}
@@ -122,12 +114,13 @@ export function NotesSidebarFooter({
         <Button
           size="icon-xs"
           variant="ghost"
+          className="group"
           onClick={() => {
             viewStore.toggleTrash();
           }}
-          title={PAPIERKORB_LABEL}
+          title={view === 'trash' ? TRASH_CLOSE_LABEL : PAPIERKORB_LABEL}
         >
-          <Trash2 />
+          {view === 'trash' ? <TrashOffIcon /> : <Trash2 />}
         </Button>
         <Button
           size="icon-xs"
@@ -139,6 +132,7 @@ export function NotesSidebarFooter({
               selection.enterSelection();
             }
           }}
+          disabled={view === 'trash'}
           title={SELECT_NOTES_LABEL}
           className={cn({ 'bg-accent': selection.selectionMode })}
         >
