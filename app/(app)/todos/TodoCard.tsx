@@ -2,10 +2,11 @@
 
 import { memo, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, FileText, Trash2 } from 'lucide-react';
+import { Calendar, FileText, AlignLeft, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn, formatDate } from '@/lib/utils';
 import { useData } from '../dataContext';
 import { useReportedTransition } from '../navigationLoading';
@@ -31,6 +32,8 @@ export const TodoCard = memo(function TodoCard({ todo, onEdit, notes }: TodoCard
   const handleToggle = (checked: boolean) => {
     void updateTodo(todo.id, { completed: checked }).catch(console.error);
   };
+
+  const hasDescription = (todo.description?.trim().length ?? 0) > 0;
 
   const linkedNotes = useMemo(
     () =>
@@ -90,6 +93,23 @@ export const TodoCard = memo(function TodoCard({ todo, onEdit, notes }: TodoCard
         <span className={cn('text-sm leading-tight mr-2', { 'line-through text-muted-foreground': todo.completed })}>
           {todo.title}
         </span>
+        {hasDescription && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                className="mr-2 inline-flex align-middle text-muted-foreground"
+                tabIndex={0}
+                role="img"
+                aria-label="Beschreibung vorhanden"
+              >
+                <AlignLeft className="h-3.5 w-3.5 shrink-0" />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs">
+              <span className="line-clamp-3">{todo.description}</span>
+            </TooltipContent>
+          </Tooltip>
+        )}
         {todo.dueDate !== undefined && (
           <Badge
             variant={!todo.completed && isOverdue(todo.dueDate) ? 'destructive' : 'secondary'}
