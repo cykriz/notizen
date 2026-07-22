@@ -1,14 +1,14 @@
 'use client';
 
 import { memo, useRef, useState } from 'react';
-import { Pencil } from 'lucide-react';
+import { ListFilter, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { TodoCard } from './TodoCard';
 import { useData } from '../dataContext';
-import { QUADRANT, QUADRANT_META } from '@/lib/constants';
+import { INBOX_SORT_HINT, INBOX_SORT_THRESHOLD, QUADRANT, QUADRANT_META } from '@/lib/constants';
 import type { QuadrantMeta, NoteSummary } from '@/lib/types';
 import type { Todo, TodoQuadrant } from '@/lib/fsTodos';
 
@@ -18,16 +18,19 @@ interface QuadrantCardMeta extends QuadrantMeta {
 }
 
 const colorMap: Record<TodoQuadrant, { colorClass: string; headerClass: string }> = {
-  do: { colorClass: 'bg-quadrant-do text-quadrant-do-foreground', headerClass: 'text-quadrant-do-foreground' },
-  schedule: {
+  [QUADRANT.DO]: {
+    colorClass: 'bg-quadrant-do text-quadrant-do-foreground',
+    headerClass: 'text-quadrant-do-foreground',
+  },
+  [QUADRANT.SCHEDULE]: {
     colorClass: 'bg-quadrant-schedule text-quadrant-schedule-foreground',
     headerClass: 'text-quadrant-schedule-foreground',
   },
-  delegate: {
-    colorClass: 'bg-quadrant-delegate text-quadrant-delegate-foreground',
-    headerClass: 'text-quadrant-delegate-foreground',
+  [QUADRANT.INBOX]: {
+    colorClass: 'bg-quadrant-inbox text-quadrant-inbox-foreground',
+    headerClass: 'text-quadrant-inbox-foreground',
   },
-  planned: {
+  [QUADRANT.PLANNED]: {
     colorClass: 'bg-quadrant-planned text-quadrant-planned-foreground',
     headerClass: 'text-quadrant-planned-foreground',
   },
@@ -58,6 +61,7 @@ export const QuadrantCard = memo(function QuadrantCard({
   const { createTodo, updateTodo } = useData();
   const openTodos = todos.filter((t) => !t.completed);
   const done = todos.filter((t) => t.completed);
+  const showSortHint = meta.key === QUADRANT.INBOX && openTodos.length >= INBOX_SORT_THRESHOLD;
   const [inputValue, setInputValue] = useState('');
 
   const handleQuickAdd = () => {
@@ -128,8 +132,21 @@ export const QuadrantCard = memo(function QuadrantCard({
     >
       <CardHeader className={cn('flex-row items-center gap-2 py-2.5 px-3', meta.colorClass)}>
         <div className="flex md:flex-col items-baseline gap-2 md:gap-0 min-w-0">
-          <CardTitle className={cn('text-sm font-semibold', meta.headerClass)}>{meta.label}</CardTitle>
-          <p className={cn('text-xs opacity-75', meta.headerClass)}>{meta.description}</p>
+          <CardTitle className={cn('text-sm font-semibold truncate min-w-0', meta.headerClass)}>{meta.label}</CardTitle>
+          <p className={cn('text-xs opacity-75 truncate min-w-0', meta.headerClass)}>{meta.description}</p>
+        </div>
+        <div className="ml-auto flex shrink-0 items-center gap-1.5">
+          {showSortHint && (
+            <span className="flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
+              <ListFilter className="h-3 w-3" />
+              {INBOX_SORT_HINT}
+            </span>
+          )}
+          {openTodos.length > 0 && (
+            <span className={cn('text-xs font-medium tabular-nums opacity-75', meta.headerClass)}>
+              {openTodos.length}
+            </span>
+          )}
         </div>
       </CardHeader>
       <CardContent className="flex-1 overflow-y-auto mx-2 md:p-1.5 md:px-0">

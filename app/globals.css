@@ -43,8 +43,8 @@
   --color-quadrant-do-foreground: var(--quadrant-do-foreground);
   --color-quadrant-schedule: var(--quadrant-schedule);
   --color-quadrant-schedule-foreground: var(--quadrant-schedule-foreground);
-  --color-quadrant-delegate: var(--quadrant-delegate);
-  --color-quadrant-delegate-foreground: var(--quadrant-delegate-foreground);
+  --color-quadrant-inbox: var(--quadrant-inbox);
+  --color-quadrant-inbox-foreground: var(--quadrant-inbox-foreground);
   --color-quadrant-planned: var(--quadrant-planned);
   --color-quadrant-planned-foreground: var(--quadrant-planned-foreground);
   --radius-sm: calc(var(--radius) - 4px);
@@ -96,8 +96,8 @@
   --quadrant-do-foreground: oklch(0.45 0.18 25);
   --quadrant-schedule: oklch(0.95 0.03 250);
   --quadrant-schedule-foreground: oklch(0.45 0.15 250);
-  --quadrant-delegate: oklch(0.95 0.04 85);
-  --quadrant-delegate-foreground: oklch(0.45 0.14 85);
+  --quadrant-inbox: oklch(0.95 0.04 85);
+  --quadrant-inbox-foreground: oklch(0.45 0.14 85);
   --quadrant-planned: oklch(0.96 0 0);
   --quadrant-planned-foreground: oklch(0.5 0 0);
 }
@@ -140,8 +140,8 @@
   --quadrant-do-foreground: oklch(0.78 0.12 20);
   --quadrant-schedule: oklch(0.23 0.035 255);
   --quadrant-schedule-foreground: oklch(0.78 0.1 255);
-  --quadrant-delegate: oklch(0.24 0.04 80);
-  --quadrant-delegate-foreground: oklch(0.8 0.1 80);
+  --quadrant-inbox: oklch(0.24 0.04 80);
+  --quadrant-inbox-foreground: oklch(0.8 0.1 80);
   --quadrant-planned: oklch(0.21 0 0);
   --quadrant-planned-foreground: oklch(0.6 0 0);
 }

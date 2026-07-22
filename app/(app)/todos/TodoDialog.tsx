@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ClearableDateInput } from './ClearableDateInput';
 import { LinkedNotesField } from './LinkedNotesField';
 import { useData } from '../dataContext';
-import { QUADRANT_META } from '@/lib/constants';
+import { QUADRANT, QUADRANT_META } from '@/lib/constants';
 import type { Todo, TodoQuadrant } from '@/lib/fsTodos';
 import type { NoteSummary } from '@/lib/types';
 
@@ -39,7 +39,7 @@ export function TodoDialog({
   const [title, setTitle] = useState(todo?.title ?? defaultTitle ?? '');
   const [description, setDescription] = useState(todo?.description ?? '');
   const [dueDate, setDueDate] = useState(todo?.dueDate ?? '');
-  const [quadrant, setQuadrant] = useState<TodoQuadrant>(todo?.quadrant ?? defaultQuadrant ?? 'do');
+  const [quadrant, setQuadrant] = useState<TodoQuadrant>(todo?.quadrant ?? defaultQuadrant ?? QUADRANT.INBOX);
   const [linkedNoteIds, setLinkedNoteIds] = useState<string[]>(todo?.linkedNoteIds ?? []);
   const dueDateRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);

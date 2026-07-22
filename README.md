@@ -12,7 +12,7 @@ Built with Next.js, shadcn/ui, and Bun. Designed for deployment on Synology NAS 
 - File attachments (drag & drop or paste images)
 - Hierarchical tags (slash-separated, e.g. `dev/python/fastapi`) with folder-style tag browser
 - Note pinning for quick access
-- Eisenhower Matrix for task management (Do / Schedule / Delegate / Eliminate)
+- Eisenhower matrix for task management with an "Eingang" inbox for quick capture & sorting
 - Drag & drop todos between quadrants
 - Quick-add input in each quadrant
 - Command palette (Cmd+P) — search notes by title or tag, jump to tasks; type `@` to search tags and jump to a folder in the sidebar
@@ -297,7 +297,7 @@ Response: `Todo[]`
 ]
 ```
 
-Quadrant values: `do`, `schedule`, `delegate`, `planned`
+Quadrant values: `do`, `schedule`, `delegate` (shown as "Eingang"), `planned`
 
 #### Create Todo
 

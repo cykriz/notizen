@@ -22,13 +22,18 @@ interface EisenhowerMatrixProps {
 export function EisenhowerMatrix({ todos, notes }: EisenhowerMatrixProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | undefined>(undefined);
-  const [defaultQuadrant, setDefaultQuadrant] = useState<TodoQuadrant>('do');
+  const [defaultQuadrant, setDefaultQuadrant] = useState<TodoQuadrant>(QUADRANT.INBOX);
   const [defaultTitle, setDefaultTitle] = useState('');
   const [dialogKey, setDialogKey] = useState(0);
   const [focusDueDate, setFocusDueDate] = useState(false);
 
   const todosByQuadrant = useMemo(() => {
-    const map: Record<TodoQuadrant, Todo[]> = { do: [], schedule: [], delegate: [], planned: [] };
+    const map: Record<TodoQuadrant, Todo[]> = {
+      [QUADRANT.DO]: [],
+      [QUADRANT.SCHEDULE]: [],
+      [QUADRANT.INBOX]: [],
+      [QUADRANT.PLANNED]: [],
+    };
     for (const t of todos) {
       map[t.quadrant].push(t);
     }
@@ -79,7 +84,7 @@ export function EisenhowerMatrix({ todos, notes }: EisenhowerMatrixProps) {
       if (e.key === 'n' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         if (!dialogOpen) {
-          handleAdd('do');
+          handleAdd(QUADRANT.INBOX);
         }
       }
     };

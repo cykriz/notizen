@@ -1,5 +1,7 @@
 import { z } from 'zod/v4';
 
+// Stored quadrant values. 'delegate' is the persisted value of the "Eingang" (inbox)
+// quadrant (QUADRANT.INBOX) — kept as-is so existing todos need no migration.
 const TodoQuadrantSchema = z.enum(['do', 'schedule', 'delegate', 'planned']);
 
 const AttachmentSchema = z.object({

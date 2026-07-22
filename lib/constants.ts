@@ -64,12 +64,7 @@ export const SHARE_EXPIRY_LABELS: Record<ShareExpiryPreset, string> = {
   never: 'Unbegrenzt',
 };
 
-export const INLINE_SAFE_MIMES: readonly string[] = [
-  'image/png',
-  'image/jpeg',
-  'image/gif',
-  'image/webp',
-];
+export const INLINE_SAFE_MIMES: readonly string[] = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 
 export const DEFAULT_NOTE_TITLE = 'Unbenannt';
 
@@ -122,7 +117,9 @@ export const DRAFT_DEBOUNCE_MS = 300;
 export const QUADRANT = {
   DO: 'do',
   SCHEDULE: 'schedule',
-  DELEGATE: 'delegate',
+  // Displayed as "Eingang" (inbox). The stored value stays 'delegate' so existing
+  // todos.json + offline caches need no migration; only the identifier was renamed.
+  INBOX: 'delegate',
   PLANNED: 'planned',
 } as const;
 
@@ -131,11 +128,17 @@ export type TodoQuadrant = (typeof QUADRANT)[keyof typeof QUADRANT];
 export const QUADRANT_KEYS = Object.values(QUADRANT);
 
 export const QUADRANT_META: readonly QuadrantMeta[] = [
+  // Steht bewusst an erster Stelle (Dump-First-Workflow, mobil dadurch große Kachel).
+  { key: QUADRANT.INBOX, label: 'Eingang', description: 'Sammeln & sortieren' },
   { key: QUADRANT.DO, label: 'Erledigen', description: 'Wichtig & Dringend' },
   { key: QUADRANT.SCHEDULE, label: 'Einplanen', description: 'Wichtig & Nicht dringend' },
-  { key: QUADRANT.DELEGATE, label: 'Delegieren', description: 'Nicht wichtig & Dringend' },
   { key: QUADRANT.PLANNED, label: 'Eingeplant', description: 'Nicht wichtig & Nicht dringend' },
 ];
+
+// Ab so vielen offenen Einträgen zeigt die Eingang-Kachel einen (rein abgeleiteten,
+// nicht persistierten) Sortier-Hinweis an.
+export const INBOX_SORT_THRESHOLD = 10;
+export const INBOX_SORT_HINT = 'Zeit zu sortieren';
 
 // --- Papierkorb (Trash) & per-user settings ---
 // Per-user trash lives at {userRoot}/.trash/ (sibling of notes/ and todos.json),
