@@ -117,9 +117,8 @@ export const DRAFT_DEBOUNCE_MS = 300;
 export const QUADRANT = {
   DO: 'do',
   SCHEDULE: 'schedule',
-  // Displayed as "Eingang" (inbox). The stored value stays 'delegate' so existing
-  // todos.json + offline caches need no migration; only the identifier was renamed.
-  INBOX: 'delegate',
+  // Displayed as "Eingang" (inbox). This is the persisted quadrant value.
+  INBOX: 'inbox',
   PLANNED: 'planned',
 } as const;
 

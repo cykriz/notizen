@@ -8,7 +8,7 @@ description: Data model, filesystem layout, API routes, core functions, componen
 See `lib/types.ts` for full definitions. Key types:
 
 - `NoteSummary` / `Note` — notes with tags, pinned, attachments
-- `Todo` — Eisenhower matrix quadrants (`do`, `schedule`, `delegate` → shown as "Eingang" inbox, `planned`)
+- `Todo` — Eisenhower matrix quadrants (`do`, `schedule`, `inbox` → shown as "Eingang", `planned`)
 - `Attachment` — file metadata with `relativePath`
 - Constants and quadrant metadata live in `lib/constants.ts`
 

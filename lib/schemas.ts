@@ -1,8 +1,8 @@
 import { z } from 'zod/v4';
+import { QUADRANT_KEYS } from './constants';
 
-// Stored quadrant values. 'delegate' is the persisted value of the "Eingang" (inbox)
-// quadrant (QUADRANT.INBOX) — kept as-is so existing todos need no migration.
-const TodoQuadrantSchema = z.enum(['do', 'schedule', 'delegate', 'planned']);
+// Stored quadrant values, derived from QUADRANT (single source of truth in lib/constants.ts).
+const TodoQuadrantSchema = z.enum(QUADRANT_KEYS);
 
 const AttachmentSchema = z.object({
   id: z.string(),
