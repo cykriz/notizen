@@ -2,7 +2,7 @@
 description: Review Next.js code for bugs, performance, and best practices
 ---
 
-Review the current unstaged and untracked changes in the Next.js codebase.
+Review the current unstaged and untracked changes in the Next.js codebase as an experienced Next.js senior developer — with a critical eye for redundancy and over-complexity, not only correctness.
 
 ## Step 0 — Discover Applicable Skills
 
@@ -36,6 +36,17 @@ For each changed file, verify it follows the rules defined in its matching skill
 - Images: `next/image` with `width`, `height`, and `alt`? No raw `<img>` tags
 - Fonts: loaded via `next/font`, not external `@import`
 - Missing `loading.tsx` or `error.tsx` for route segments that need them
+
+### Redundancy & Simplicity
+
+Analyze this as a senior dev would — is the change as simple as it could be, and does it avoid repeating what already exists?
+
+- Reuse over re-implementation: does new code duplicate an existing hook, util, or component? Name the one to call instead
+- Duplication: copy-pasted blocks (often with slight variation) that should be a single shared helper/component
+- Redundant or derivable state: values held in state/refs/props that could be computed from what's already there
+- Unnecessary complexity: deep nesting, needless indirection or abstraction, premature generalization, options nobody uses
+- Dead weight: unused exports, props, variables, imports, or leftover commented-out code
+- Right altitude: special cases layered on shared infrastructure where generalizing the mechanism is cleaner; thin wrappers that don't earn their keep
 
 ### Style & Conventions
 

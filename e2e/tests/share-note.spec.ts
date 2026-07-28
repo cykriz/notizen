@@ -11,7 +11,9 @@ async function createShareViaUI(
   page: Page,
   preset?: "1 Tag" | "1 Woche" | "1 Monat" | "Unbegrenzt",
 ): Promise<{ url: string; token: string }> {
-  await page.getByRole("button", { name: "Notiz teilen" }).click();
+  await page.getByRole("button", { name: "Weitere Aktionen" }).click();
+  // exact: true so it doesn't also match "Teilen-Link erstellen".
+  await page.getByRole("button", { name: "Teilen", exact: true }).click();
 
   if (preset) {
     await page.getByRole("combobox").click();

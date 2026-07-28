@@ -16,6 +16,17 @@ const nextConfig: NextConfig = {
     // Raise this so large file uploads (audio/video attachments) pass through intact.
     proxyClientMaxBodySize: 500 * 1024 * 1024, // 500 MB
   },
+  turbopack: {
+    // The neural TTS engine (@diffusionstudio/vits-web) ships emscripten glue
+    // that references Node built-ins (`fs`/`path`/`crypto`) inside dead
+    // Node-only branches. Stub them to an empty module in the BROWSER bundle
+    // only; server code keeps the real modules via the default condition.
+    resolveAlias: {
+      fs: { browser: './lib/emptyModule.ts' },
+      path: { browser: './lib/emptyModule.ts' },
+      crypto: { browser: './lib/emptyModule.ts' },
+    },
+  },
   generateBuildId: () => buildId,
 };
 

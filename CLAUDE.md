@@ -8,7 +8,7 @@ Next.js 16 + React 19 + Bun + TypeScript (strict) + Tailwind v4 + shadcn/ui. Fil
 - Run lint + tsc after every code change. Fix all errors before moving on.
 - Dev server: `bun --bun next dev`
 - Add shadcn component: `npx shadcn@latest add <name>`
-- E2E tests: `bun run test:e2e` (headless), `bun run test:e2e:ui` (UI mode) — uses `npx` (not `bunx`) because Playwright's test runner needs Node.js module loading internals
+- E2E tests: `bun run test:e2e` (headless), `bun run test:e2e:ui` (UI mode). Browser install: `bunx playwright install chromium`. Only Playwright's test *runner* falls back to `npx` (needs Node's module loader) — everything else (install, scripts, queries) uses `bun`/`bunx`.
 - Install git hooks: `cp scripts/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit`
 
 ## Code Rules
@@ -17,7 +17,7 @@ Next.js 16 + React 19 + Bun + TypeScript (strict) + Tailwind v4 + shadcn/ui. Fil
 
 ## Key Rules
 
-- **Always Bun**: use `bun` / `bunx` for all package management and scripts — never `npm`, `npx`, `yarn`, or `pnpm`. Only documented exceptions (need Node's module loader): `npx shadcn@latest add <name>` and `npx playwright` for E2E.
+- **Always Bun**: use `bun` / `bunx` for ALL package management, scripts, one-off evals (`bun -e`), and registry queries (`bun info`) — never `npm`, `npx`, `node`, `yarn`, or `pnpm`. Only documented exceptions (need Node's module loader): `npx shadcn@latest add <name>` and the Playwright test *runner* (`npx playwright test`). Playwright browser install still uses `bunx playwright install`.
 - **Always Radix for UI primitives**: build interactive UI on Radix (via the unified `radix-ui` package, imported as `import { X as XPrimitive } from 'radix-ui'`) through shadcn wrappers in `components/ui/`. Never hand-roll tooltips, popovers, dropdowns/menus, dialogs, progress bars, switches/toggles, tabs, etc. — add the shadcn component (`npx shadcn@latest add <name>`) or compose the Radix primitive instead.
 - All user-facing text in **German**
 - Max 200 lines per file — split if exceeded (excludes test files: `*.spec.ts`, `*.test.ts`)
@@ -49,6 +49,10 @@ class-variance-authority clsx tailwind-merge tw-animate-css
 @uiw/react-codemirror @uiw/react-markdown-preview @codemirror/lang-markdown @codemirror/search @codemirror/commands @codemirror/view @codemirror/state
 unist-util-visit @types/mdast
 @serwist/turbopack serwist
+@diffusionstudio/vits-web
 @types/bun
 @playwright/test
 ```
+
+- `@diffusionstudio/vits-web` powers **natural neural read-aloud** (Piper/VITS in-browser via its transitive `onnxruntime-web`). Runs in a **Web Worker** (`lib/neuralTts.worker.ts`, driven by `lib/neuralTtsClient.ts`) so the heavy WASM synthesis never blocks the UI thread; `lib/neuralPlayer.ts` chunks the text (`NEURAL_CHUNK_MAX` — whole-note synthesis overruns the model's memory) and pre-synthesizes the next chunk during playback for gapless audio. Voice models download from HuggingFace on first use and cache in OPFS (offline after that); the ONNX/phonemizer WASM load from CDNs (cdnjs/jsdelivr), so neural TTS needs network on first use and falls back to the Web Speech API (`hooks/useSpeech.ts`) when unavailable/offline.
+- Its emscripten glue references Node built-ins (`fs`/`path`/`crypto`) in dead Node-only branches. `next.config.ts` `turbopack.resolveAlias` stubs these to `lib/emptyModule.ts` **for the browser bundle only** (`{ browser: … }`), leaving server-side `fs`/`path`/`crypto` untouched — without this the client build fails to resolve `fs`.

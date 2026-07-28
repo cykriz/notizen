@@ -21,7 +21,7 @@ export interface UseShareInfoResult {
   changePreset: (preset: ShareExpiryPreset) => void;
 }
 
-export function useShareInfo(noteId: string, open: boolean): UseShareInfoResult {
+export function useShareInfo(noteId: string): UseShareInfoResult {
   const [info, setInfo] = useState<ShareRecord | null>(null);
   const [fetched, setFetched] = useState(false);
   const [presetUpdated, setPresetUpdated] = useState(false);
@@ -31,23 +31,9 @@ export function useShareInfo(noteId: string, open: boolean): UseShareInfoResult 
   // Monotonic id: a slow op only applies if `latestOp.current` still matches.
   const latestOp = useRef(0);
 
-  // Note navigation is handled by remounting (parent renders
-  // <ShareNoteButton key={noteId} />), so noteId is effectively constant for
-  // a given hook instance — only popover open/close needs an in-place reset.
-  const [prevOpen, setPrevOpen] = useState(open);
-  if (prevOpen !== open) {
-    setPrevOpen(open);
-    setPresetUpdated(false);
-    setError(null);
-    if (!open) {
-      // Drop stale state so the next open shows the skeleton, not the last value.
-      setInfo(null);
-      setFetched(false);
-    }
-  }
-
-  // Refetch on every open (an external revoke/expiry shouldn't show stale UI).
-  // The latestOp bump fires on close too so prior in-flight ops are discarded.
+  // The sole consumer (ShareMenuView) mounts this only while the share view is
+  // open and unmounts it on close / note switch, so state resets naturally on
+  // unmount — the hook just fetches once on mount.
   useEffect(() => {
     if (presetUpdatedTimer.current) {
       clearTimeout(presetUpdatedTimer.current);
@@ -55,10 +41,6 @@ export function useShareInfo(noteId: string, open: boolean): UseShareInfoResult 
     }
 
     const opId = ++latestOp.current;
-    if (!open) {
-      return;
-    }
-
     void getShareInfoForNoteAction(noteId)
       .then((result) => {
         if (opId !== latestOp.current) {
@@ -78,7 +60,7 @@ export function useShareInfo(noteId: string, open: boolean): UseShareInfoResult 
         setFetched(true);
         setError('Teilen-Status konnte nicht geladen werden.');
       });
-  }, [open, noteId]);
+  }, [noteId]);
 
   useEffect(() => {
     return () => {

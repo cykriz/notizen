@@ -131,9 +131,19 @@ A valid share token grants read access to the shared note AND every attachment o
 | NotePageClient | `app/(app)/notes/[id]/NotePageClient.tsx` — note page client logic |
 | TagInput | `app/(app)/notes/[id]/TagInput.tsx` — tag editing with autocomplete |
 | TagBadge | `app/(app)/notes/[id]/TagBadge.tsx` — tag display badge |
-| ShareNoteButton | `app/(app)/notes/[id]/ShareNoteButton.tsx` — popover to create/revoke share link |
-| ShareNoteBody | `app/(app)/notes/[id]/ShareNoteBody.tsx` — share popover body (fetch state, copy link, expiry display, revoke) |
+| NoteActionsMenu | `app/(app)/notes/[id]/NoteActionsMenu.tsx` — ⋯ popover in the note header (attachment upload, share, tags on mobile); two-view menu ⇄ share |
+| ShareMenuView | `app/(app)/notes/[id]/ShareMenuView.tsx` — share panel inside the actions menu (expiry select + ShareNoteBody), wraps useShareInfo |
+| ShareNoteBody | `app/(app)/notes/[id]/ShareNoteBody.tsx` — share panel body (fetch state, copy link, expiry display, revoke); rendered inside ShareMenuView |
 | useShareInfo | `app/(app)/notes/[id]/useShareInfo.ts` — hook orchestrating share state lifecycle (fetch, create, revoke, change preset) |
+| ReadAloudControls | `components/ReadAloudControls.tsx` — speaker popover, shared by editor + share view; orchestrates system/neural TTS with auto-fallback |
+| ReadAloudPanel | `components/ReadAloudPanel.tsx` — read-aloud popover body (transport, engine + voice pickers, progress/notice) |
+| useSpeech | `hooks/useSpeech.ts` — Web Speech (system) engine: chunked utterances, keep-alive, rate |
+| useSpeechVoices | `hooks/useSpeechVoices.ts` — German system-voice list + persisted choice |
+| useNeuralSpeech | `hooks/useNeuralSpeech.ts` — Piper/vits-web neural engine (single-shot synth, OPFS model cache) |
+| useAttachmentUpload | `hooks/useAttachmentUpload.ts` — note attachment upload flow (hidden input + progress) |
+| markdownToPlainText | `lib/markdownToPlainText.ts` — markdown→plain text + sentence chunking for TTS |
+| selectGermanVoice | `lib/selectGermanVoice.ts` — rank/select natural German system voices |
+| localStorageState | `lib/localStorageState.ts` — safe localStorage read/write helper |
 | SharedNotesEntry | `app/(app)/SharedNotesEntry.tsx` — sidebar entry + badge that opens the shared-notes dialog (online-only, hidden in todos view) |
 | SharedNotesDialog | `app/(app)/SharedNotesDialog.tsx` — list dialog for all of a user's active share links (open / copy / revoke) |
 | SharedNotesList | `app/(app)/SharedNotesList.tsx` — presentational list rendered inside the dialog |

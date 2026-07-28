@@ -174,3 +174,9 @@ export const TRASH_LOAD_ERROR_MESSAGE = 'Der Papierkorb konnte nicht geladen wer
 export const TRASH_NOTES_SECTION_LABEL = 'Notizen';
 export const TRASH_TODOS_SECTION_LABEL = 'Aufgaben';
 export const TRASH_RETENTION_LABEL = 'Automatisch löschen nach';
+
+// Attachment upload
+export const UPLOAD_FAILED_MESSAGE = 'Upload fehlgeschlagen';
+
+// Read-aloud (Text-to-Speech) constants live in lib/ttsConstants.ts to keep this
+// file under the 200-line limit; import them directly from there.

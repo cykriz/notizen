@@ -1,13 +1,14 @@
 'use client';
 
 import { useTheme } from 'next-themes';
-import { useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import MarkdownPreview from '@uiw/react-markdown-preview/nohighlight';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { NoteOutline, extractHeadings } from '@/components/NoteOutline';
 import { useClientMounted } from '@/hooks/useClientMounted';
 import { remarkLooseListGaps } from '@/lib/remarkLooseListGaps';
+import { ReadAloudControls } from '@/components/ReadAloudControls';
 
 interface SharedNoteViewProps {
   title: string;
@@ -50,6 +51,8 @@ export function SharedNoteView({ title, content }: SharedNoteViewProps) {
 
   const headings = useMemo(() => extractHeadings(content), [content]);
 
+  const getContent = useCallback(() => content, [content]);
+
   const handleHeadingClick = (_line: number, index: number) => {
     const previewEl = previewScrollRef.current?.querySelector('.wmde-markdown');
     if (!previewEl) {
@@ -69,6 +72,7 @@ export function SharedNoteView({ title, content }: SharedNoteViewProps) {
           <h1 className="flex-1 min-w-0 truncate text-xl md:text-2xl font-semibold">
             {title}
           </h1>
+          <ReadAloudControls getContent={getContent} title={title} />
           <Badge variant="secondary" className="shrink-0">
             Nur-Lese-Ansicht
           </Badge>

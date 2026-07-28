@@ -157,4 +157,10 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Justify + hyphenate only rendered note content (editor preview + share
+     view render into .wmde-markdown), not app-chrome paragraphs like popover
+     hints or dialogs, where justification leaves ugly gaps in narrow layouts. */
+  .wmde-markdown p {
+    @apply text-justify hyphens-auto;
+  }
 }

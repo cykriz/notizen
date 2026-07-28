@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useCallback, useState } from 'react';
-import { Copy, Check, Eye, Pencil, List, Tag } from 'lucide-react';
+import { Copy, Check, Eye, Pencil, List } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,9 +10,9 @@ import { PREVIEW_EDIT } from '@/lib/constants';
 import type { PreviewMode } from '@/lib/types';
 import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
 import type { Attachment } from '@/lib/fsNotes';
-import { AttachmentUploadButton } from './AttachmentUploadButton';
 import { TagInput } from './TagInput';
-import { ShareNoteButton } from './ShareNoteButton';
+import { ReadAloudControls } from '@/components/ReadAloudControls';
+import { NoteActionsMenu } from './NoteActionsMenu';
 
 const COPY_KEY_NOTE_MD = 'note-md';
 
@@ -89,16 +89,6 @@ export const NoteHeader = memo(function NoteHeader({
 
         <div className="relative z-20 flex shrink-0 items-center gap-2 md:gap-1">
           <Button
-            onClick={() => {
-              setTagsExpanded((v) => !v);
-            }}
-            size="icon-xs"
-            variant="ghost"
-            className={cn('md:hidden', { 'bg-accent': tagsExpanded })}
-          >
-            <Tag />
-          </Button>
-          <Button
             onClick={onToggleOutline}
             size="icon-xs"
             variant="ghost"
@@ -109,8 +99,7 @@ export const NoteHeader = memo(function NoteHeader({
           <Button onClick={onTogglePreview} size="icon-xs" variant="ghost">
             {preview === PREVIEW_EDIT ? <Eye /> : <Pencil />}
           </Button>
-          <AttachmentUploadButton noteId={noteId} onUploaded={onFileUploaded} onInsertLinks={onInsertLinks} />
-          <ShareNoteButton noteId={noteId} key={noteId} />
+          <ReadAloudControls getContent={getContent} title={title} />
           <Button
             onClick={handleCopy}
             size="icon-xs"
@@ -120,6 +109,14 @@ export const NoteHeader = memo(function NoteHeader({
           >
             {isCopied ? <Check /> : <Copy />}
           </Button>
+          <NoteActionsMenu
+            noteId={noteId}
+            onFileUploaded={onFileUploaded}
+            onInsertLinks={onInsertLinks}
+            onExpandTags={() => {
+              setTagsExpanded(true);
+            }}
+          />
         </div>
       </CardContent>
     </Card>
