@@ -1,6 +1,7 @@
-import { type SyncQueueEntry, getSyncQueue, nextSyncSeq, setSyncQueue } from '@/lib/localCache';
-import { addToFailedSync, removeFromFailedSync } from '@/lib/failedSyncQueue';
-import { SYNC_ACTION, SYNC_ENTITY, SYNC_MAX_RETRIES } from '@/lib/constants';
+import { type SyncQueueEntry, getSyncQueue, nextSyncSeq, sameSyncEntry, setSyncQueue } from '@/lib/localCache';
+import { addToFailedSync, buildFailure, markFailure, removeFromFailedSync } from '@/lib/failedSyncQueue';
+import { replayMutation } from '@/lib/syncReplay';
+import { SYNC_ACTION, SYNC_MAX_RETRIES } from '@/lib/constants';
 
 let processing = false;
 
@@ -41,29 +42,63 @@ export function getPendingCount(): number {
   return getSyncQueue().length;
 }
 
-function headMatches(head: SyncQueueEntry, current: SyncQueueEntry): boolean {
-  if (current.seq !== undefined && head.seq !== undefined) {
-    return head.seq === current.seq;
-  }
-
-  return head.entityType === current.entityType && head.entityId === current.entityId && head.action === current.action;
+/**
+ * Puts a failed entry back into the pending queue for another attempt. The retry
+ * budget and the recorded failure are dropped BY CONSTRUCTION — the transport
+ * fields are copied explicitly rather than spread.
+ *
+ * The entry deliberately stays in the failed queue: processSyncQueue clears it
+ * on success and addToFailedSync overwrites it on a second failure, so there is
+ * never a window in which the unsynced content has no record at all.
+ *
+ * Callers must check hasPendingForEntity first. Re-queuing while a newer
+ * mutation waits would either overwrite that newer payload (enqueueMutation
+ * dedups on the same action) or replay out of order (a re-queued create lands
+ * behind a pending update → 404).
+ *
+ * The one exception is a 'not-recorded' entry: it IS the pending entry, parked
+ * with a spent retry budget, so nothing will ever replay it on its own. Here the
+ * enqueueMutation dedup is the mechanism rather than the hazard — it replaces the
+ * entry in place, which is what clears retryCount and failure.
+ */
+export function requeueFailedEntry(entry: SyncQueueEntry): void {
+  enqueueMutation({
+    entityType: entry.entityType,
+    entityId: entry.entityId,
+    action: entry.action,
+    payload: entry.payload,
+    timestamp: entry.timestamp,
+  });
 }
 
 function removeHeadIfMatches(current: SyncQueueEntry): void {
   const fresh = getSyncQueue();
-  if (fresh.length > 0 && headMatches(fresh[0], current)) {
+  if (fresh.length > 0 && sameSyncEntry(fresh[0], current)) {
     fresh.shift();
     setSyncQueue(fresh);
   }
 }
 
-function updateHeadRetryIfMatches(current: SyncQueueEntry): void {
+/**
+ * Applies a patch to the pending head, re-reading the queue first so a
+ * concurrently enqueued mutation is never clobbered.
+ *
+ * The patch is a function of the FRESH head, not a literal: the retry paths must
+ * increment the persisted retryCount rather than the one on the stale `current`.
+ * Fields the patch omits are preserved — which is how a thrown attempt keeps the
+ * previous `failure` so a later give-up still reports the real HTTP status.
+ */
+function patchHead(current: SyncQueueEntry, patch: (head: SyncQueueEntry) => Partial<SyncQueueEntry>): void {
   const fresh = getSyncQueue();
-  if (fresh.length > 0 && headMatches(fresh[0], current)) {
-    fresh[0] = { ...fresh[0], retryCount: (fresh[0].retryCount ?? 0) + 1 };
+  if (fresh.length > 0 && sameSyncEntry(fresh[0], current)) {
+    fresh[0] = { ...fresh[0], ...patch(fresh[0]) };
     setSyncQueue(fresh);
   }
 }
+
+const bumpRetry = (head: SyncQueueEntry): Partial<SyncQueueEntry> => ({
+  retryCount: (head.retryCount ?? 0) + 1,
+});
 
 export async function processSyncQueue(): Promise<void> {
   if (processing) {
@@ -83,7 +118,16 @@ export async function processSyncQueue(): Promise<void> {
 
       if ((entry.retryCount ?? 0) >= SYNC_MAX_RETRIES) {
         console.error('Sync entry exceeded max retries, moving to failed:', entry);
-        addToFailedSync(entry);
+        if (!addToFailedSync(markFailure(entry, 'max-retries'))) {
+          // localStorage full. Leave the entry at the pending head — dropping it
+          // here would destroy the only record of the unsynced content — and
+          // mark it so the inspector can surface it. No budget change needed:
+          // this branch runs before the replay, so it issues no request and
+          // simply re-marks on every drain until storage frees up.
+          patchHead(entry, (head) => ({ failure: buildFailure(head, 'not-recorded') }));
+          break;
+        }
+
         removeHeadIfMatches(entry);
         queue = getSyncQueue();
         continue;
@@ -92,18 +136,33 @@ export async function processSyncQueue(): Promise<void> {
       try {
         const result = await replayMutation(entry);
 
-        if (result === 'offline') {
+        if (result.outcome === 'offline') {
           // Network unreachable (offline) — pause WITHOUT consuming the retry
           // budget. Offline is not a failure; the mutation must wait for
           // reconnection, not be declared failed after N futile offline polls.
           break;
-        } else if (result === 'discard') {
+        } else if (result.outcome === 'discard') {
           console.error('Sync entry not retryable, moving to failed:', entry);
-          addToFailedSync(entry);
+          if (!addToFailedSync(markFailure(entry, 'non-retryable', result))) {
+            // localStorage full: the entry has to stay at the pending head as the
+            // only surviving record. Burn a retry so it converges on the
+            // max-retries branch above, which issues no request — otherwise every
+            // drain would re-send a mutation already known to be rejected, with
+            // the rest of the queue blocked behind it.
+            patchHead(entry, (head) => ({
+              ...bumpRetry(head),
+              failure: buildFailure(head, 'not-recorded', result),
+            }));
+            break;
+          }
+
           removeHeadIfMatches(entry);
           queue = getSyncQueue();
-        } else if (result === 'retry') {
-          updateHeadRetryIfMatches(entry);
+        } else if (result.outcome === 'retry') {
+          patchHead(entry, (head) => ({
+            ...bumpRetry(head),
+            failure: buildFailure(head, 'server-error', result),
+          }));
           queue = getSyncQueue();
           break;
         } else {
@@ -117,7 +176,7 @@ export async function processSyncQueue(): Promise<void> {
           queue = getSyncQueue();
         }
       } catch {
-        updateHeadRetryIfMatches(entry);
+        patchHead(entry, bumpRetry);
         queue = getSyncQueue();
         break;
       }
@@ -125,85 +184,4 @@ export async function processSyncQueue(): Promise<void> {
   } finally {
     processing = false;
   }
-}
-
-async function replayMutation(entry: SyncQueueEntry): Promise<'ok' | 'discard' | 'retry' | 'offline'> {
-  const { entityType, entityId, action, payload } = entry;
-  const baseUrl = entityType === SYNC_ENTITY.NOTE ? '/api/notes' : '/api/todos';
-
-  let url: string;
-  let method: string;
-  let body: string | undefined;
-
-  switch (action) {
-    case SYNC_ACTION.CREATE: {
-      url = baseUrl;
-      method = 'POST';
-      body = JSON.stringify(payload);
-      break;
-    }
-
-    case SYNC_ACTION.UPDATE: {
-      url = `${baseUrl}/${entityId}`;
-      method = 'PUT';
-      body = JSON.stringify(payload);
-      break;
-    }
-
-    case SYNC_ACTION.DELETE: {
-      url = `${baseUrl}/${entityId}`;
-      method = 'DELETE';
-      break;
-    }
-
-    default: {
-      throw new Error(`Unknown sync action: ${action as string}`);
-    }
-  }
-
-  // No X-Expected-UpdatedAt header: queue-replayed mutations skip conflict
-  // detection since they are sequential writes from the same user.
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body,
-    });
-  } catch {
-    // fetch throws only on network errors (offline). Signal 'offline' so the
-    // caller pauses without counting this against SYNC_MAX_RETRIES — otherwise
-    // a long-enough offline period would wrongly tag the note 'sync-fehler'.
-    return 'offline';
-  }
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    console.error(`Sync replay ${action} ${entityType}/${entityId}: ${res.status.toString()}`, text);
-
-    if (res.status === 401) {
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
-      }
-
-      throw new Error('Session expired');
-    }
-
-    // Treat DELETE 404 as success — the entity is already gone server-side,
-    // which is the desired end state. Prevents the row from appearing as a
-    // ghost with a sync-fehler tag. UPDATE/CREATE 404 intentionally stay as
-    // discards: an UPDATE 404 means the user's edits were lost and the
-    // sync-fehler marker is the truth they need to see.
-    if (action === SYNC_ACTION.DELETE && res.status === 404) {
-      return 'ok';
-    }
-
-    if (res.status >= 500 || !navigator.onLine) {
-      return 'retry';
-    }
-
-    return 'discard';
-  }
-
-  return 'ok';
 }

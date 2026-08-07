@@ -85,6 +85,9 @@ export const SYNC_ACTION = {
 
 export const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
 export const SYNC_MAX_RETRIES = 5;
+// Cap on the server response body stored in SyncFailureInfo.message. Diagnostic
+// text only, so a runaway error page can never bloat the failed queue.
+export const SYNC_ERROR_BODY_MAX = 500;
 export const FAILED_SYNC_TAG = 'sync-fehler';
 
 // Reserved client-only tag markers injected at render time (e.g. by

@@ -3,6 +3,11 @@ import { getCachedNote, removeCachedNote, setCachedNote, setCachedNotesList } fr
 import { addTombstone } from '@/lib/localCacheMerge';
 import { ConflictResponseSchema, NoteResponseSchema } from '@/lib/schemas';
 import { clearPendingForEntity, enqueueMutation, hasPendingCreate, hasPendingForEntity } from '@/lib/syncQueue';
+// A later successful write means the client has moved on, so an earlier failure
+// record is stale. processSyncQueue does this for queue replays; the direct online
+// fast path below needs it just as much — otherwise the inspector keeps showing a
+// failure for content that is already on the server, and offers to discard it.
+import { removeFromFailedSync } from '@/lib/failedSyncQueue';
 import { tryFetch } from '@/lib/tryFetch';
 import type { Note, NoteSummary } from '@/lib/types';
 
@@ -71,6 +76,7 @@ export async function createNoteOffline(
       setCachedNote(serverNote);
       const serverList = updatedList.map((n) => (n.id === id ? noteToSummary(serverNote) : n));
       setCachedNotesList(serverList);
+      removeFromFailedSync(SYNC_ENTITY.NOTE, id);
       return { note: serverNote, updatedList: serverList };
     }
   } else {
@@ -163,6 +169,7 @@ export async function updateNoteOffline(
       setCachedNote(serverNote);
       const serverList = updatedList.map((n) => (n.id === id ? noteToSummary(serverNote) : n));
       setCachedNotesList(serverList);
+      removeFromFailedSync(SYNC_ENTITY.NOTE, id);
       return serverList;
     } else {
       console.error(`updateNoteOffline: server returned ${res.status.toString()}`);
@@ -199,6 +206,10 @@ export async function deleteNoteOffline(
     const res = await tryFetch(`/api/notes/${id}`, { method: 'DELETE' });
     if (res === null) {
       enqueueMutation(entry);
+    } else if (res.ok || res.status === 404) {
+      // 404 = already gone server-side, which is the desired end state (same
+      // judgement replayMutation makes). Either way an earlier failure is stale.
+      removeFromFailedSync(SYNC_ENTITY.NOTE, id);
     }
   } else {
     enqueueMutation(entry);

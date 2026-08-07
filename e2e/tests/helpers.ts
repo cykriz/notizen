@@ -1,9 +1,11 @@
-import { type Page, expect } from "@playwright/test";
+import { type Locator, type Page, expect } from "@playwright/test";
 import fs from "fs/promises";
 import path from "path";
 import { TEST_NOTES_ROOT } from "../playwright.config";
 import { SHARES_DIR, SHARES_FILE } from "../../lib/constants";
+import { FAILED_SYNC_DIALOG_TITLE, FAILED_SYNC_OPEN_LABEL } from "../../lib/failedSyncConstants";
 import type { ShareEntry } from "../../lib/fsSharesRegistry";
+import type { SyncQueueEntry } from "../../lib/localCache";
 
 /** Wait for the auto-save PUT to /api/notes/ to complete successfully. */
 export async function waitForSave(page: Page): Promise<void> {
@@ -93,6 +95,73 @@ export async function setShareExpiry(token: string, expiresAt: string): Promise<
   registry[token] = { ...entry, expiresAt };
   await fs.mkdir(path.dirname(SHARES_FILE_PATH), { recursive: true });
   await fs.writeFile(SHARES_FILE_PATH, JSON.stringify(registry, null, 2), "utf-8");
+}
+
+/** Read the failed-sync queue (notizen:sync-failed). */
+export async function readFailedQueue(page: Page): Promise<SyncQueueEntry[]> {
+  return page.evaluate(() => {
+    const raw = localStorage.getItem("notizen:sync-failed");
+    return raw ? (JSON.parse(raw) as SyncQueueEntry[]) : [];
+  });
+}
+
+/** Read the pending sync queue (notizen:sync-queue). */
+export async function readPendingQueue(page: Page): Promise<SyncQueueEntry[]> {
+  return page.evaluate(() => {
+    const raw = localStorage.getItem("notizen:sync-queue");
+    return raw ? (JSON.parse(raw) as SyncQueueEntry[]) : [];
+  });
+}
+
+/** Write failed-queue entries directly. Avoids driving multi-cycle offline
+ *  navigation, which stresses service-worker chunk caching rather than the
+ *  feature under test. Same seeding approach as cache-merge.spec.ts. */
+export async function seedFailedQueue(
+  page: Page,
+  entries: Partial<SyncQueueEntry>[],
+): Promise<void> {
+  await page.evaluate((seed) => {
+    const full = seed.map((e) => ({
+      entityType: "note",
+      action: "update",
+      payload: {},
+      timestamp: new Date().toISOString(),
+      retryCount: 5,
+      ...e,
+    }));
+    localStorage.setItem("notizen:sync-failed", JSON.stringify(full));
+  }, entries);
+}
+
+/** Force every pending entry's retryCount so the next drain gives up on it. */
+export async function setRetryCount(page: Page, retryCount: number): Promise<void> {
+  await page.evaluate((count) => {
+    const raw = localStorage.getItem("notizen:sync-queue");
+    if (!raw) return;
+    const queue = JSON.parse(raw) as { retryCount?: number }[];
+    for (const entry of queue) {
+      entry.retryCount = count;
+    }
+    localStorage.setItem("notizen:sync-queue", JSON.stringify(queue));
+  }, retryCount);
+}
+
+/** Wait for a queued mutation to appear (auto-save is debounced). */
+export async function waitForPendingEntry(page: Page): Promise<void> {
+  await expect(async () => {
+    expect((await readPendingQueue(page)).length).toBeGreaterThan(0);
+  }).toPass({ timeout: 5_000 });
+}
+
+/** Click the failed-sync indicator and wait for the inspector to open. */
+export async function openFailedSyncDialog(page: Page): Promise<Locator> {
+  await page
+    .getByRole("button", { name: FAILED_SYNC_OPEN_LABEL })
+    .first()
+    .click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByText(FAILED_SYNC_DIALOG_TITLE)).toBeVisible({ timeout: 5_000 });
+  return dialog;
 }
 
 /** Delete all notes via the API and clear localStorage so tests

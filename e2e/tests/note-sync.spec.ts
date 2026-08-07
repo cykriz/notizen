@@ -150,7 +150,7 @@ test.describe("Note Sync", () => {
       .getByRole("button", { name: "Notiz löschen" })
       .click();
     await page
-      .getByRole("button", { name: "Endgültig löschen" })
+      .getByRole("button", { name: "In den Papierkorb" })
       .click();
 
     await expect(noteLink).not.toBeVisible({ timeout: 5_000 });

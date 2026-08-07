@@ -1,4 +1,4 @@
-import type { Note, NoteSummary, SyncAction, SyncEntityType, Todo } from '@/lib/types';
+import type { Note, NoteSummary, SyncAction, SyncEntityType, SyncFailureInfo, Todo } from '@/lib/types';
 import { NoteSummaryArraySchema, NoteResponseSchema, TodoArraySchema } from '@/lib/schemas';
 
 export const PREFIX = 'notizen:';
@@ -152,10 +152,31 @@ export interface SyncQueueEntry {
   timestamp: string;
   retryCount?: number;
   seq?: string;
+  // Most recent replay failure. On a PENDING entry this is the last retryable
+  // attempt's error, so a later max-retries give-up still knows the real HTTP
+  // status (five 503s would otherwise land in the failed queue with no status at
+  // all). On a FAILED entry it is the terminal cause. Absent on legacy entries.
+  failure?: SyncFailureInfo;
 }
 
 export function nextSyncSeq(): string {
   return crypto.randomUUID();
+}
+
+/**
+ * Same queued mutation? Prefers `seq`, falling back to the identity triple for
+ * entries persisted before seq existed.
+ *
+ * Lives here because both syncQueue (matching the head before patching it) and
+ * failedSyncDiscard (removing a stuck entry without touching a newer mutation for
+ * the same entity) need it, and importing either from the other would close a cycle.
+ */
+export function sameSyncEntry(a: SyncQueueEntry, b: SyncQueueEntry): boolean {
+  if (a.seq !== undefined && b.seq !== undefined) {
+    return a.seq === b.seq;
+  }
+
+  return a.entityType === b.entityType && a.entityId === b.entityId && a.action === b.action;
 }
 
 export function getSyncQueue(): SyncQueueEntry[] {

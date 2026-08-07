@@ -3,6 +3,9 @@ import { setCachedTodos } from '@/lib/localCache';
 import { addTombstone } from '@/lib/localCacheMerge';
 import { SYNC_ACTION, SYNC_ENTITY } from '@/lib/constants';
 import { enqueueMutation, hasPendingForEntity, hasPendingCreate, clearPendingForEntity } from '@/lib/syncQueue';
+// See the note in offlineNotes: a successful direct write invalidates any earlier
+// failure record for the same entity.
+import { removeFromFailedSync } from '@/lib/failedSyncQueue';
 import { tryFetch } from '@/lib/tryFetch';
 import { TodoResponseSchema } from '@/lib/schemas';
 
@@ -50,6 +53,7 @@ export async function createTodoOffline(
       const serverTodo = TodoResponseSchema.parse(await res.json());
       const serverList = updatedList.map((t) => t.id === id ? serverTodo : t);
       setCachedTodos(serverList);
+      removeFromFailedSync(SYNC_ENTITY.TODO, id);
       return { todo: serverTodo, updatedList: serverList };
     }
   } else {
@@ -110,6 +114,8 @@ export async function updateTodoOffline(
     });
     if (res === null) {
       enqueueMutation(entry);
+    } else if (res.ok) {
+      removeFromFailedSync(SYNC_ENTITY.TODO, id);
     }
   } else {
     enqueueMutation(entry);
@@ -139,6 +145,8 @@ export async function deleteTodoOffline(
     const res = await tryFetch(`/api/todos/${id}`, { method: 'DELETE' });
     if (res === null) {
       enqueueMutation(entry);
+    } else if (res.ok || res.status === 404) {
+      removeFromFailedSync(SYNC_ENTITY.TODO, id);
     }
   } else {
     enqueueMutation(entry);

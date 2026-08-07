@@ -12,3 +12,10 @@ export function formatDate(iso: string): string {
     year: 'numeric',
   });
 }
+
+export function formatDateTime(iso: string): string {
+  return new Intl.DateTimeFormat('de-DE', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(iso));
+}

@@ -32,9 +32,13 @@ See `lib/types.ts` for full definitions. Key types:
 - `lib/apiHelpers.ts` — API utility helpers
 - `lib/tryFetch.ts` — fetch wrapper
 - `lib/localCache.ts` — client-side local cache CRUD (notes, todos, sync queue)
-- `lib/localCacheMerge.ts` — merge, tombstones, and cache expiry cleanup
-- `lib/syncQueue.ts` — offline sync queue management
-- `lib/failedSyncQueue.ts` — permanently failed sync entries (exceeded retries / non-retryable)
+- `lib/localCacheMerge.ts` — merge, tombstones, and cache expiry cleanup. Failed sync entries deliberately never expire: they are the only record of unsynced content, and they are what keeps `notizen:note:<id>` + drafts + the list keys out of the TTL sweep
+- `lib/syncQueue.ts` — offline sync queue management (`enqueueMutation`, `processSyncQueue`, `requeueFailedEntry`)
+- `lib/syncReplay.ts` — replays one queued mutation; returns `ReplayResult` carrying the HTTP status + trimmed body so the failure can be recorded
+- `lib/failedSyncQueue.ts` — permanently failed sync entries (exceeded retries / non-retryable). `markFailure` stamps `SyncFailureInfo` onto the entry; failures are also written onto the *pending* entry during retries so a max-retries give-up still knows the real status. `getInspectableEntries` adds pending entries marked `not-recorded` (localStorage full — they stay pending as the surviving record)
+- `lib/failedSyncDiscard.ts` — `discardEntry` / `discardAllEntries`: drops the entry AND the local state it would otherwise resurrect (cached list row always; `notizen:note:<id>` + draft only when the change carried content). Never adds a tombstone
+- `lib/failedSyncDetail.ts` + `lib/failedSyncCause.ts` + `lib/failedSyncPayload.ts` — pure view model for the inspector (`toFailedSyncDetails` takes injected `sources`, so it unit-tests without a DOM). Defensive readers guard both `payload` and `failure`, which come from an unvalidated cast
+- `lib/failedSyncConstants.ts` — German strings for the inspector (`lib/constants.ts` is at its line cap)
 - `lib/offlineNotes.ts` / `lib/offlineTodos.ts` — offline support for notes and todos
 - `lib/offlineTagFolder.ts` — offline tag-folder deletion (deleteTagFolderOffline, stripFolderTags)
 - `lib/fsShares.ts` — share registry CRUD (upsertShare, revokeShare, getShare, getShareByNote)
@@ -114,7 +118,7 @@ A valid share token grants read access to the shared note AND every attachment o
 | DataProvider | `app/(app)/DataProvider.tsx` — client-side data context |
 | DeleteNoteDialog | `app/(app)/DeleteNoteDialog.tsx` — note deletion confirmation |
 | DeleteTagFolderDialog | `app/(app)/DeleteTagFolderDialog.tsx` — tag folder deletion confirmation |
-| ClearFailedSyncDialog | `app/(app)/ClearFailedSyncDialog.tsx` — confirms purge of the failed sync queue; opened from SyncStatusIndicator and from the sync-fehler TagNavigation toolbar |
+| FailedSyncDialog | `app/(app)/FailedSyncDialog.tsx` — the failed-sync inspector: lists every failed entry with title, folder, storage location, cause and content, plus per-entry open/retry/copy/discard. Owns the two-step "Alle verwerfen" confirmation in its footer (`FailedSyncFooter`), so there is no separate confirm dialog. Rows in `FailedSyncRow` / `FailedSyncRowDetails`, data via `useFailedSyncDetails`. Opened from SyncStatusIndicator (also while offline) and from the sync-fehler TagNavigation toolbar |
 | NoteListItem | `app/(app)/NoteListItem.tsx` — note list entry |
 | MobileBottomNav | `app/(app)/MobileBottomNav.tsx` — bottom tab bar (`md:hidden`) |
 | useVisualViewportHeight | `hooks/useVisualViewportHeight.ts` — tracks `window.visualViewport`; sets `--app-h` on `<html>` and toggles `data-keyboard-open` so the app shell shrinks and mobile UI hides when the on-screen keyboard opens |
@@ -158,4 +162,8 @@ A valid share token grants read access to the shared note AND every attachment o
 
 ## Installed shadcn/ui Components
 
-button, card, input, dialog, textarea, badge, sidebar, separator, sheet, tooltip, skeleton, checkbox, select, command, popover
+button, card, input, dialog, textarea, badge, sidebar, separator, sheet, tooltip, skeleton, checkbox, select, command, popover, label, progress, collapsible
+
+`collapsible` is hand-written against the unified `radix-ui` package (like every
+other wrapper here) rather than added via `npx shadcn@latest add` — that would
+pull in a separate `@radix-ui/react-collapsible` dependency.

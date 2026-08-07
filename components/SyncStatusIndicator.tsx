@@ -1,8 +1,12 @@
 'use client';
 
-import { ClearFailedSyncDialog } from '@/app/(app)/ClearFailedSyncDialog';
+import { FailedSyncDialog } from '@/app/(app)/FailedSyncDialog';
 import { useData } from '@/app/(app)/dataContext';
 import { Button } from '@/components/ui/button';
+import {
+  FAILED_SYNC_OPEN_LABEL,
+  failedSyncIndicatorTitle,
+} from '@/lib/failedSyncConstants';
 import { Cloud, CloudAlert, CloudOff, CloudUpload, RefreshCcw } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -10,7 +14,7 @@ export function SyncStatusIndicator() {
   const { isOnline, hasPendingSync, failedSyncCount, refreshFromServer } = useData();
   const [syncing, setSyncing] = useState(false);
   const [refreshError, setRefreshError] = useState(false);
-  const [clearOpen, setClearOpen] = useState(false);
+  const [failedOpen, setFailedOpen] = useState(false);
   const errorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -55,26 +59,19 @@ export function SyncStatusIndicator() {
   // Dialog is rendered alongside every branch so its close animation completes
   // even after failedSyncCount drops to 0 and the indicator switches branches.
   const dialog = (
-    <ClearFailedSyncDialog
-      open={clearOpen}
-      onOpenChange={setClearOpen}
-      onCleared={() => {
+    <FailedSyncDialog
+      open={failedOpen}
+      onOpenChange={setFailedOpen}
+      onEmptied={() => {
         // header has no current sidebar path to reset
       }}
     />
   );
 
-  if (!isOnline) {
-    return (
-      <>
-        <span title="Offline">
-          <CloudOff className="h-3.5 w-3.5 text-muted-foreground" />
-        </span>
-        {dialog}
-      </>
-    );
-  }
-
+  // Failed entries win over the offline branch. The old order returned an inert
+  // CloudOff first, hiding the unsynced changes exactly when inspecting them
+  // matters most — the dialog is localStorage-only and works fully offline.
+  // One icon carries both states (a second one would crowd the header strip).
   if (failedSyncCount > 0) {
     return (
       <>
@@ -82,14 +79,29 @@ export function SyncStatusIndicator() {
           variant="ghost"
           size="icon"
           onClick={() => {
-            setClearOpen(true);
+            setFailedOpen(true);
           }}
-          aria-label="Fehlgeschlagene Synchronisierungen verwerfen"
-          title={`${failedSyncCount.toString()} fehlgeschlagene Synchronisierungen — klicken zum Verwerfen`}
+          aria-label={FAILED_SYNC_OPEN_LABEL}
+          title={failedSyncIndicatorTitle(failedSyncCount, isOnline)}
           className="h-auto w-auto p-0"
         >
-          <CloudAlert className="h-3.5 w-3.5 text-destructive" />
+          {isOnline ? (
+            <CloudAlert className="h-3.5 w-3.5 text-destructive" />
+          ) : (
+            <CloudOff className="h-3.5 w-3.5 text-destructive" />
+          )}
         </Button>
+        {dialog}
+      </>
+    );
+  }
+
+  if (!isOnline) {
+    return (
+      <>
+        <span title="Offline">
+          <CloudOff className="h-3.5 w-3.5 text-muted-foreground" />
+        </span>
         {dialog}
       </>
     );

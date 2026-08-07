@@ -4,7 +4,7 @@ import { Sidebar, useSidebar } from '@/components/ui/sidebar';
 import { useFinePointer } from '@/hooks/useFinePointer';
 import { useSwipeBack } from '@/hooks/useSwipeBack';
 import { FAILED_SYNC_TAG, SYNC_ENTITY } from '@/lib/constants';
-import { getFailedSyncQueue } from '@/lib/failedSyncQueue';
+import { getInspectableEntries } from '@/lib/failedSyncQueue';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { AppSidebarBody } from './AppSidebarBody';
@@ -28,7 +28,7 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ authEnabled }: AppSidebarProps) {
-  const { notes, todos, failedSyncVersion } = useData();
+  const { notes, todos, failedSyncVersion, hasPendingSync } = useData();
   const { isMobile } = useSidebar();
   const finePointer = useFinePointer();
   const pathname = usePathname();
@@ -45,12 +45,12 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
   const failedNoteIds = useMemo(
     () =>
       new Set(
-        getFailedSyncQueue()
+        getInspectableEntries()
           .filter((e) => e.entityType === SYNC_ENTITY.NOTE)
           .map((e) => e.entityId),
       ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- failedSyncVersion is the reactive proxy for the queue contents
-    [failedSyncVersion],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- failedSyncVersion/hasPendingSync are the reactive proxies for the two queues
+    [failedSyncVersion, hasPendingSync],
   );
   const displayNotes = useMemo(() => withFailedSyncTag(notes, failedNoteIds), [notes, failedNoteIds]);
 

@@ -4,6 +4,7 @@ import { createContext, useContext } from 'react';
 import type { Note, NoteSummary, SyncEntityType, Todo } from '@/lib/types';
 import type { CreateNoteInput, UpdateNoteInput } from '@/lib/offlineNotes';
 import type { CreateTodoInput, UpdateTodoInput } from '@/lib/offlineTodos';
+import type { PushResult } from '@/hooks/useFailedSyncActions';
 
 export interface DataContextValue {
   notes: NoteSummary[];
@@ -12,7 +13,13 @@ export interface DataContextValue {
   hasPendingSync: boolean;
   failedSyncCount: number;
   failedSyncVersion: number;
-  clearFailedSync: () => void;
+  // Makes the SERVER match local: replays the mutation, or re-creates / restores
+  // first when the entity is gone server-side. Async because a 404 has to check
+  // the trash before choosing. The result names what actually happened.
+  pushFailedSync: (entityType: SyncEntityType, entityId: string) => Promise<PushResult>;
+  // Discard also purges the local state the change would otherwise resurrect.
+  discardFailedSync: (entityType: SyncEntityType, entityId: string) => void;
+  discardAllFailedSync: () => void;
   createNote: (input: CreateNoteInput) => Promise<Note>;
   updateNote: (id: string, input: UpdateNoteInput) => Promise<void>;
   updateNotes: (updates: { id: string; input: UpdateNoteInput }[]) => Promise<void>;

@@ -52,7 +52,7 @@ export function DataProvider({ initialNotes, initialTodos, children }: DataProvi
   todosRef.current = todos;
   isOnlineRef.current = isOnline;
 
-  const { hasPendingSync, setHasPendingSync, failedSyncCount, failedSyncVersion, clearFailed, refreshFromServer, syncPending } = useDataSync({
+  const { hasPendingSync, setHasPendingSync, failedSyncCount, failedSyncVersion, pushFailedSync, discardFailedSync, discardAllFailedSync, refreshFromServer, syncPending } = useDataSync({
     isOnline,
     isOnlineRef,
     setNotes,
@@ -177,7 +177,9 @@ export function DataProvider({ initialNotes, initialTodos, children }: DataProvi
         hasPendingSync,
         failedSyncCount,
         failedSyncVersion,
-        clearFailedSync: clearFailed,
+        pushFailedSync,
+        discardFailedSync,
+        discardAllFailedSync,
         createNote: handleCreateNote,
         updateNote: handleUpdateNote,
         updateNotes: handleUpdateNotes,

@@ -83,6 +83,32 @@ export interface NeuralSpeechControls {
 export type SyncEntityType = 'note' | 'todo';
 export type SyncAction = 'create' | 'update' | 'delete';
 
+// Why a queued mutation was abandoned.
+//   'server-error'  — transient marker on a still-PENDING entry after a retryable
+//                     (5xx) attempt; never a terminal state.
+//   'max-retries'   — SYNC_MAX_RETRIES attempts spent.
+//   'non-retryable' — the server answered with a definitive non-5xx error.
+//   'not-recorded'  — the entry could not be written to the failed queue at all
+//                     (localStorage full); it stays at the head of the pending
+//                     queue as the surviving record. See addToFailedSync.
+export type SyncFailureReason = 'server-error' | 'max-retries' | 'non-retryable' | 'not-recorded';
+
+// Snapshot of the last failed replay attempt. Optional throughout: entries
+// persisted by older builds carry no `failure`, so every consumer must handle
+// `undefined`. Read defensively — getFailedSyncQueue casts without validating.
+export interface SyncFailureInfo {
+  reason: SyncFailureReason;
+  // HTTP status of the rejecting response. Absent when no response arrived.
+  status?: number;
+  // Response body, trimmed to SYNC_ERROR_BODY_MAX. Diagnostic only — the
+  // user-facing German text is derived from `status`, never from this.
+  message?: string;
+  failedAt: string;
+  // Attempts actually made. NOT retryCount + 1 on the max-retries path: the
+  // give-up check sits before the replay, so the last counted attempt never ran.
+  attempts: number;
+}
+
 export interface QuadrantMeta {
   key: TodoQuadrant;
   label: string;

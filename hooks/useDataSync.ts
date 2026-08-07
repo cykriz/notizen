@@ -2,10 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { NoteSummary, Todo } from '@/lib/types';
 import { NoteSummaryArraySchema, TodoArraySchema } from '@/lib/schemas';
 import { getCachedNotesList, getCachedTodos, setCachedNotesList, setCachedTodos } from '@/lib/localCache';
-import { clearFailedSyncQueue, getFailedSyncCount } from '@/lib/failedSyncQueue';
+import { getInspectableCount } from '@/lib/failedSyncQueue';
 import { mergeById } from '@/lib/localCacheMerge';
 import { getPendingCount, processSyncQueue } from '@/lib/syncQueue';
 import { SYNC_RETRY_INTERVAL_MS, SYNC_RETRY_MAX_INTERVAL_MS } from '@/lib/constants';
+import { useFailedSyncActions } from '@/hooks/useFailedSyncActions';
 
 interface UseDataSyncArgs {
   isOnline: boolean;
@@ -16,7 +17,10 @@ interface UseDataSyncArgs {
 
 export function useDataSync({ isOnline, isOnlineRef, setNotes, setTodos }: UseDataSyncArgs) {
   const [hasPendingSync, setHasPendingSync] = useState(() => getPendingCount() > 0);
-  const [failedSyncCount, setFailedSyncCount] = useState(() => getFailedSyncCount());
+  // Counts recorded failures PLUS pending entries that could not be recorded
+  // (localStorage full) — otherwise those stay invisible behind a permanent
+  // "Synchronisiere…". See getInspectableEntries.
+  const [failedSyncCount, setFailedSyncCount] = useState(() => getInspectableCount());
   // Bumps whenever the failed queue is mutated, even when the count nets out
   // to the same length (one removal + one addition in a single drain). Memo
   // keys depending on queue *contents* should use this, not failedSyncCount.
@@ -95,7 +99,7 @@ export function useDataSync({ isOnline, isOnlineRef, setNotes, setTodos }: UseDa
         return;
       }
 
-      setFailedSyncCount(getFailedSyncCount());
+      setFailedSyncCount(getInspectableCount());
       setFailedSyncVersion((v) => v + 1);
       const remaining = getPendingCount();
       setHasPendingSync(remaining > 0);
@@ -135,7 +139,7 @@ export function useDataSync({ isOnline, isOnlineRef, setNotes, setTodos }: UseDa
           // retry on next trigger
         }
 
-        setFailedSyncCount(getFailedSyncCount());
+        setFailedSyncCount(getInspectableCount());
         setFailedSyncVersion((v) => v + 1);
         const remaining = getPendingCount();
         setHasPendingSync(remaining > 0);
@@ -148,16 +152,21 @@ export function useDataSync({ isOnline, isOnlineRef, setNotes, setTodos }: UseDa
     }
   }, [isOnlineRef, refreshFromServer]);
 
-  const clearFailed = useCallback(() => {
-    clearFailedSyncQueue();
-    setFailedSyncCount(0);
-    setFailedSyncVersion((v) => v + 1);
-    // Cache-only rows kept alive solely by failed entries (see mergeById) are
-    // now orphans. Refresh from server to drop them; when offline this is a
-    // no-op (refreshFromServer swallows its own errors) and the orphans
-    // linger until the next reconnect, matching the rest of the offline UX.
-    void refreshFromServer();
-  }, [refreshFromServer]);
+  const failedSyncActions = useFailedSyncActions({
+    isOnlineRef,
+    setFailedSyncCount,
+    setFailedSyncVersion,
+    refreshFromServer,
+    syncPending,
+  });
 
-  return { hasPendingSync, setHasPendingSync, failedSyncCount, failedSyncVersion, clearFailed, refreshFromServer, syncPending };
+  return {
+    hasPendingSync,
+    setHasPendingSync,
+    failedSyncCount,
+    failedSyncVersion,
+    refreshFromServer,
+    syncPending,
+    ...failedSyncActions,
+  };
 }

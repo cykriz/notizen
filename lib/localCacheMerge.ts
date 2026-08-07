@@ -11,7 +11,7 @@ import {
   DRAFT_PREFIX,
   getSyncQueue,
 } from './localCache';
-import { cleanExpiredFailedEntries, getFailedSyncQueue } from './failedSyncQueue';
+import { getFailedSyncQueue } from './failedSyncQueue';
 import { CACHE_TTL_MS } from './constants';
 
 const TOMBSTONES_KEY = `${PREFIX}tombstones`;
@@ -22,7 +22,7 @@ const TOMBSTONES_KEY = `${PREFIX}tombstones`;
  * Merge server (primary) and localStorage (cached) arrays by `id`.
  * For each item: pick whichever has the newer `updatedAt`.
  * Cache-only items are kept only if they have a pending OR failed sync entry
- * (failed CREATE/UPDATE stay visible until the user clears the failed queue);
+ * (failed CREATE/UPDATE stay visible until that entry is retried or discarded);
  * otherwise they were likely deleted externally and are dropped.
  * Items with a pending delete or a tombstone are excluded entirely — this is
  * why failed DELETEs never surface (the tombstone is added before the enqueue).
@@ -52,8 +52,8 @@ export function mergeById<T extends { id: string; updatedAt: string }>(
   }
 
   // Append cache-only items (not in `seen`) iff they have any pending or failed
-  // sync entry — failed CREATEs and UPDATEs stay visible until the user clears
-  // the failed queue. Failed DELETEs never surface: deleteNoteOffline /
+  // sync entry — failed CREATEs and UPDATEs stay visible until that entry is
+  // retried or discarded. Failed DELETEs never surface: deleteNoteOffline /
   // deleteTodoOffline always add a tombstone before enqueuing, and tombstones
   // win over failed entries. Items with no pending/failed entry were likely
   // deleted externally and are dropped.
@@ -134,23 +134,17 @@ export function cleanExpiredEntries(): void {
   }
 
   cleanTombstones();
-  cleanExpiredFailedEntries();
+  // Failed entries deliberately never expire — see discardEntry. Expiring
+  // them here would strip their own pendingEntityIds() protection in this very
+  // pass and delete notizen:note:<id> + draft with no user action at all.
   const now = Date.now();
   const pending = pendingEntityIds();
   const keysToRemove: string[] = [];
 
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key === null) {
-      continue;
-    }
-
-    if (!key.startsWith(PREFIX)) {
-      continue;
-    }
-
-    // Never delete sync queue
-    if (key === SYNC_QUEUE_KEY) {
+    // Never delete the sync queue itself
+    if (key === null || !key.startsWith(PREFIX) || key === SYNC_QUEUE_KEY) {
       continue;
     }
 
