@@ -12,23 +12,29 @@ import {
   FAILED_SYNC_OPEN_LABEL,
   FAILED_SYNC_PUSH_LABEL,
   FAILED_SYNC_PUSH_OFFLINE,
+  FAILED_SYNC_CARD_LABEL,
   FAILED_SYNC_TODOS_FILE,
   FAILED_SYNC_TODO_QUADRANT,
 } from "../../lib/failedSyncConstants";
 import { FAILED_SYNC_TAG } from "../../lib/constants";
+import { SYNC_ERROR_TITLE, SYNC_PENDING_LABEL } from "../../lib/syncStatusConstants";
 import {
   createNote,
   deleteAllNotes,
+  deleteAllTodos,
   goOffline,
   goOnline,
   noteIdFromUrl,
   openFailedSyncDialog,
+  waitForPendingEntry,
+} from "./helpers";
+import {
+  readCachedTodos,
   readFailedQueue,
   readPendingQueue,
   seedFailedQueue,
   setRetryCount,
-  waitForPendingEntry,
-} from "./helpers";
+} from "./storageHelpers";
 
 /** Offline-edit the open note so a PUT lands in the sync queue. */
 async function editOffline(page: import("@playwright/test").Page, text: string) {
@@ -743,5 +749,227 @@ test.describe("Sync Failure Handling", () => {
       );
       expect(cached).not.toBeNull();
     }).toPass({ timeout: 10_000 });
+  });
+});
+
+test.describe("Todo sync", () => {
+  test.beforeEach(async ({ page }) => {
+    // Todos survive between tests otherwise, and every `.first()` below would
+    // silently act on a leftover card from an earlier case.
+    await page.goto("/todos");
+    await deleteAllTodos(page);
+    await page.reload();
+  });
+
+  /** Quick-add a todo and wait for the server to acknowledge it. */
+  async function addTodo(page: import("@playwright/test").Page, title: string) {
+    await page.goto("/todos");
+    const quickAdd = page.getByPlaceholder("Neue Aufgabe…").first();
+    await quickAdd.click();
+    await quickAdd.fill(title);
+    const created = page.waitForResponse(
+      (r) => r.url().endsWith("/api/todos") && r.request().method() === "POST" && r.ok(),
+      { timeout: 15_000 },
+    );
+    await quickAdd.press("Enter");
+    await created;
+  }
+
+  test("a second change to the same todo still reaches the server", async ({ page }) => {
+    // THE regression. updateTodoOffline used to discard the PUT response, so the
+    // cache kept the client's updatedAt while the server had its own. The next
+    // edit sent that stale value as X-Expected-UpdatedAt, got a 409, and fell out
+    // of an if/else with no else branch — no queue entry, no failure record, no
+    // log. Result: the first edit synced, every later one vanished silently.
+    await addTodo(page, "ZweiteAenderung");
+
+    const puts: number[] = [];
+    page.on("response", (r) => {
+      if (r.url().includes("/api/todos/") && r.request().method() === "PUT") {
+        puts.push(r.status());
+      }
+    });
+
+    await page.getByRole("checkbox").first().click();
+    await expect(async () => {
+      expect(puts.filter((s) => s === 200)).toHaveLength(1);
+    }).toPass({ timeout: 15_000 });
+
+    // Second edit on the same row — this is the one that used to disappear.
+    await page.getByText("ZweiteAenderung").first().click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("combobox").first().click();
+    await page.getByRole("option", { name: "Erledigen" }).click();
+    await dialog.getByRole("button", { name: /Speichern/ }).click();
+
+    await expect(async () => {
+      expect(puts.filter((s) => s === 200).length).toBeGreaterThanOrEqual(2);
+      expect(puts).not.toContain(409);
+    }).toPass({ timeout: 15_000 });
+
+    // And the server really holds the move, not just the checkbox.
+    const onServer = await page.evaluate(async () => {
+      const res = await fetch("/api/todos");
+      return (await res.json()) as { title: string; quadrant: string; completed: boolean }[];
+    });
+    const row = onServer.find((t) => t.title === "ZweiteAenderung");
+    expect(row?.quadrant).toBe("do");
+    expect(row?.completed).toBe(true);
+  });
+
+  test("a rejected todo change lands in the inspector immediately", async ({ page }) => {
+    // Deterministic 4xx goes straight to the failed queue instead of burning
+    // five backoff cycles and blocking the shared FIFO behind it.
+    await addTodo(page, "AbgelehnteAufgabe");
+    await page.route("**/api/todos/*", (route) =>
+      route.request().method() === "PUT"
+        ? route.fulfill({ status: 400, body: JSON.stringify({ error: "nope" }) })
+        : route.continue(),
+    );
+
+    await page.getByRole("checkbox").first().click();
+
+    await expect(async () => {
+      const failed = await readFailedQueue(page);
+      expect(failed).toHaveLength(1);
+      expect(failed[0].entityType).toBe("todo");
+      expect(failed[0].failure?.status).toBe(400);
+    }).toPass({ timeout: 15_000 });
+
+    // The card itself carries the marker — todos have no sidebar folder.
+    await expect(page.getByText(FAILED_SYNC_CARD_LABEL).first()).toBeVisible();
+  });
+
+  test("a rejected todo create survives a refresh instead of being dropped", async ({ page }) => {
+    // A 5xx on create used to only console.error: no queue entry, so mergeById's
+    // cache-only branch dropped the row on the next pull and persisted the loss.
+    await page.goto("/todos");
+    await page.route("**/api/todos", (route) =>
+      route.request().method() === "POST"
+        ? route.fulfill({ status: 500, body: JSON.stringify({ error: "kaputt" }) })
+        : route.continue(),
+    );
+
+    const quickAdd = page.getByPlaceholder("Neue Aufgabe…").first();
+    await quickAdd.click();
+    await quickAdd.fill("UeberlebtRefresh");
+    await quickAdd.press("Enter");
+
+    await waitForPendingEntry(page);
+    expect((await readPendingQueue(page))[0].action).toBe("create");
+    await expect(page.getByText("UeberlebtRefresh")).toBeVisible();
+  });
+
+  test("moving and ticking offline sends both fields", async ({ page }) => {
+    // enqueueMutation replaced same-action entries wholesale, so the {quadrant}
+    // payload was overwritten by {completed} and the move never left the device.
+    await addTodo(page, "BeideFelder");
+    await goOffline(page);
+
+    await page.getByText("BeideFelder").first().click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("combobox").first().click();
+    await page.getByRole("option", { name: "Erledigen" }).click();
+    await dialog.getByRole("button", { name: /Speichern/ }).click();
+    await waitForPendingEntry(page);
+
+    await page.getByRole("checkbox").first().click();
+    await expect(async () => {
+      const updates = (await readPendingQueue(page)).filter((e) => e.action === "update");
+      expect(updates).toHaveLength(1);
+      expect(updates[0].payload).toMatchObject({ quadrant: "do", completed: true });
+    }).toPass({ timeout: 10_000 });
+
+    await goOnline(page);
+    await expect(async () => {
+      const onServer = await page.evaluate(async () => {
+        const res = await fetch("/api/todos");
+        return (await res.json()) as { title: string; quadrant: string; completed: boolean }[];
+      });
+      const row = onServer.find((t) => t.title === "BeideFelder");
+      expect(row?.quadrant).toBe("do");
+      expect(row?.completed).toBe(true);
+    }).toPass({ timeout: 25_000 });
+  });
+
+  test("a failed entry survives a later successful partial write", async ({ page }) => {
+    // removeFromFailedSync keys only on (entityType, entityId), so ticking the
+    // checkbox used to erase a failed quadrant move — a change the server never
+    // received disappeared from the inspector. subtractAckedKeys keeps the rest.
+    await addTodo(page, "TeilAck");
+
+    await seedFailedQueue(page, [
+      {
+        entityType: "todo",
+        entityId: (await readCachedTodos(page)).find((t) => t.title === "TeilAck")?.id as string,
+        action: "update",
+        payload: { quadrant: "do" },
+      },
+    ]);
+
+    await page.getByRole("checkbox").first().click();
+
+    await expect(async () => {
+      const failed = await readFailedQueue(page);
+      expect(failed).toHaveLength(1);
+      expect(failed[0].payload).toEqual({ quadrant: "do" });
+    }).toPass({ timeout: 15_000 });
+  });
+
+  test("a manual sync that cannot empty the outbox shows the error state", async ({ page }) => {
+    // The error branch used to be unreachable: refreshFromServer swallows its own
+    // failures, so handleSync's catch never fired and CloudAlert was dead code.
+    // processSyncQueue does not reject on a 5xx either — it pauses the drain — so
+    // the honest signal is what is still queued after the push.
+    await addTodo(page, "StummerFehler");
+    await goOffline(page);
+    await page.getByRole("checkbox").first().click();
+    await waitForPendingEntry(page);
+
+    await page.route("**/api/todos/*", (route) =>
+      route.request().method() === "PUT"
+        ? route.fulfill({ status: 500, body: "Internal Server Error" })
+        : route.continue(),
+    );
+    await goOnline(page);
+
+    const button = page.getByRole("button", { name: SYNC_PENDING_LABEL });
+    await expect(button).toBeVisible({ timeout: 15_000 });
+    await button.click();
+
+    await expect(page.getByRole("button", { name: SYNC_PENDING_LABEL })).toHaveAttribute(
+      "title",
+      SYNC_ERROR_TITLE,
+      { timeout: 15_000 },
+    );
+  });
+
+  test("the pending indicator is a button, not an inert span", async ({ page }) => {
+    // The regression: the icon stopped being clickable exactly when there was
+    // unsent work. Asserted with the push failing, so the outbox stays non-empty
+    // and the pending state cannot race the automatic drain — otherwise the label
+    // flips to the idle one mid-assertion. That the click actually pushes is
+    // covered by the error-state test above, which reaches a state only syncNow
+    // can produce.
+    await addTodo(page, "ManuellerPush");
+    await page.route("**/api/todos/*", (route) =>
+      route.request().method() === "PUT"
+        ? route.fulfill({ status: 500, body: "Internal Server Error" })
+        : route.continue(),
+    );
+
+    await goOffline(page);
+    await page.getByRole("checkbox").first().click();
+    await waitForPendingEntry(page);
+
+    // The failed branch outranks the pending one, so this must be a clean queue.
+    expect(await readFailedQueue(page)).toHaveLength(0);
+    await goOnline(page);
+
+    const button = page.getByRole("button", { name: SYNC_PENDING_LABEL });
+    await expect(button).toBeVisible({ timeout: 15_000 });
+    await expect(button).toBeEnabled();
   });
 });

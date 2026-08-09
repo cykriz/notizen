@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { QuadrantCard, quadrants } from './QuadrantCard';
+import { QuadrantCard } from './QuadrantCard';
+import { quadrants } from './quadrantStyles';
 import { TodoDialog } from './TodoDialog';
-import { QUADRANT } from '@/lib/constants';
+import { useFailedEntityIds } from '../useFailedEntityIds';
+import { QUADRANT, SYNC_ENTITY } from '@/lib/constants';
 import type { Todo, TodoQuadrant } from '@/lib/fsTodos';
 import type { NoteSummary } from '@/lib/types';
 
@@ -26,6 +28,7 @@ export function EisenhowerMatrix({ todos, notes }: EisenhowerMatrixProps) {
   const [defaultTitle, setDefaultTitle] = useState('');
   const [dialogKey, setDialogKey] = useState(0);
   const [focusDueDate, setFocusDueDate] = useState(false);
+  const failedIds = useFailedEntityIds(SYNC_ENTITY.TODO);
 
   const todosByQuadrant = useMemo(() => {
     const map: Record<TodoQuadrant, Todo[]> = {
@@ -110,6 +113,7 @@ export function EisenhowerMatrix({ todos, notes }: EisenhowerMatrixProps) {
             key={meta.key}
             meta={meta}
             todos={todosByQuadrant[meta.key]}
+            failedIds={failedIds}
             onAdd={handleAdd}
             onEdit={handleEdit}
             onRequireDueDate={handleRequireDueDate}

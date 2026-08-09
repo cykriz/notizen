@@ -14,9 +14,10 @@ See `lib/types.ts` for full definitions. Key types:
 
 ## Filesystem Layout
 
-- Notes: `NOTES_ROOT/notes/YYYY-MM-DD-slug-uuid/note.md` + `attachments/`
+- Per-user root: `NOTES_ROOT/users/<username>/` (`userRootFor` in `lib/fsHelpers.ts`) — every path below is relative to it
+- Notes: `notes/YYYY-MM-DD-slug-uuid/note.md` + `attachments/`
 - Frontmatter in `note.md`: id, title, tags, pinned, createdAt, updatedAt
-- Todos: `NOTES_ROOT/todos.json` (single JSON array)
+- Todos: `todos.json` (single JSON array, trash included via `trashedAt`). Rows written before `cd9392c` carry the retired quadrant `delegate`; `readTodos` normalises every quadrant via `toUsableQuadrant` and the next write persists the fix, so the file self-heals — there is deliberately no migration script
 - Shares: `NOTES_ROOT/.shares/shares.json` (single JSON registry, token → { username, noteId, preset, createdAt, expiresAt })
 
 ## Core Functions
@@ -26,20 +27,26 @@ See `lib/types.ts` for full definitions. Key types:
 - `lib/fsNotes.ts` — CRUD for notes (listNotes, getNote, createNote, updateNote, deleteNote); re-exports attachment helpers
 - `lib/fsAttachments.ts` — attachment CRUD (listAttachments, saveAttachment, deleteAttachment, getAttachmentFilePath)
 - `lib/fsTodos.ts` — CRUD for todos (listTodos, getTodo, createTodo, updateTodo, deleteTodo)
+- `lib/fsTodosStore.ts` — the `todos.json` read/write layer under `fsTodos`; normalises quadrants on read, so the fix is persisted by the next write
+- `lib/quadrantAlias.ts` — `toUsableQuadrant`: the single rule for what a stored quadrant means. Retired values (pre-`cd9392c` `delegate`) are rewritten, anything else unrecognised falls back to Eingang rather than being dropped. Applied at BOTH entry points (`fsTodosStore` for `todos.json`, `schemas` for caches and responses), which is why per-quadrant records can be indexed directly
 - `lib/tagTree.ts` — hierarchical tag tree (buildTagTree, getChildNodes, getNotesAtPath, getNotesUnderPath, listAllTags, listAllTagPaths)
 - `lib/fsHelpers.ts` — shared filesystem helpers
-- `lib/schemas.ts` — Zod validation schemas
+- `lib/schemas.ts` — Zod schemas plus the row-wise parsers. Two variants with different contracts: the lenient `parse*Rows` for cache reads (salvage what is readable), and the strict `parse*RowsStrict` for server responses, where **`null` means the caller MUST skip the merge** — `[]` would be read as "the server has nothing" and wipe the offline cache
 - `lib/apiHelpers.ts` — API utility helpers
 - `lib/tryFetch.ts` — fetch wrapper
 - `lib/localCache.ts` — client-side local cache CRUD (notes, todos, sync queue)
 - `lib/localCacheMerge.ts` — merge, tombstones, and cache expiry cleanup. Failed sync entries deliberately never expire: they are the only record of unsynced content, and they are what keeps `notizen:note:<id>` + drafts + the list keys out of the TTL sweep
 - `lib/syncQueue.ts` — offline sync queue management (`enqueueMutation`, `processSyncQueue`, `requeueFailedEntry`)
-- `lib/syncReplay.ts` — replays one queued mutation; returns `ReplayResult` carrying the HTTP status + trimmed body so the failure can be recorded
+- `lib/syncReplay.ts` — replays one queued mutation; returns `ReplayResult` carrying the HTTP status + trimmed body so the failure can be recorded. Also owns `classifyErrorResponse`, the single rule for what a non-ok answer means (retry vs. give up, DELETE + 404 = done) — shared with the direct write path so the two can never disagree
+- `lib/syncQueuePayload.ts` — pure payload algebra for the queues: `foldQueuedEntry` merges partial UPDATEs instead of replacing them (offline drag + tick used to lose the quadrant), `subtractAckedKeys` clears only the fields a successful write actually carried, so a failed change for *other* fields keeps its inspector row
+- `lib/offlineWrite.ts` — `sendOrQueue`: the one send-or-enqueue decision for notes and todos (eligibility, `X-Expected-UpdatedAt` + one-shot 409 re-send, deterministic 4xx straight to the inspector, everything else queued). Also `deleteEntityOffline`, the shared optimistic-delete path
+- `lib/offlineAdopt.ts` — `upsertById`: replace-or-insert by id, the shared half of adopting a server response. Callers pass the CURRENT cache, never the list captured when the write started, so a slower in-flight write cannot undo a faster one
 - `lib/failedSyncQueue.ts` — permanently failed sync entries (exceeded retries / non-retryable). `markFailure` stamps `SyncFailureInfo` onto the entry; failures are also written onto the *pending* entry during retries so a max-retries give-up still knows the real status. `getInspectableEntries` adds pending entries marked `not-recorded` (localStorage full — they stay pending as the surviving record)
 - `lib/failedSyncDiscard.ts` — `discardEntry` / `discardAllEntries`: drops the entry AND the local state it would otherwise resurrect (cached list row always; `notizen:note:<id>` + draft only when the change carried content). Never adds a tombstone
 - `lib/failedSyncDetail.ts` + `lib/failedSyncCause.ts` + `lib/failedSyncPayload.ts` — pure view model for the inspector (`toFailedSyncDetails` takes injected `sources`, so it unit-tests without a DOM). Defensive readers guard both `payload` and `failure`, which come from an unvalidated cast
 - `lib/failedSyncConstants.ts` — German strings for the inspector (`lib/constants.ts` is at its line cap)
-- `lib/offlineNotes.ts` / `lib/offlineTodos.ts` — offline support for notes and todos
+- `lib/syncStatusConstants.ts` — German strings for the sidebar sync indicator (same reason)
+- `lib/offlineNotes.ts` / `lib/offlineTodos.ts` — offline support for notes and todos. Both are thin over `sendOrQueue`; each keeps only its own cache adoption (`adoptServer*` writes the server row over the optimistic one, rebuilt from the CURRENT cache so a slower in-flight write cannot undo a faster one)
 - `lib/offlineTagFolder.ts` — offline tag-folder deletion (deleteTagFolderOffline, stripFolderTags)
 - `lib/fsShares.ts` — share registry CRUD (upsertShare, revokeShare, getShare, getShareByNote)
 - `lib/fsSharesRegistry.ts` — share registry I/O + locking (read/write, prune, withSharesLock, removeUserShares)
@@ -80,6 +87,7 @@ A valid share token grants read access to the shared note AND every attachment o
 ## Server Actions
 
 - `app/(app)/shareActions.ts` — `upsertShareLinkAction(noteId, preset)`, `revokeShareLinkAction(noteId)`, `getShareInfoForNoteAction(noteId)`, `listSharedNotesAction()`. All gated by `requireAuthSession()` and validate inputs with Zod. The share page is `dynamic = 'force-dynamic'`, so no `revalidatePath` is needed.
+- Note and todo mutations deliberately have **no** server actions: they must go through the API routes so the offline layer can queue and replay them. A server action would write straight to the filesystem, bypassing the outbox and the tombstones — the exact failure mode that layer exists to prevent.
 
 ## Layout & Pages
 
@@ -127,6 +135,9 @@ A valid share token grants read access to the shared note AND every attachment o
 | useAutoShowOutline | `hooks/useAutoShowOutline.ts` — opens the outline once content overflows the editor viewport |
 | ViewportEffects | `app/(app)/ViewportEffects.tsx` — mounts `useVisualViewportHeight` to expose `--app-h` and `data-keyboard-open` for the app shell |
 | useTagStateSync | `app/(app)/useTagStateSync.ts` — sidebar tag-path reconciliation (note open, tag edits, palette nav) |
+| useSyncDrain | `hooks/useSyncDrain.ts` — the two outbox drain paths: `syncNow` (user-initiated, pushes then pulls, rejects when the outbox is not empty afterwards) and `syncPending` (fired after every mutation, arms the retry loop, never pulls on its own). `useDataSync`'s backoff effect calls the same `drain`, so manual and automatic cannot drift |
+| useTodoActions | `app/(app)/useTodoActions.ts` — the three todo mutations, split out of DataProvider; each writes through the offline layer, never a server action |
+| useFailedEntityIds | `app/(app)/useFailedEntityIds.ts` — failed-sync ids for one entity type, shared by the sidebar tag and the todo cards. Memo keyed on `failedSyncVersion`, which localStorage cannot signal on its own |
 | CommandPalette | `app/(app)/CommandPalette.tsx` — Cmd+P search (@ prefix for tag navigation) |
 | tagNavigationStore | `app/(app)/tagNavigationStore.ts` — cross-component tag path navigation |
 | CommandPaletteClient | `app/(app)/CommandPaletteClient.tsx` — client-side command palette |
@@ -156,7 +167,8 @@ A valid share token grants read access to the shared note AND every attachment o
 | EisenhowerMatrix | `app/(app)/todos/EisenhowerMatrix.tsx` — 2x2 grid |
 | TodoDialog | `app/(app)/todos/TodoDialog.tsx` — create/edit with note linking |
 | QuadrantCard | `app/(app)/todos/QuadrantCard.tsx` — quadrant card |
-| TodoCard | `app/(app)/todos/TodoCard.tsx` — individual todo card |
+| quadrantStyles | `app/(app)/todos/quadrantStyles.ts` — `quadrants` metadata + per-quadrant token classes, split out of QuadrantCard |
+| TodoCard | `app/(app)/todos/TodoCard.tsx` — individual todo card; carries the failed-sync badge, since todos have no sidebar folder to mark |
 | ClearableDateInput | `app/(app)/todos/ClearableDateInput.tsx` — date input |
 | LinkedNotesField | `app/(app)/todos/LinkedNotesField.tsx` — link notes to todos |
 

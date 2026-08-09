@@ -2,12 +2,13 @@
 
 import { memo, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, FileText, AlignLeft, Trash2 } from 'lucide-react';
+import { Calendar, CloudAlert, FileText, AlignLeft, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn, formatDate } from '@/lib/utils';
+import { FAILED_SYNC_CARD_LABEL, FAILED_SYNC_CARD_TOOLTIP } from '@/lib/failedSyncConstants';
 import { useData } from '../dataContext';
 import { useReportedTransition } from '../navigationLoading';
 import type { Todo } from '@/lib/fsTodos';
@@ -17,13 +18,15 @@ interface TodoCardProps {
   todo: Todo;
   onEdit: (todo: Todo) => void;
   notes: NoteSummary[];
+  /** Sync for this todo failed permanently — it exists only on this device. */
+  syncFailed?: boolean;
 }
 
 function isOverdue(dueDate: string): boolean {
   return new Date(dueDate) < new Date(new Date().toISOString().slice(0, 10));
 }
 
-export const TodoCard = memo(function TodoCard({ todo, onEdit, notes }: TodoCardProps) {
+export const TodoCard = memo(function TodoCard({ todo, onEdit, notes, syncFailed = false }: TodoCardProps) {
   const { updateTodo, deleteTodo } = useData();
   const router = useRouter();
   const startNavigation = useReportedTransition();
@@ -107,6 +110,19 @@ export const TodoCard = memo(function TodoCard({ todo, onEdit, notes }: TodoCard
             </TooltipTrigger>
             <TooltipContent side="top" className="max-w-xs">
               <span className="line-clamp-3">{todo.description}</span>
+            </TooltipContent>
+          </Tooltip>
+        )}
+        {syncFailed && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant="destructive" className="mr-2 text-xs px-1.5 py-0 gap-0.5" tabIndex={0}>
+                <CloudAlert className="h-2.5 w-2.5" />
+                {FAILED_SYNC_CARD_LABEL}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs">
+              {FAILED_SYNC_CARD_TOOLTIP}
             </TooltipContent>
           </Tooltip>
         )}

@@ -1,9 +1,10 @@
 import { type SyncQueueEntry, getSyncQueue, nextSyncSeq, sameSyncEntry, setSyncQueue } from '@/lib/localCache';
-import { addToFailedSync, buildFailure, markFailure, removeFromFailedSync } from '@/lib/failedSyncQueue';
+import { ackFailedSync, addToFailedSync, buildFailure, markFailure } from '@/lib/failedSyncQueue';
 import { replayMutation } from '@/lib/syncReplay';
+import { foldQueuedEntry } from '@/lib/syncQueuePayload';
 import { SYNC_ACTION, SYNC_MAX_RETRIES } from '@/lib/constants';
 
-let processing = false;
+let processing: Promise<void> | null = null;
 
 export function enqueueMutation(entry: SyncQueueEntry): void {
   const queue = getSyncQueue();
@@ -17,7 +18,8 @@ export function enqueueMutation(entry: SyncQueueEntry): void {
   );
 
   if (existingIdx >= 0) {
-    queue[existingIdx] = { ...entry, seq };
+    // Merges partial UPDATE payloads instead of replacing them — see foldQueuedEntry.
+    queue[existingIdx] = { ...foldQueuedEntry(queue[existingIdx], entry), seq };
   } else {
     queue.push({ ...entry, seq });
   }
@@ -100,88 +102,93 @@ const bumpRetry = (head: SyncQueueEntry): Partial<SyncQueueEntry> => ({
   retryCount: (head.retryCount ?? 0) + 1,
 });
 
-export async function processSyncQueue(): Promise<void> {
-  if (processing) {
-    return;
-  }
+/**
+ * Drains the outbox. Concurrent callers share the in-flight pass rather than
+ * returning instantly: a manual "jetzt synchronisieren" click landing during the
+ * backoff drain must be able to await the real work, otherwise the button's
+ * spinner reports a sync that never happened.
+ */
+export function processSyncQueue(): Promise<void> {
+  processing ??= drainQueue().finally(() => {
+    processing = null;
+  });
 
-  processing = true;
+  return processing;
+}
 
-  try {
-    // Re-read from localStorage on every iteration so entries enqueued
-    // concurrently (e.g. user action during an in-flight replay) are never
-    // silently overwritten.
-    let queue = getSyncQueue();
+async function drainQueue(): Promise<void> {
+  // Re-read from localStorage on every iteration so entries enqueued
+  // concurrently (e.g. user action during an in-flight replay) are never
+  // silently overwritten.
+  let queue = getSyncQueue();
 
-    while (queue.length > 0) {
-      const entry = queue[0];
+  while (queue.length > 0) {
+    const entry = queue[0];
 
-      if ((entry.retryCount ?? 0) >= SYNC_MAX_RETRIES) {
-        console.error('Sync entry exceeded max retries, moving to failed:', entry);
-        if (!addToFailedSync(markFailure(entry, 'max-retries'))) {
-          // localStorage full. Leave the entry at the pending head — dropping it
-          // here would destroy the only record of the unsynced content — and
-          // mark it so the inspector can surface it. No budget change needed:
-          // this branch runs before the replay, so it issues no request and
-          // simply re-marks on every drain until storage frees up.
-          patchHead(entry, (head) => ({ failure: buildFailure(head, 'not-recorded') }));
+    if ((entry.retryCount ?? 0) >= SYNC_MAX_RETRIES) {
+      console.error('Sync entry exceeded max retries, moving to failed:', entry);
+      if (!addToFailedSync(markFailure(entry, 'max-retries'))) {
+        // localStorage full. Leave the entry at the pending head — dropping it
+        // here would destroy the only record of the unsynced content — and
+        // mark it so the inspector can surface it. No budget change needed:
+        // this branch runs before the replay, so it issues no request and
+        // simply re-marks on every drain until storage frees up.
+        patchHead(entry, (head) => ({ failure: buildFailure(head, 'not-recorded') }));
+        break;
+      }
+
+      removeHeadIfMatches(entry);
+      queue = getSyncQueue();
+      continue;
+    }
+
+    try {
+      const result = await replayMutation(entry);
+
+      if (result.outcome === 'offline') {
+        // Network unreachable (offline) — pause WITHOUT consuming the retry
+        // budget. Offline is not a failure; the mutation must wait for
+        // reconnection, not be declared failed after N futile offline polls.
+        break;
+      } else if (result.outcome === 'discard') {
+        console.error('Sync entry not retryable, moving to failed:', entry);
+        if (!addToFailedSync(markFailure(entry, 'non-retryable', result))) {
+          // localStorage full: the entry has to stay at the pending head as the
+          // only surviving record. Burn a retry so it converges on the
+          // max-retries branch above, which issues no request — otherwise every
+          // drain would re-send a mutation already known to be rejected, with
+          // the rest of the queue blocked behind it.
+          patchHead(entry, (head) => ({
+            ...bumpRetry(head),
+            failure: buildFailure(head, 'not-recorded', result),
+          }));
           break;
         }
 
         removeHeadIfMatches(entry);
         queue = getSyncQueue();
-        continue;
-      }
-
-      try {
-        const result = await replayMutation(entry);
-
-        if (result.outcome === 'offline') {
-          // Network unreachable (offline) — pause WITHOUT consuming the retry
-          // budget. Offline is not a failure; the mutation must wait for
-          // reconnection, not be declared failed after N futile offline polls.
-          break;
-        } else if (result.outcome === 'discard') {
-          console.error('Sync entry not retryable, moving to failed:', entry);
-          if (!addToFailedSync(markFailure(entry, 'non-retryable', result))) {
-            // localStorage full: the entry has to stay at the pending head as the
-            // only surviving record. Burn a retry so it converges on the
-            // max-retries branch above, which issues no request — otherwise every
-            // drain would re-send a mutation already known to be rejected, with
-            // the rest of the queue blocked behind it.
-            patchHead(entry, (head) => ({
-              ...bumpRetry(head),
-              failure: buildFailure(head, 'not-recorded', result),
-            }));
-            break;
-          }
-
-          removeHeadIfMatches(entry);
-          queue = getSyncQueue();
-        } else if (result.outcome === 'retry') {
-          patchHead(entry, (head) => ({
-            ...bumpRetry(head),
-            failure: buildFailure(head, 'server-error', result),
-          }));
-          queue = getSyncQueue();
-          break;
-        } else {
-          // Any later successful op for this id means the client has moved on,
-          // so drop any earlier failure marker for the same entity. Concrete
-          // cases this covers: successful DELETE clears a failed CREATE/UPDATE;
-          // a fresh UPDATE that finally succeeds clears its own prior failure.
-          // We deliberately match by id, not action.
-          removeFromFailedSync(entry.entityType, entry.entityId);
-          removeHeadIfMatches(entry);
-          queue = getSyncQueue();
-        }
-      } catch {
-        patchHead(entry, bumpRetry);
+      } else if (result.outcome === 'retry') {
+        patchHead(entry, (head) => ({
+          ...bumpRetry(head),
+          failure: buildFailure(head, 'server-error', result),
+        }));
         queue = getSyncQueue();
         break;
+      } else {
+        // Any later successful op for this id means the client has moved on,
+        // so drop the earlier failure marker for the same entity — successful
+        // DELETE clears a failed CREATE/UPDATE, a fresh UPDATE that finally
+        // lands clears its own prior failure. Payload-aware: a partial UPDATE
+        // only clears the fields it actually carried, so a failed UPDATE for
+        // *other* fields keeps its inspector row. See subtractAckedKeys.
+        ackFailedSync(entry);
+        removeHeadIfMatches(entry);
+        queue = getSyncQueue();
       }
+    } catch {
+      patchHead(entry, bumpRetry);
+      queue = getSyncQueue();
+      break;
     }
-  } finally {
-    processing = false;
   }
 }

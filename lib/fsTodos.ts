@@ -1,30 +1,11 @@
-import fs from 'fs/promises';
-import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import type { Todo, TodoQuadrant, TrashedTodo } from './types';
-import { NotFoundError, ensureDir, withTodosLock } from './fsHelpers';
+import { NotFoundError, withTodosLock } from './fsHelpers';
+import { readTodos, writeTodos } from './fsTodosStore';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export type { Todo, TodoQuadrant } from './types';
-
-function todosPath(root: string): string {
-  return path.join(root, 'todos.json');
-}
-
-async function readTodos(root: string): Promise<Todo[]> {
-  try {
-    const raw = await fs.readFile(todosPath(root), 'utf-8');
-    return JSON.parse(raw) as Todo[];
-  } catch {
-    return [];
-  }
-}
-
-async function writeTodos(todos: Todo[], root: string): Promise<void> {
-  await ensureDir(root);
-  await fs.writeFile(todosPath(root), JSON.stringify(todos, null, 2), 'utf-8');
-}
 
 export async function listTodos(root: string): Promise<Todo[]> {
   const todos = (await readTodos(root)).filter((t) => t.trashedAt === undefined);

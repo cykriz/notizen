@@ -1,5 +1,5 @@
 import type { Note, NoteSummary, SyncAction, SyncEntityType, SyncFailureInfo, Todo } from '@/lib/types';
-import { NoteSummaryArraySchema, NoteResponseSchema, TodoArraySchema } from '@/lib/schemas';
+import { NoteResponseSchema, parseNoteSummaryRows, parseTodoRows } from '@/lib/schemas';
 
 export const PREFIX = 'notizen:';
 export const NOTES_LIST_KEY = `${PREFIX}notes-list`;
@@ -56,13 +56,9 @@ export function safeSetJson(key: string, value: unknown): void {
 // --- Notes List ---
 
 export function getCachedNotesList(): NoteSummary[] {
-  const raw = safeGetJson(NOTES_LIST_KEY);
-  if (raw === null) {
-    return [];
-  }
-
-  const parsed = NoteSummaryArraySchema.safeParse(raw);
-  return parsed.success ? parsed.data : [];
+  // Row-wise: a single malformed row must not discard the whole list, which for
+  // offline-created notes is the only copy that exists. See parseNoteSummaryRows.
+  return parseNoteSummaryRows(safeGetJson(NOTES_LIST_KEY));
 }
 
 export function setCachedNotesList(notes: NoteSummary[]): void {
@@ -129,13 +125,9 @@ export function removeCachedNote(id: string): void {
 // --- Todos ---
 
 export function getCachedTodos(): Todo[] {
-  const raw = safeGetJson(TODOS_KEY);
-  if (raw === null) {
-    return [];
-  }
-
-  const parsed = TodoArraySchema.safeParse(raw);
-  return parsed.success ? parsed.data : [];
+  // Row-wise, and rescuing pre-cd9392c 'delegate' rows: the previous whole-array
+  // parse turned one stale row into a total cache wipe. See parseTodoRows.
+  return parseTodoRows(safeGetJson(TODOS_KEY));
 }
 
 export function setCachedTodos(todos: Todo[]): void {

@@ -4,7 +4,6 @@ import { Sidebar, useSidebar } from '@/components/ui/sidebar';
 import { useFinePointer } from '@/hooks/useFinePointer';
 import { useSwipeBack } from '@/hooks/useSwipeBack';
 import { FAILED_SYNC_TAG, SYNC_ENTITY } from '@/lib/constants';
-import { getInspectableEntries } from '@/lib/failedSyncQueue';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { AppSidebarBody } from './AppSidebarBody';
@@ -19,6 +18,7 @@ import { SharedNotesEntry } from './SharedNotesEntry';
 import { TagNavigation } from './TagNavigation';
 import { TodosSidebarFooter } from './TodosSidebarFooter';
 import { useCreateNote } from './useCreateNote';
+import { useFailedEntityIds } from './useFailedEntityIds';
 import { useNoteSelection } from './useNoteSelection';
 import { useTagStateSync } from './useTagStateSync';
 import { viewStore } from './viewStore';
@@ -28,7 +28,7 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ authEnabled }: AppSidebarProps) {
-  const { notes, todos, failedSyncVersion, hasPendingSync } = useData();
+  const { notes, todos } = useData();
   const { isMobile } = useSidebar();
   const finePointer = useFinePointer();
   const pathname = usePathname();
@@ -38,20 +38,7 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
   // Augment notes with the synthetic FAILED_SYNC_TAG for sidebar display only.
   // useTagStateSync gets the un-augmented `notes` so opening a failed-sync note
   // never auto-jumps the sidebar into the sync-fehler folder.
-  // failedSyncVersion drives the memo — getFailedSyncQueue reads localStorage,
-  // which is invisible to React. Version bumps on every add/remove (not just
-  // count change), so a same-tick add+remove that nets to equal length still
-  // refreshes the set.
-  const failedNoteIds = useMemo(
-    () =>
-      new Set(
-        getInspectableEntries()
-          .filter((e) => e.entityType === SYNC_ENTITY.NOTE)
-          .map((e) => e.entityId),
-      ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- failedSyncVersion/hasPendingSync are the reactive proxies for the two queues
-    [failedSyncVersion, hasPendingSync],
-  );
+  const failedNoteIds = useFailedEntityIds(SYNC_ENTITY.NOTE);
   const displayNotes = useMemo(() => withFailedSyncTag(notes, failedNoteIds), [notes, failedNoteIds]);
 
   const { currentTagPath, setCurrentTagPath, noteId } = useTagStateSync({ notes, pathname });

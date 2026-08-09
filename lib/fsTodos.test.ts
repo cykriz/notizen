@@ -86,4 +86,83 @@ describe('fsTodos', () => {
     expect(removed).toBe(1);
     expect(await listTrashedTodos(testRoot)).toHaveLength(0);
   });
+
+  test('updateTodo — stamps a server updatedAt that differs from the caller value', async () => {
+    // Why the client MUST adopt the response: it stamps its own clock optimistically,
+    // the server overwrites it here, and a cache still holding the client value makes
+    // the next X-Expected-UpdatedAt a guaranteed 409.
+    const t = await createTodo({ title: 'Stamp', quadrant: 'do' }, testRoot);
+    const clientStamp = t.updatedAt;
+    await new Promise((r) => setTimeout(r, 2));
+    const updated = await updateTodo(t.id, { completed: true }, testRoot);
+
+    expect(updated.updatedAt).not.toBe(clientStamp);
+    await permanentlyDeleteTodo(t.id, testRoot).catch(() => undefined);
+  });
+
+  test('updateTodo — null removes the key entirely', async () => {
+    // The contract foldQueuedEntry relies on: absent means "unchanged", null means
+    // "clear". If null were merely stored, the merged outbox payload would be wrong.
+    const t = await createTodo({ title: 'Nullen', quadrant: 'do', description: 'weg damit' }, testRoot);
+    const updated = await updateTodo(t.id, { description: null }, testRoot);
+
+    expect(updated.description).toBeUndefined();
+    expect(Object.hasOwn(updated, 'description')).toBe(false);
+  });
+
+  test('readTodos — normalises a legacy delegate row and persists the fix', async () => {
+    const legacyRoot = path.join(testRoot, 'legacy');
+    await fs.mkdir(legacyRoot, { recursive: true });
+    await fs.writeFile(
+      path.join(legacyRoot, 'todos.json'),
+      JSON.stringify([{
+        id: 'alt-1',
+        title: 'Vor cd9392c geschrieben',
+        quadrant: 'delegate',
+        completed: false,
+        createdAt: '2026-08-01T08:00:00.000Z',
+        updatedAt: '2026-08-01T08:00:00.000Z',
+      }]),
+      'utf-8',
+    );
+
+    // Read: the retired value is rewritten rather than served as-is.
+    expect((await listTodos(legacyRoot))[0].quadrant).toBe('inbox');
+
+    // Same rule as the client parser: anything unrecognised lands in Eingang, so
+    // the server-rendered first paint and the cache agree and EisenhowerMatrix
+    // can index its per-quadrant record directly.
+    await fs.writeFile(
+      path.join(legacyRoot, 'todos.json'),
+      JSON.stringify([{
+        id: 'fremd-1',
+        title: 'Unbekannter Quadrant',
+        quadrant: 'irgendwas',
+        completed: false,
+        createdAt: '2026-08-01T08:00:00.000Z',
+        updatedAt: '2026-08-01T08:00:00.000Z',
+      }]),
+      'utf-8',
+    );
+    expect((await listTodos(legacyRoot))[0].quadrant).toBe('inbox');
+
+    // Restore the delegate row for the write-through assertion below.
+    await fs.writeFile(
+      path.join(legacyRoot, 'todos.json'),
+      JSON.stringify([{
+        id: 'alt-1',
+        title: 'Vor cd9392c geschrieben',
+        quadrant: 'delegate',
+        completed: false,
+        createdAt: '2026-08-01T08:00:00.000Z',
+        updatedAt: '2026-08-01T08:00:00.000Z',
+      }]),
+      'utf-8',
+    );
+
+    // Write: the next mutation flushes the fix to disk, so it self-heals.
+    await updateTodo('alt-1', { completed: true }, legacyRoot);
+    const onDisk: unknown = JSON.parse(await fs.readFile(path.join(legacyRoot, 'todos.json'), 'utf-8'));
+    expect((onDisk as { quadrant: string }[])[0].quadrant).toBe('inbox');
+  });
 });

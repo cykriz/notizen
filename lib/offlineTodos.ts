@@ -1,13 +1,9 @@
 import type { Todo, TodoQuadrant } from '@/lib/types';
-import { setCachedTodos } from '@/lib/localCache';
-import { addTombstone } from '@/lib/localCacheMerge';
+import { getCachedTodos, setCachedTodos } from '@/lib/localCache';
 import { SYNC_ACTION, SYNC_ENTITY } from '@/lib/constants';
-import { enqueueMutation, hasPendingForEntity, hasPendingCreate, clearPendingForEntity } from '@/lib/syncQueue';
-// See the note in offlineNotes: a successful direct write invalidates any earlier
-// failure record for the same entity.
-import { removeFromFailedSync } from '@/lib/failedSyncQueue';
-import { tryFetch } from '@/lib/tryFetch';
-import { TodoResponseSchema } from '@/lib/schemas';
+import { deleteEntityOffline, sendOrQueue } from '@/lib/offlineWrite';
+import { upsertById } from '@/lib/offlineAdopt';
+import { TodoResponseSchema, reportUnreadableResponse } from '@/lib/schemas';
 
 export interface CreateTodoInput {
   title: string;
@@ -15,6 +11,26 @@ export interface CreateTodoInput {
   description?: string;
   dueDate?: string;
   linkedNoteIds?: string[];
+}
+
+/**
+ * Writes the server's own row over the optimistic one — see upsertById for why
+ * this matters and why it reads the current cache. Returns the parsed row
+ * alongside the list so callers never re-parse what was resolved here.
+ */
+function adoptServerTodo(body: unknown, fallback: Todo[]): { entity: Todo | null; list: Todo[] } {
+  const parsed = TodoResponseSchema.safeParse(body);
+  if (!parsed.success) {
+    // The write succeeded but we cannot read the answer — a client/server schema
+    // drift. Self-correcting (the stale updatedAt takes the 409 re-send path on
+    // the next edit), but silence would hide a real deployment mismatch.
+    reportUnreadableResponse('adoptServerTodo', body);
+    return { entity: null, list: fallback };
+  }
+
+  const merged = upsertById(getCachedTodos(), parsed.data, 'end');
+  setCachedTodos(merged);
+  return { entity: parsed.data, list: merged };
 }
 
 export async function createTodoOffline(
@@ -36,31 +52,18 @@ export async function createTodoOffline(
   setCachedTodos(updatedList);
 
   const payload = { id, ...input };
-  const entry = { entityType: SYNC_ENTITY.TODO, entityId: id, action: SYNC_ACTION.CREATE, payload, timestamp: now };
+  const result = await sendOrQueue(
+    { entityType: SYNC_ENTITY.TODO, entityId: id, action: SYNC_ACTION.CREATE, payload, timestamp: now },
+    { url: '/api/todos', method: 'POST', body: payload },
+    isOnline,
+  );
 
-  // Direct API if online + no pending queue work; else enqueue for FIFO replay
-  if (isOnline && !hasPendingForEntity(id)) {
-    const res = await tryFetch('/api/todos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (res === null) {
-      enqueueMutation(entry);
-    } else if (!res.ok) {
-      console.error(`createTodoOffline: server returned ${res.status.toString()}`);
-    } else {
-      const serverTodo = TodoResponseSchema.parse(await res.json());
-      const serverList = updatedList.map((t) => t.id === id ? serverTodo : t);
-      setCachedTodos(serverList);
-      removeFromFailedSync(SYNC_ENTITY.TODO, id);
-      return { todo: serverTodo, updatedList: serverList };
-    }
-  } else {
-    enqueueMutation(entry);
+  if (result.outcome !== 'ok') {
+    return { todo, updatedList };
   }
 
-  return { todo, updatedList };
+  const { entity, list } = adoptServerTodo(result.body, updatedList);
+  return { todo: entity ?? todo, updatedList: list };
 }
 
 export interface UpdateTodoInput {
@@ -97,60 +100,28 @@ export async function updateTodoOffline(
   setCachedTodos(updatedList);
 
   const payload = { ...input };
-  const entry = { entityType: SYNC_ENTITY.TODO, entityId: id, action: SYNC_ACTION.UPDATE, payload, timestamp: now };
-
-  // Skip direct API if queue has pending mutations for this entity (preserves ordering)
-  if (isOnline && !hasPendingForEntity(id)) {
-    const expectedUpdatedAt = currentTodos.find((t) => t.id === id)?.updatedAt;
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (expectedUpdatedAt !== undefined) {
-      headers['X-Expected-UpdatedAt'] = expectedUpdatedAt;
-    }
-
-    const res = await tryFetch(`/api/todos/${id}`, {
+  const result = await sendOrQueue(
+    { entityType: SYNC_ENTITY.TODO, entityId: id, action: SYNC_ACTION.UPDATE, payload, timestamp: now },
+    {
+      url: `/api/todos/${id}`,
       method: 'PUT',
-      headers,
-      body: JSON.stringify(payload),
-    });
-    if (res === null) {
-      enqueueMutation(entry);
-    } else if (res.ok) {
-      removeFromFailedSync(SYNC_ENTITY.TODO, id);
-    }
-  } else {
-    enqueueMutation(entry);
-  }
+      body: payload,
+      expectedUpdatedAt: currentTodos.find((t) => t.id === id)?.updatedAt,
+    },
+    isOnline,
+  );
 
-  return updatedList;
+  return result.outcome === 'ok' ? adoptServerTodo(result.body, updatedList).list : updatedList;
 }
 
-export async function deleteTodoOffline(
+export function deleteTodoOffline(
   id: string,
   currentTodos: Todo[],
   isOnline: boolean,
 ): Promise<Todo[]> {
-  const now = new Date().toISOString();
-  const updatedList = currentTodos.filter((t) => t.id !== id);
-  setCachedTodos(updatedList);
-  addTombstone(id);
-
-  if (hasPendingCreate(id)) {
-    clearPendingForEntity(id);
-    return updatedList;
-  }
-
-  const entry = { entityType: SYNC_ENTITY.TODO, entityId: id, action: SYNC_ACTION.DELETE, payload: {}, timestamp: now };
-
-  if (isOnline && !hasPendingForEntity(id)) {
-    const res = await tryFetch(`/api/todos/${id}`, { method: 'DELETE' });
-    if (res === null) {
-      enqueueMutation(entry);
-    } else if (res.ok || res.status === 404) {
-      removeFromFailedSync(SYNC_ENTITY.TODO, id);
-    }
-  } else {
-    enqueueMutation(entry);
-  }
-
-  return updatedList;
+  return deleteEntityOffline(id, currentTodos, isOnline, {
+    entityType: SYNC_ENTITY.TODO,
+    baseUrl: '/api/todos',
+    writeCache: setCachedTodos,
+  });
 }

@@ -1,4 +1,5 @@
 import type { SyncQueueEntry } from '@/lib/localCache';
+import type { SyncAction } from '@/lib/types';
 import { SYNC_ACTION, SYNC_ENTITY, SYNC_ERROR_BODY_MAX } from '@/lib/constants';
 
 export type ReplayOutcome = 'ok' | 'discard' | 'retry' | 'offline';
@@ -9,6 +10,34 @@ export interface ReplayResult {
   status?: number;
   // Response body, trimmed to SYNC_ERROR_BODY_MAX.
   message?: string;
+}
+
+/**
+ * The single place that decides what a non-ok response means.
+ *
+ * The direct write path (sendOrQueue) and the queue replay must agree, or the
+ * same server answer would be retried in one and discarded in the other. Reads
+ * the body, so call it at most once per response.
+ */
+export async function classifyErrorResponse(
+  res: Response,
+  action: SyncAction,
+): Promise<ReplayResult> {
+  const message = (await res.text().catch(() => '')).slice(0, SYNC_ERROR_BODY_MAX);
+
+  // DELETE + 404 = the entity is already gone server-side, which is the desired
+  // end state. Prevents a ghost row carrying a sync-fehler tag. UPDATE/CREATE
+  // 404 intentionally stays a discard: an UPDATE 404 means the user's edits were
+  // lost and the marker is the truth they need to see.
+  if (action === SYNC_ACTION.DELETE && res.status === 404) {
+    return { outcome: 'ok' };
+  }
+
+  if (res.status >= 500 || !navigator.onLine) {
+    return { outcome: 'retry', status: res.status, message };
+  }
+
+  return { outcome: 'discard', status: res.status, message };
 }
 
 /**
@@ -69,9 +98,9 @@ export async function replayMutation(entry: SyncQueueEntry): Promise<ReplayResul
   }
 
   if (!res.ok) {
-    const message = (await res.text().catch(() => '')).slice(0, SYNC_ERROR_BODY_MAX);
-    console.error(`Sync replay ${action} ${entityType}/${entityId}: ${res.status.toString()}`, message);
-
+    // 401 is handled here rather than in classifyErrorResponse: the replay loop
+    // needs it to THROW so the drain stops, which tryFetch's silent redirect
+    // cannot express.
     if (res.status === 401) {
       if (typeof window !== 'undefined') {
         window.location.href = '/login';
@@ -80,20 +109,12 @@ export async function replayMutation(entry: SyncQueueEntry): Promise<ReplayResul
       throw new Error('Session expired');
     }
 
-    // Treat DELETE 404 as success — the entity is already gone server-side,
-    // which is the desired end state. Prevents the row from appearing as a
-    // ghost with a sync-fehler tag. UPDATE/CREATE 404 intentionally stay as
-    // discards: an UPDATE 404 means the user's edits were lost and the
-    // sync-fehler marker is the truth they need to see.
-    if (action === SYNC_ACTION.DELETE && res.status === 404) {
-      return { outcome: 'ok' };
-    }
-
-    if (res.status >= 500 || !navigator.onLine) {
-      return { outcome: 'retry', status: res.status, message };
-    }
-
-    return { outcome: 'discard', status: res.status, message };
+    const result = await classifyErrorResponse(res, action);
+    console.error(
+      `Sync replay ${action} ${entityType}/${entityId}: ${res.status.toString()}`,
+      result.message ?? '',
+    );
+    return result;
   }
 
   return { outcome: 'ok' };

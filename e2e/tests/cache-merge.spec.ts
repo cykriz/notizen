@@ -1,5 +1,14 @@
 import { test, expect } from "@playwright/test";
-import { createNote, deleteAllNotes, noteIdFromUrl } from "./helpers";
+import {
+  createNote,
+  deleteAllNotes,
+  noteIdFromUrl,
+} from "./helpers";
+import {
+  readCachedTodos,
+  seedCachedTodos,
+  seedPendingQueue,
+} from "./storageHelpers";
 
 test.describe("Cache & Merge", () => {
   test.beforeEach(async ({ page }) => {
@@ -161,5 +170,51 @@ test.describe("Cache & Merge", () => {
       "Ungespeicherter Entwurf!",
       { timeout: 15_000 },
     );
+  });
+
+  test("one broken todo row does not wipe the cached list", async ({ page }) => {
+    // getCachedTodos used to safeParse the whole array and return [] on failure,
+    // so a single stale row discarded every cached todo — including offline-only
+    // ones whose only copy that was. cd9392c made this reachable by narrowing
+    // QUADRANT_KEYS without shipping a data migration.
+    await page.goto("/todos");
+    const stamp = new Date().toISOString();
+    const row = (id: string, title: string, quadrant: string) => ({
+      id,
+      title,
+      quadrant,
+      completed: false,
+      createdAt: stamp,
+      updatedAt: stamp,
+    });
+
+    await seedCachedTodos(page, [
+      row("gut-1", "GuteZeile", "inbox"),
+      { id: "kaputt-1", title: "KaputteZeile" },
+      row("alt-1", "LegacyZeile", "delegate"),
+    ]);
+
+    // Pending CREATEs make these cache-only rows survive mergeById, which
+    // otherwise drops rows the server does not know about — that guard is
+    // deliberate (it stops externally deleted todos from coming back). This is
+    // exactly the shape of an offline-created todo whose only copy is the cache.
+    await seedPendingQueue(page, [
+      { entityId: "gut-1", payload: row("gut-1", "GuteZeile", "inbox") },
+      { entityId: "alt-1", payload: row("alt-1", "LegacyZeile", "inbox") },
+    ]);
+
+    await page.reload();
+
+    // The good row survives, and the legacy one is rescued rather than dropped.
+    await expect(page.getByText("GuteZeile")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("LegacyZeile")).toBeVisible();
+    await expect(page.getByText("KaputteZeile")).toHaveCount(0);
+
+    // 'delegate' is rewritten to the current value, so the row is usable again.
+    await expect(async () => {
+      const cached = await readCachedTodos(page);
+      const legacy = cached.find((t) => t.id === "alt-1");
+      expect(legacy?.quadrant).toBe("inbox");
+    }).toPass({ timeout: 15_000 });
   });
 });

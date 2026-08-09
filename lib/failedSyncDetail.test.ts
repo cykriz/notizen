@@ -10,6 +10,8 @@ import {
   FAILED_SYNC_HINT_NOT_RECORDED,
   FAILED_SYNC_HINT_RETRY,
   FAILED_SYNC_TODOS_FILE,
+  FAILED_SYNC_TODO_COMPLETED,
+  FAILED_SYNC_TODO_QUADRANT,
 } from './failedSyncConstants';
 import { type FailedSyncSources, buildClipboardText, toFailedSyncDetails } from './failedSyncDetail';
 import { buildFailure, dedupeByEntity } from './failedSyncQueue';
@@ -114,6 +116,21 @@ describe('failedSyncDetail — content resolution', () => {
     const d = one(e, sources({ todos: [todo({ description: 'Beschreibung' })] }));
     expect(d.content).toBe('Beschreibung');
     expect(d.contentSource).toBe('cache');
+  });
+
+  test('a merged todo payload renders every field it carries', () => {
+    // foldQueuedEntry combines partial updates, so an entry reaching the
+    // inspector can hold both a quadrant move and a tick. Both must be listed —
+    // showing only one would understate what is unsynced.
+    const e = entry({
+      entityType: SYNC_ENTITY.TODO,
+      entityId: 't1',
+      payload: { quadrant: 'do', completed: true },
+    });
+    const labels = one(e, sources({ todos: [todo()] })).fields.map((f) => f.label);
+
+    expect(labels).toContain(FAILED_SYNC_TODO_QUADRANT);
+    expect(labels).toContain(FAILED_SYNC_TODO_COMPLETED);
   });
 });
 

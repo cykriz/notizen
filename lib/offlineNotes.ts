@@ -1,14 +1,14 @@
 import { SYNC_ACTION, SYNC_ENTITY } from '@/lib/constants';
-import { getCachedNote, removeCachedNote, setCachedNote, setCachedNotesList } from '@/lib/localCache';
-import { addTombstone } from '@/lib/localCacheMerge';
-import { ConflictResponseSchema, NoteResponseSchema } from '@/lib/schemas';
-import { clearPendingForEntity, enqueueMutation, hasPendingCreate, hasPendingForEntity } from '@/lib/syncQueue';
-// A later successful write means the client has moved on, so an earlier failure
-// record is stale. processSyncQueue does this for queue replays; the direct online
-// fast path below needs it just as much — otherwise the inspector keeps showing a
-// failure for content that is already on the server, and offers to discard it.
-import { removeFromFailedSync } from '@/lib/failedSyncQueue';
-import { tryFetch } from '@/lib/tryFetch';
+import {
+  getCachedNote,
+  getCachedNotesList,
+  removeCachedNote,
+  setCachedNote,
+  setCachedNotesList,
+} from '@/lib/localCache';
+import { NoteResponseSchema, reportUnreadableResponse } from '@/lib/schemas';
+import { deleteEntityOffline, sendOrQueue } from '@/lib/offlineWrite';
+import { upsertById } from '@/lib/offlineAdopt';
 import type { Note, NoteSummary } from '@/lib/types';
 
 function noteToSummary(note: Note): NoteSummary {
@@ -22,6 +22,29 @@ function noteToSummary(note: Note): NoteSummary {
     tags: note.tags,
     pinned: note.pinned,
   };
+}
+
+/**
+ * Writes the server's own row over the optimistic one — see upsertById for why
+ * this matters and why it reads the current cache. Notes prepend (newest first)
+ * and carry a second cache entry for their content.
+ */
+function adoptServerNote(
+  body: unknown,
+  fallback: NoteSummary[],
+): { entity: Note | null; list: NoteSummary[] } {
+  const parsed = NoteResponseSchema.safeParse(body);
+  if (!parsed.success) {
+    // See adoptServerTodo: the write landed, the answer is unreadable.
+    reportUnreadableResponse('adoptServerNote', body);
+    return { entity: null, list: fallback };
+  }
+
+  const server = parsed.data;
+  setCachedNote(server);
+  const merged = upsertById(getCachedNotesList(), noteToSummary(server), 'start');
+  setCachedNotesList(merged);
+  return { entity: server, list: merged };
 }
 
 export interface CreateNoteInput {
@@ -56,34 +79,18 @@ export async function createNoteOffline(
   setCachedNotesList(updatedList);
 
   const payload = { id, title: input.title, content: input.content, tags: input.tags ?? [] };
-  const entry = { entityType: SYNC_ENTITY.NOTE, entityId: id, action: SYNC_ACTION.CREATE, payload, timestamp: now };
+  const result = await sendOrQueue(
+    { entityType: SYNC_ENTITY.NOTE, entityId: id, action: SYNC_ACTION.CREATE, payload, timestamp: now },
+    { url: '/api/notes', method: 'POST', body: payload },
+    isOnline,
+  );
 
-  // If online and no pending queue entries for this entity, try direct API call.
-  // Only enqueue on network failure (null response). Server errors (4xx/5xx) are not retryable.
-  if (isOnline && !hasPendingForEntity(id)) {
-    const res = await tryFetch('/api/notes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    if (res === null) {
-      enqueueMutation(entry);
-    } else if (!res.ok) {
-      console.error(`createNoteOffline: server returned ${res.status.toString()}`);
-    } else {
-      const serverNote = NoteResponseSchema.parse(await res.json());
-      setCachedNote(serverNote);
-      const serverList = updatedList.map((n) => (n.id === id ? noteToSummary(serverNote) : n));
-      setCachedNotesList(serverList);
-      removeFromFailedSync(SYNC_ENTITY.NOTE, id);
-      return { note: serverNote, updatedList: serverList };
-    }
-  } else {
-    enqueueMutation(entry);
+  if (result.outcome !== 'ok') {
+    return { note, updatedList };
   }
 
-  return { note, updatedList };
+  const { entity, list } = adoptServerNote(result.body, updatedList);
+  return { note: entity ?? note, updatedList: list };
 }
 
 export interface UpdateNoteInput {
@@ -127,93 +134,31 @@ export async function updateNoteOffline(
   setCachedNotesList(updatedList);
 
   const payload = { ...input };
-  const entry = { entityType: SYNC_ENTITY.NOTE, entityId: id, action: SYNC_ACTION.UPDATE, payload, timestamp: now };
-
-  // Skip direct API if queue has pending mutations for this entity (preserves ordering)
-  if (isOnline && !hasPendingForEntity(id)) {
-    const expectedUpdatedAt = existing?.updatedAt ?? existingSummary?.updatedAt;
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (expectedUpdatedAt !== undefined) {
-      headers['X-Expected-UpdatedAt'] = expectedUpdatedAt;
-    }
-
-    let res = await tryFetch(`/api/notes/${id}`, {
+  const result = await sendOrQueue(
+    { entityType: SYNC_ENTITY.NOTE, entityId: id, action: SYNC_ACTION.UPDATE, payload, timestamp: now },
+    {
+      url: `/api/notes/${id}`,
       method: 'PUT',
-      headers,
-      body: JSON.stringify(payload),
-    });
+      body: payload,
+      expectedUpdatedAt: existing?.updatedAt ?? existingSummary?.updatedAt,
+    },
+    isOnline,
+  );
 
-    // On 409 conflict (stale cache), retry once with the server's actual updatedAt
-    if (res !== null && res.status === 409) {
-      let body: unknown;
-      try {
-        body = await res.json(); 
-      } catch {
-        body = null; 
-      }
-      const parsed = body !== null ? ConflictResponseSchema.safeParse(body) : { success: false as const };
-      if (parsed.success) {
-        headers['X-Expected-UpdatedAt'] = parsed.data.serverVersion.updatedAt;
-        res = await tryFetch(`/api/notes/${id}`, {
-          method: 'PUT',
-          headers,
-          body: JSON.stringify(payload),
-        });
-      }
-    }
-
-    if (res === null) {
-      enqueueMutation(entry);
-    } else if (res.ok) {
-      const serverNote = NoteResponseSchema.parse(await res.json());
-      setCachedNote(serverNote);
-      const serverList = updatedList.map((n) => (n.id === id ? noteToSummary(serverNote) : n));
-      setCachedNotesList(serverList);
-      removeFromFailedSync(SYNC_ENTITY.NOTE, id);
-      return serverList;
-    } else {
-      console.error(`updateNoteOffline: server returned ${res.status.toString()}`);
-      enqueueMutation(entry);
-    }
-  } else {
-    enqueueMutation(entry);
-  }
-
-  return updatedList;
+  return result.outcome === 'ok' ? adoptServerNote(result.body, updatedList).list : updatedList;
 }
 
-export async function deleteNoteOffline(
+export function deleteNoteOffline(
   id: string,
   currentNotes: NoteSummary[],
   isOnline: boolean,
 ): Promise<NoteSummary[]> {
-  const now = new Date().toISOString();
+  // Notes carry a second cache entry for their content, dropped before the
+  // shared path handles the list row, the tombstone and the request.
   removeCachedNote(id);
-  addTombstone(id);
-  const updatedList = currentNotes.filter((n) => n.id !== id);
-  setCachedNotesList(updatedList);
-
-  // If the note was created offline and never synced, just clear the queue —
-  // no need to send a delete to the server for something it never received.
-  if (hasPendingCreate(id)) {
-    clearPendingForEntity(id);
-    return updatedList;
-  }
-
-  const entry = { entityType: SYNC_ENTITY.NOTE, entityId: id, action: SYNC_ACTION.DELETE, payload: {}, timestamp: now };
-
-  if (isOnline && !hasPendingForEntity(id)) {
-    const res = await tryFetch(`/api/notes/${id}`, { method: 'DELETE' });
-    if (res === null) {
-      enqueueMutation(entry);
-    } else if (res.ok || res.status === 404) {
-      // 404 = already gone server-side, which is the desired end state (same
-      // judgement replayMutation makes). Either way an earlier failure is stale.
-      removeFromFailedSync(SYNC_ENTITY.NOTE, id);
-    }
-  } else {
-    enqueueMutation(entry);
-  }
-
-  return updatedList;
+  return deleteEntityOffline(id, currentNotes, isOnline, {
+    entityType: SYNC_ENTITY.NOTE,
+    baseUrl: '/api/notes',
+    writeCache: setCachedNotesList,
+  });
 }

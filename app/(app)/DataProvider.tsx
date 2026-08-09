@@ -12,13 +12,6 @@ import {
 import { batchUpdateNotesOffline, foldNoteUpdates } from '@/lib/offlineNotesBatch';
 import { deleteTagFolderOffline } from '@/lib/offlineTagFolder';
 import {
-  type CreateTodoInput,
-  type UpdateTodoInput,
-  createTodoOffline,
-  deleteTodoOffline,
-  updateTodoOffline,
-} from '@/lib/offlineTodos';
-import {
   getCachedNote,
   getCachedNotesList,
   getCachedTodos,
@@ -33,6 +26,7 @@ import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useDataSync } from '@/hooks/useDataSync';
 import { DataContext } from './dataContext';
 import { useRestoreFromTrash } from './useRestoreFromTrash';
+import { useTodoActions } from './useTodoActions';
 import { sharedNotesStore } from './sharedNotesStore';
 
 interface DataProviderProps {
@@ -52,7 +46,7 @@ export function DataProvider({ initialNotes, initialTodos, children }: DataProvi
   todosRef.current = todos;
   isOnlineRef.current = isOnline;
 
-  const { hasPendingSync, setHasPendingSync, failedSyncCount, failedSyncVersion, pushFailedSync, discardFailedSync, discardAllFailedSync, refreshFromServer, syncPending } = useDataSync({
+  const { hasPendingSync, setHasPendingSync, failedSyncCount, failedSyncVersion, pushFailedSync, discardFailedSync, discardAllFailedSync, refreshFromServer, syncPending, syncNow } = useDataSync({
     isOnline,
     isOnlineRef,
     setNotes,
@@ -149,23 +143,7 @@ export function DataProvider({ initialNotes, initialTodos, children }: DataProvi
     syncPending();
   }, [syncPending]);
 
-  const handleCreateTodo = useCallback(async (input: CreateTodoInput): Promise<Todo> => {
-    const { todo, updatedList } = await createTodoOffline(input, todosRef.current, isOnlineRef.current);
-    setTodos(updatedList);
-    syncPending();
-    return todo;
-  }, [syncPending]);
-
-  const handleUpdateTodo = useCallback(async (id: string, input: UpdateTodoInput) => {
-    setTodos(await updateTodoOffline(id, input, todosRef.current, isOnlineRef.current));
-    syncPending();
-  }, [syncPending]);
-
-  const handleDeleteTodo = useCallback(async (id: string) => {
-    setTodos(await deleteTodoOffline(id, todosRef.current, isOnlineRef.current));
-    syncPending();
-  }, [syncPending]);
-
+  const todoActions = useTodoActions({ todosRef, isOnlineRef, setTodos, syncPending });
   const restoreFromTrash = useRestoreFromTrash(refreshFromServer);
 
   return (
@@ -185,12 +163,11 @@ export function DataProvider({ initialNotes, initialTodos, children }: DataProvi
         updateNotes: handleUpdateNotes,
         deleteNote: handleDeleteNote,
         deleteTagFolder: handleDeleteTagFolder,
-        createTodo: handleCreateTodo,
-        updateTodo: handleUpdateTodo,
-        deleteTodo: handleDeleteTodo,
+        ...todoActions,
         restoreFromTrash,
         getCachedNoteContent: getCachedNote,
         refreshFromServer,
+        syncNow,
       }}
     >
       {children}

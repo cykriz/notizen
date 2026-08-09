@@ -140,6 +140,14 @@ export const FAILED_SYNC_REASON_NON_RETRYABLE = 'Sofort abgebrochen — ein erne
 export const FAILED_SYNC_REASON_MAX_RETRIES = `Nach ${SYNC_MAX_RETRIES.toString()} Versuchen aufgegeben.`;
 export const FAILED_SYNC_STATUS_PREFIX = 'HTTP-Status';
 
+// --- Card marker (todos) ---
+// Notes surface a failed sync through the synthetic FAILED_SYNC_TAG folder in
+// the sidebar; todos have no sidebar entry, so the card itself carries the
+// marker — otherwise the only hint is the count on the cloud icon.
+export const FAILED_SYNC_CARD_LABEL = 'Nicht übertragen';
+export const FAILED_SYNC_CARD_TOOLTIP =
+  'Diese Aufgabe liegt nur auf diesem Gerät. Details über das Wolken-Symbol in der Seitenleiste.';
+
 // --- Todo detail rows ---
 export const FAILED_SYNC_TODO_QUADRANT = 'Quadrant';
 export const FAILED_SYNC_TODO_DUE = 'Fällig am';

@@ -8,38 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { TodoCard } from './TodoCard';
 import { useData } from '../dataContext';
-import { INBOX_SORT_HINT, INBOX_SORT_THRESHOLD, QUADRANT, QUADRANT_META } from '@/lib/constants';
-import type { QuadrantMeta, NoteSummary } from '@/lib/types';
+import { INBOX_SORT_HINT, INBOX_SORT_THRESHOLD, QUADRANT } from '@/lib/constants';
+import type { NoteSummary } from '@/lib/types';
 import type { Todo, TodoQuadrant } from '@/lib/fsTodos';
-
-interface QuadrantCardMeta extends QuadrantMeta {
-  colorClass: string;
-  headerClass: string;
-}
-
-const colorMap: Record<TodoQuadrant, { colorClass: string; headerClass: string }> = {
-  [QUADRANT.DO]: {
-    colorClass: 'bg-quadrant-do text-quadrant-do-foreground',
-    headerClass: 'text-quadrant-do-foreground',
-  },
-  [QUADRANT.SCHEDULE]: {
-    colorClass: 'bg-quadrant-schedule text-quadrant-schedule-foreground',
-    headerClass: 'text-quadrant-schedule-foreground',
-  },
-  [QUADRANT.INBOX]: {
-    colorClass: 'bg-quadrant-inbox text-quadrant-inbox-foreground',
-    headerClass: 'text-quadrant-inbox-foreground',
-  },
-  [QUADRANT.PLANNED]: {
-    colorClass: 'bg-quadrant-planned text-quadrant-planned-foreground',
-    headerClass: 'text-quadrant-planned-foreground',
-  },
-};
-
-export const quadrants: QuadrantCardMeta[] = QUADRANT_META.map((m) => ({
-  ...m,
-  ...colorMap[m.key],
-}));
+import type { QuadrantCardMeta } from './quadrantStyles';
 
 interface QuadrantCardProps {
   meta: QuadrantCardMeta;
@@ -48,6 +20,8 @@ interface QuadrantCardProps {
   onEdit: (todo: Todo) => void;
   onRequireDueDate?: (todoId: string) => void;
   notes: NoteSummary[];
+  /** Ids whose sync has permanently failed — rendered as a badge on the card. */
+  failedIds: ReadonlySet<string>;
 }
 
 export const QuadrantCard = memo(function QuadrantCard({
@@ -57,6 +31,7 @@ export const QuadrantCard = memo(function QuadrantCard({
   onEdit,
   onRequireDueDate,
   notes,
+  failedIds,
 }: QuadrantCardProps) {
   const { createTodo, updateTodo } = useData();
   const openTodos = todos.filter((t) => !t.completed);
@@ -154,11 +129,11 @@ export const QuadrantCard = memo(function QuadrantCard({
           <p className="py-4 text-center text-xs text-muted-foreground">Keine Aufgaben</p>
         )}
         {openTodos.map((t) => (
-          <TodoCard key={t.id} todo={t} onEdit={onEdit} notes={notes} />
+          <TodoCard key={t.id} todo={t} onEdit={onEdit} notes={notes} syncFailed={failedIds.has(t.id)} />
         ))}
         {done.length > 0 && openTodos.length > 0 && <div className="my-1 border-t" />}
         {done.map((t) => (
-          <TodoCard key={t.id} todo={t} onEdit={onEdit} notes={notes} />
+          <TodoCard key={t.id} todo={t} onEdit={onEdit} notes={notes} syncFailed={failedIds.has(t.id)} />
         ))}
       </CardContent>
       <div className="flex items-center gap-1 border-t px-2 py-1">

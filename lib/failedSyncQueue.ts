@@ -1,8 +1,11 @@
 import { type SyncQueueEntry, PREFIX, getSyncQueue, safeGetJson } from './localCache';
 import { SYNC_MAX_RETRIES } from './constants';
+import { type AckedWrite, subtractAckedKeys } from './syncQueuePayload';
 import type { SyncFailureInfo, SyncFailureReason } from './types';
 
-const FAILED_SYNC_KEY = `${PREFIX}sync-failed`;
+// Exported so the e2e suite can seed and read this queue without repeating the
+// literal — same reason TODOS_KEY and SYNC_QUEUE_KEY live in localCache.
+export const FAILED_SYNC_KEY = `${PREFIX}sync-failed`;
 
 export function getFailedSyncQueue(): SyncQueueEntry[] {
   const raw = safeGetJson(FAILED_SYNC_KEY);
@@ -53,10 +56,6 @@ export function markFailure(
  * record of the unsynced content is gone.
  */
 export function addToFailedSync(entry: SyncQueueEntry): boolean {
-  if (typeof localStorage === 'undefined') {
-    return false;
-  }
-
   // Dedup by (entityType, entityId): a later failure for the same entity
   // overwrites the earlier one. Only the most recent failed action is
   // informative — the row either still exists (CREATE/UPDATE) or it doesn't.
@@ -70,23 +69,54 @@ export function addToFailedSync(entry: SyncQueueEntry): boolean {
     queue.push(entry);
   }
 
-  try {
-    localStorage.setItem(FAILED_SYNC_KEY, JSON.stringify(queue));
-    return true;
-  } catch {
-    return false;
-  }
+  return persist(queue);
 }
 
 export function removeFromFailedSync(entityType: string, entityId: string): void {
-  if (typeof localStorage === 'undefined') {
+  const queue = getFailedSyncQueue();
+  const kept = queue.filter((e) => !(e.entityType === entityType && e.entityId === entityId));
+  // No match: rewriting the key would serialise the whole queue for nothing.
+  if (kept.length !== queue.length) {
+    persist(kept);
+  }
+}
+
+/**
+ * A write for this entity just succeeded — retire the matching failure record.
+ *
+ * Not a plain removeFromFailedSync: that keys only on (entityType, entityId),
+ * so a successful partial UPDATE would erase a failed UPDATE carrying *other*
+ * fields, and a change that never reached the server would vanish from the
+ * inspector. subtractAckedKeys clears only the acknowledged keys and keeps the
+ * remainder. Everything but UPDATE-over-UPDATE is still a full ack.
+ */
+export function ackFailedSync(acked: AckedWrite): void {
+  const queue = getFailedSyncQueue();
+  const idx = queue.findIndex((e) => e.entityType === acked.entityType && e.entityId === acked.entityId);
+  if (idx < 0) {
     return;
   }
 
-  const queue = getFailedSyncQueue();
-  const kept = queue.filter((e) => !(e.entityType === entityType && e.entityId === entityId));
-  if (kept.length === queue.length) {
-    return;
+  const remainder = subtractAckedKeys(queue[idx], acked);
+  persist(
+    remainder === null
+      ? queue.filter((_, i) => i !== idx)
+      : queue.map((e, i) => (i === idx ? remainder : e)),
+  );
+}
+
+/**
+ * The only write path for the failed queue.
+ *
+ * Returns false when the entries could not be stored — addToFailedSync forwards
+ * that to its caller, which MUST then leave the entry in the pending queue: it
+ * would otherwise be dropped from both and the only record of the unsynced
+ * content would be gone. Removals ignore the result; a failed shrink just leaves
+ * a stale entry the next drain will retire.
+ */
+function persist(kept: SyncQueueEntry[]): boolean {
+  if (typeof localStorage === 'undefined') {
+    return false;
   }
 
   try {
@@ -95,8 +125,10 @@ export function removeFromFailedSync(entityType: string, entityId: string): void
     } else {
       localStorage.setItem(FAILED_SYNC_KEY, JSON.stringify(kept));
     }
+
+    return true;
   } catch {
-    // best-effort
+    return false;
   }
 }
 

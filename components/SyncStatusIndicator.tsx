@@ -7,11 +7,19 @@ import {
   FAILED_SYNC_OPEN_LABEL,
   failedSyncIndicatorTitle,
 } from '@/lib/failedSyncConstants';
+import {
+  SYNC_ERROR_TITLE,
+  SYNC_IDLE_LABEL,
+  SYNC_IDLE_TITLE,
+  SYNC_OFFLINE_TITLE,
+  SYNC_PENDING_LABEL,
+  SYNC_PENDING_TITLE,
+} from '@/lib/syncStatusConstants';
 import { Cloud, CloudAlert, CloudOff, CloudUpload, RefreshCcw } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export function SyncStatusIndicator() {
-  const { isOnline, hasPendingSync, failedSyncCount, refreshFromServer } = useData();
+  const { isOnline, hasPendingSync, failedSyncCount, syncNow } = useData();
   const [syncing, setSyncing] = useState(false);
   const [refreshError, setRefreshError] = useState(false);
   const [failedOpen, setFailedOpen] = useState(false);
@@ -25,7 +33,9 @@ export function SyncStatusIndicator() {
     };
   }, []);
 
-  const handleRefresh = useCallback(async () => {
+  // One handler for both interactive branches: syncNow pushes the outbox first
+  // and then pulls, so an empty queue makes it a plain refresh.
+  const handleSync = useCallback(async () => {
     setSyncing(true);
     setRefreshError(false);
     if (errorTimer.current) {
@@ -33,7 +43,7 @@ export function SyncStatusIndicator() {
     }
 
     try {
-      await refreshFromServer();
+      await syncNow();
     } catch {
       setRefreshError(true);
       errorTimer.current = setTimeout(() => {
@@ -42,8 +52,18 @@ export function SyncStatusIndicator() {
     } finally {
       setSyncing(false);
     }
-  }, [refreshFromServer]);
+  }, [syncNow]);
 
+  function buttonTitle() {
+    if (refreshError) {
+      return SYNC_ERROR_TITLE;
+    }
+
+    return hasPendingSync ? SYNC_PENDING_TITLE : SYNC_IDLE_TITLE;
+  }
+
+  // The one place the icon precedence lives: in progress beats error beats
+  // unsent work beats resting.
   function renderIcon() {
     if (syncing) {
       return <RefreshCcw className="h-3.5 w-3.5 text-muted-foreground animate-spin direction-reverse" />;
@@ -51,6 +71,10 @@ export function SyncStatusIndicator() {
 
     if (refreshError) {
       return <CloudAlert className="h-3.5 w-3.5 text-destructive" />;
+    }
+
+    if (hasPendingSync) {
+      return <CloudUpload className="h-3.5 w-3.5 text-muted-foreground animate-pulse" />;
     }
 
     return <Cloud className="h-3.5 w-3.5 text-muted-foreground" />;
@@ -99,7 +123,7 @@ export function SyncStatusIndicator() {
   if (!isOnline) {
     return (
       <>
-        <span title="Offline">
+        <span title={SYNC_OFFLINE_TITLE}>
           <CloudOff className="h-3.5 w-3.5 text-muted-foreground" />
         </span>
         {dialog}
@@ -107,26 +131,18 @@ export function SyncStatusIndicator() {
     );
   }
 
-  if (hasPendingSync) {
-    return (
-      <>
-        <span title="Synchronisiere…">
-          <CloudUpload className="h-3.5 w-3.5 text-muted-foreground animate-pulse" />
-        </span>
-        {dialog}
-      </>
-    );
-  }
-
+  // Pending and idle share one button — they differ only in label, title and the
+  // resting icon. The pending branch used to be an inert <span>, i.e. the icon
+  // stopped being clickable exactly when there was unsent work.
   return (
     <>
       <Button
         variant="ghost"
         size="icon"
         disabled={syncing}
-        onClick={handleRefresh}
-        aria-label="Manuell synchronisieren"
-        title={refreshError ? 'Aktualisierung fehlgeschlagen' : 'Synchronisiert — klicken zum Aktualisieren'}
+        onClick={handleSync}
+        aria-label={hasPendingSync ? SYNC_PENDING_LABEL : SYNC_IDLE_LABEL}
+        title={buttonTitle()}
         className="h-auto w-auto p-0"
       >
         {renderIcon()}

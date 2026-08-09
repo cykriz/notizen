@@ -8,7 +8,7 @@ import type { NoteSummary } from '@/lib/types';
 // Pure function: callers compute `failedIds` from the failed sync queue and
 // memoize against `failedSyncCount` (which is reactive). Keeps localStorage
 // reads out of the render path.
-export function withFailedSyncTag(notes: NoteSummary[], failedIds: Set<string>): NoteSummary[] {
+export function withFailedSyncTag(notes: NoteSummary[], failedIds: ReadonlySet<string>): NoteSummary[] {
   if (failedIds.size === 0) {
     return notes;
   }
