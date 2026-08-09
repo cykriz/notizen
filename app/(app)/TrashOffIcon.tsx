@@ -1,12 +1,12 @@
 import { Slash, Trash2 } from 'lucide-react';
 
-// Durchgestrichene Mülltonne ("Papierkorb verlassen"): lucide hat kein trash-off-Icon,
-// daher Trash2 + überlagerter Slash. Die inneren svg bekommen keine size-Klasse und erben
-// so die Icon-Größe des jeweiligen Buttons (icon-xs → size-3, sm → size-4). Der dickere
-// Slash in Sidebar-Hintergrundfarbe schneidet eine Lücke, damit der Strich klar trennt.
+// Crossed-out trash can ("leave the trash"): lucide has no trash-off icon, so Trash2 plus an
+// overlaid Slash. The inner svgs get no size class and therefore inherit the icon size of their
+// button (icon-xs → size-3, sm → size-4). The thicker slash in the sidebar background color cuts
+// a gap so the stroke separates clearly.
 //
-// Setzt einen Ghost-Host-Button mit `group` voraus: der Cutout muss den effektiven
-// Button-Hintergrund treffen (Ruhe = sidebar, Hover = accent). Bei anderem Host anpassen.
+// Assumes a ghost host button with `group`: the cutout has to match the effective button
+// background (idle = sidebar, hover = accent). Adjust for a different host.
 export function TrashOffIcon() {
   return (
     <span className="relative inline-flex shrink-0">

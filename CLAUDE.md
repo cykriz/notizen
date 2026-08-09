@@ -11,6 +11,14 @@ Next.js 16 + React 19 + Bun + TypeScript (strict) + Tailwind v4 + shadcn/ui. Fil
 - E2E tests: `bun run test:e2e` (headless), `bun run test:e2e:ui` (UI mode). Browser install: `bunx playwright install chromium`. Only Playwright's test *runner* falls back to `npx` (needs Node's module loader) — everything else (install, scripts, queries) uses `bun`/`bunx`.
 - Install git hooks: `cp scripts/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit`
 
+## Plan Review (automatic)
+
+In plan mode, `ExitPlanMode` is gated by `scripts/plan-review-gate.ts` (registered in `.claude/settings.json`): it denies the call until the `plan-reviewer` subagent has reviewed the plan, and returns `scripts/plan-review-protocol.md` as the reason. A deny here is expected behaviour, not a bug — follow the protocol, then call `ExitPlanMode` again. The gate never returns `allow`, so the user's approval dialog always happens.
+
+Review criteria live **only** in `.claude/plan-review-criteria.md`, shared by the `plan-reviewer` agent and the `/plan-review` command; it applies `.claude/commands/review.md` to plans by reference rather than copying it.
+
+A gate that silently passes looks exactly like a broken gate, so set `PLAN_REVIEW_GATE_DEBUG=/path/dump.jsonl` to have it log each hook payload plus the decision it made.
+
 ## Code Rules
 
 - Extract repeated string literals (modes, statuses, quadrants) into `lib/constants.ts` with types in `lib/types.ts` — never scatter raw literals across files

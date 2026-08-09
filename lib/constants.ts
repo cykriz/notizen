@@ -137,8 +137,8 @@ export const QUADRANT_META: readonly QuadrantMeta[] = [
   { key: QUADRANT.PLANNED, label: 'Eingeplant', description: 'Nicht wichtig & Nicht dringend' },
 ];
 
-// Ab so vielen offenen Einträgen zeigt die Eingang-Kachel einen (rein abgeleiteten,
-// nicht persistierten) Sortier-Hinweis an.
+// From this many open entries on, the inbox tile shows a (purely derived, never persisted)
+// hint to sort them.
 export const INBOX_SORT_THRESHOLD = 10;
 export const INBOX_SORT_HINT = 'Zeit zu sortieren';
 
