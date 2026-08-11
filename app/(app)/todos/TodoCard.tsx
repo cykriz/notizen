@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn, formatDate } from '@/lib/utils';
+import { cn, formatDate, isOverdue } from '@/lib/utils';
+import { useClientMounted } from '@/hooks/useClientMounted';
 import { FAILED_SYNC_CARD_LABEL, FAILED_SYNC_CARD_TOOLTIP } from '@/lib/failedSyncConstants';
 import { useData } from '../dataContext';
 import { useReportedTransition } from '../navigationLoading';
@@ -22,15 +23,15 @@ interface TodoCardProps {
   syncFailed?: boolean;
 }
 
-function isOverdue(dueDate: string): boolean {
-  return new Date(dueDate) < new Date(new Date().toISOString().slice(0, 10));
-}
-
 export const TodoCard = memo(function TodoCard({ todo, onEdit, notes, syncFailed = false }: TodoCardProps) {
   const { updateTodo, deleteTodo } = useData();
   const router = useRouter();
   const startNavigation = useReportedTransition();
   const [isDragging, setIsDragging] = useState(false);
+  // Clock read, and the server HTML comes from the build-versioned page cache —
+  // possibly days old. Gated per hooks/useClientMounted.ts.
+  const mounted = useClientMounted();
+  const overdue = mounted && !todo.completed && todo.dueDate !== undefined && isOverdue(todo.dueDate);
 
   const handleToggle = (checked: boolean) => {
     void updateTodo(todo.id, { completed: checked }).catch(console.error);
@@ -128,7 +129,7 @@ export const TodoCard = memo(function TodoCard({ todo, onEdit, notes, syncFailed
         )}
         {todo.dueDate !== undefined && (
           <Badge
-            variant={!todo.completed && isOverdue(todo.dueDate) ? 'destructive' : 'secondary'}
+            variant={overdue ? 'destructive' : 'secondary'}
             className="mr-2 text-xs px-1.5 py-0"
           >
             <Calendar className="h-2.5 w-2.5 mr-0.5" />

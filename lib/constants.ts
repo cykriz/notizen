@@ -42,6 +42,10 @@ export const OFFLINE_PATH = '/offline';
 // never evict note/todo data) and prevents serving stale trash offline.
 export const SW_BYPASS_API_PREFIXES = ['/api/trash', '/api/user/settings'] as const;
 
+// The one zone every user-facing date is rendered and compared in (see lib/utils.ts
+// for why it is pinned). Single place a per-user setting would later hook in.
+export const DISPLAY_TIME_ZONE = 'Europe/Berlin';
+
 export const SHARES_DIR = '.shares';
 export const SHARES_FILE = 'shares.json';
 export const SHARE_PATH_PREFIX = '/share/';
