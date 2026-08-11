@@ -11,6 +11,7 @@ import { previewModeFor, useNoteInitialState } from '@/hooks/useNoteInitialState
 import { useNoteKeyboardShortcuts } from '@/hooks/useNoteKeyboardShortcuts';
 import { PREVIEW_EDIT, PREVIEW_PREVIEW } from '@/lib/constants';
 import type { Note } from '@/lib/fsNotes';
+import type { UpdateNoteInput } from '@/lib/offlineNotes';
 import type { NoteSummary, PreviewMode } from '@/lib/types';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { DeleteNoteDialog } from '../../DeleteNoteDialog';
@@ -53,7 +54,7 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
   const getContent = useCallback(() => contentRef.current, []);
 
   const saveContent = useCallback(
-    async (id: string, data: { title: string; content: string }) => {
+    async (id: string, data: UpdateNoteInput) => {
       await updateNote(id, data);
     },
     [updateNote],

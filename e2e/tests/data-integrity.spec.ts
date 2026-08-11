@@ -8,6 +8,46 @@ test.describe("Data Integrity", () => {
     await page.reload();
   });
 
+  // Clearing the title used to PUT `title: ''`, which the route rejects with
+  // min(1) -> 400 -> non-retryable -> the whole entry (content included) went to the
+  // failed-sync inspector and never reached the server. buildNoteSavePayload now
+  // omits a blank title instead.
+  test("clearing the title keeps saving instead of failing with 400", async ({
+    page,
+  }) => {
+    const noteUrl = await createNote(page, "Titel-Test", "Inhalt eins.");
+    const noteId = noteIdFromUrl(noteUrl);
+
+    // The autosave must fire while the title is still empty AND the field still has
+    // focus. Leaving the field first would let the onBlur normalisation replace the
+    // title with the fallback, so the invalid payload would never be sent and this
+    // test could not fail — verified by reverting the fix.
+    const put = page.waitForResponse(
+      (resp) =>
+        resp.url().includes(`/api/notes/${noteId}`) && resp.request().method() === "PUT",
+      { timeout: 15_000 },
+    );
+    await page.locator("#note-title").fill("");
+    const resp = await put;
+
+    // 400 = "Too small: expected string to have >=1 characters" -> non-retryable ->
+    // the whole entry, content included, would land in the failed-sync inspector.
+    expect(resp.status()).toBe(200);
+
+    // Blur normalises the still-blank field so it cannot disagree with the server.
+    await page.locator(".cm-content").click();
+    await expect(page.locator("#note-title")).toHaveValue("Unbenannt");
+
+    // And a following content edit still saves and survives a reload.
+    const saved = waitForSave(page);
+    await page.keyboard.press("ControlOrMeta+a");
+    await page.keyboard.type("Inhalt zwei.");
+    await saved;
+
+    await page.reload();
+    await expect(page.getByText("Inhalt zwei.").first()).toBeVisible({ timeout: 20_000 });
+  });
+
   test("pinning a note offline does not wipe its content", async ({
     page,
   }) => {

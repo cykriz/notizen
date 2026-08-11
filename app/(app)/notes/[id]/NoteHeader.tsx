@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { PREVIEW_EDIT } from '@/lib/constants';
+import { DEFAULT_NOTE_TITLE, PREVIEW_EDIT } from '@/lib/constants';
 import type { PreviewMode } from '@/lib/types';
 import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
 import type { Attachment } from '@/lib/fsNotes';
@@ -64,6 +64,14 @@ export const NoteHeader = memo(function NoteHeader({
           value={title}
           onChange={(e) => {
             onTitleChange(e.target.value);
+          }}
+          onBlur={() => {
+            // A blank title is not sent (buildNoteSavePayload omits it), so the field
+            // would keep showing empty while the server still holds the old title.
+            // Normalising on blur keeps the two in agreement.
+            if (title.trim() === '') {
+              onTitleChange(DEFAULT_NOTE_TITLE);
+            }
           }}
           placeholder="Notiz-Titel…"
           rounded={false}

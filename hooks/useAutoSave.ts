@@ -1,5 +1,7 @@
 import { useState, useTransition, useCallback, useRef, useEffect } from 'react';
 import { FEEDBACK_FLASH_MS } from '@/lib/constants';
+import { buildNoteSavePayload } from '@/lib/noteSavePayload';
+import type { UpdateNoteInput } from '@/lib/offlineNotes';
 
 interface UseAutoSaveOptions {
   noteId: string;
@@ -7,7 +9,7 @@ interface UseAutoSaveOptions {
   content: string;
   originalTitle: string;
   originalContent: string;
-  saveAction: (id: string, data: { title: string; content: string }) => Promise<unknown>;
+  saveAction: (id: string, data: UpdateNoteInput) => Promise<unknown>;
 }
 
 export function useAutoSave({
@@ -58,7 +60,7 @@ export function useAutoSave({
 
   const doSave = useCallback(() => {
     startSaving(async () => {
-      await saveAction(noteId, { title: latestTitle.current, content: latestContent.current });
+      await saveAction(noteId, buildNoteSavePayload(latestTitle.current, latestContent.current));
       showSavedFeedback();
     });
   }, [noteId, saveAction, showSavedFeedback]);
