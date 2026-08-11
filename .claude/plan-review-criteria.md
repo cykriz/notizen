@@ -66,9 +66,21 @@ What changes when the subject is a plan instead of a diff:
 
 - **Extraction (probe 1)**: the tell is wording — "split out of", "moved to", or a new module whose
   exports mirror an existing file — with no sentence saying the original goes away.
-- **Prior art (probe 3)**: grep for every new function/helper the plan proposes, by verb **and** by the
-  thing it operates on. There is no diff to read, so this probe is the only thing standing between the
-  plan and a re-implementation.
+- **Prior art (probe 3)** — the probe that most often decides whether a plan is worth anything, because
+  there is no diff to read later. `/review` keys it on a new *exported function*; on a plan that trigger is
+  too narrow and has already let a duplicate through. Widen it on all four counts:
+  - **Trigger on any logic the plan spells out, not just on new names.** A plan that inlines its logic
+    proposes no symbol to grep for — an effect body, a `useMemo`, a snippet inside a diff block, three
+    statements in prose. A name-keyed probe skips all of it, and an anonymous block re-implementing a
+    named function is exactly the case this review has missed before.
+  - **Key the grep on behaviour, not on a name.** For every block the plan writes out, grep (a) each
+    piece of state it writes — the setter, the store key, the file — and (b) each external read it makes
+    (`getX()`, `localStorage`, `fetch`). Whoever already owns that state is nearly always an existing
+    function; read it, then say whether the plan should call it instead of restating it.
+  - **Look one level out.** The duplicate usually is not in the file the plan edits but in a sibling that
+    already shares the state — the other hooks behind the same provider, the helper the caller uses.
+  - **Report it even when the plan's version is shorter.** A short copy that silently drops a guard the
+    original carries is more damaging than the duplication, not less.
 - **Cross-reference comments (probe 5)**: here it is the *plan's own* wording ("same as X", "mirrors Y"),
   not comments in finished code — for those see "Not Checkable at the Plan Level".
 - **Mode parameters** (`/review` § 2b, "Boolean and mode parameters" — the one 2b check that *is*
@@ -88,6 +100,9 @@ apply (see below). Minimums, not ceilings — raise them when the damage warrant
 Plan-level additions:
 
 - The plan breaks a project invariant, or is not implementable as written → **high**
+- The plan writes out logic that an existing function already performs → **high**, whether or not the plan
+  gives it a name, and whether or not the plan's version is shorter. Once implemented this is a duplicate
+  nobody asked for, and the plan stage is the last cheap moment to catch it.
 - A gap that would surface in the code review at the latest (missing verification, open edge case) → **medium**
 
 ## Not Checkable at the Plan Level

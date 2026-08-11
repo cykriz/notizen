@@ -26,6 +26,13 @@ Follow § "How to run this review" at the top of `.claude/plan-review-criteria.m
 read, which skills to load, and the evidence standard. It is the plan-level layer over
 `.claude/commands/review.md`, which holds the probes and severity floors themselves.
 
+**The prior-art probe is not optional.** Every code snippet in the plan — named function, effect body,
+`useMemo`, loose statements — gets grepped against the repo the way § "Duplication & Simplicity" describes:
+by the state it writes and the external reads it makes, not by its name. It is the one probe whose misses
+cannot be caught later by `/review`, because by then the duplicate is already written. If the plan contains
+snippets and you produce no prior-art finding, say so explicitly in `SCOPE` ("prior art: N snippets checked
+against <files>, no duplicate") so a skipped probe cannot pass for a clean one.
+
 ## 3. Output contract
 
 Plain text. **No** code fences, no tilde blocks, no tables, no salutation, no strengths, no ✅ lines, no
