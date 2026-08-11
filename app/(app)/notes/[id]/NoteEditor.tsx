@@ -7,7 +7,7 @@ import { useAutoShowOutline } from '@/hooks/useAutoShowOutline';
 import { useDraft } from '@/hooks/useDraft';
 import { useFocusOnEditMode } from '@/hooks/useFocusOnEditMode';
 import { useNoteAttachments } from '@/hooks/useNoteAttachments';
-import { useNoteInitialState } from '@/hooks/useNoteInitialState';
+import { previewModeFor, useNoteInitialState } from '@/hooks/useNoteInitialState';
 import { useNoteKeyboardShortcuts } from '@/hooks/useNoteKeyboardShortcuts';
 import { PREVIEW_EDIT, PREVIEW_PREVIEW } from '@/lib/constants';
 import type { Note } from '@/lib/fsNotes';
@@ -31,6 +31,13 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
   const [title, setTitle] = useState(initial.title);
   const [content, setContent] = useState(initial.content);
   const [preview, setPreview] = useState<PreviewMode>(initial.preview);
+  // initial.preview comes from the server note so the first render matches the
+  // server HTML (see hooks/useClientMounted.ts); initial.content is the draft-aware
+  // value, applicable from here on. Mount only — later it would fight the user's toggle.
+  useEffect(() => {
+    setPreview(previewModeFor(initial.content));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only
+  }, []);
   const [tags, setTags] = useState<string[]>(note.tags);
   const [outlineVisible, setOutlineVisible] = useState(initial.outlineVisible);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);

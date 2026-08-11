@@ -2,10 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { NoteSummary, Todo } from '@/lib/types';
 import { parseNoteSummaryRowsStrict, parseTodoRowsStrict } from '@/lib/schemas';
 import { readJson } from '@/lib/offlineWrite';
-import { getCachedNotesList, getCachedTodos, setCachedNotesList, setCachedTodos } from '@/lib/localCache';
-import { getInspectableCount } from '@/lib/failedSyncQueue';
+import { SYNC_QUEUE_KEY, getCachedNotesList, getCachedTodos, setCachedNotesList, setCachedTodos } from '@/lib/localCache';
 import { mergeById } from '@/lib/localCacheMerge';
 import { getPendingCount } from '@/lib/syncQueue';
+import { FAILED_SYNC_KEY } from '@/lib/failedSyncQueue';
 import { SYNC_RETRY_INTERVAL_MS, SYNC_RETRY_MAX_INTERVAL_MS } from '@/lib/constants';
 import { useFailedSyncActions } from '@/hooks/useFailedSyncActions';
 import { useSyncDrain } from '@/hooks/useSyncDrain';
@@ -18,11 +18,15 @@ interface UseDataSyncArgs {
 }
 
 export function useDataSync({ isOnline, isOnlineRef, setNotes, setTodos }: UseDataSyncArgs) {
-  const [hasPendingSync, setHasPendingSync] = useState(() => getPendingCount() > 0);
+  // SSR-neutral, restored in the mount effect below — the "state the user can later
+  // own" shape from hooks/useClientMounted.ts. Concretely: reading the queues in the
+  // initializer let SyncStatusIndicator swap its icon during hydration (Cloud has one
+  // <path>, CloudUpload/CloudAlert three) and threw #418 on every offline reload.
+  const [hasPendingSync, setHasPendingSync] = useState(false);
   // Counts recorded failures PLUS pending entries that could not be recorded
   // (localStorage full) — otherwise those stay invisible behind a permanent
   // "Synchronisiere…". See getInspectableEntries.
-  const [failedSyncCount, setFailedSyncCount] = useState(() => getInspectableCount());
+  const [failedSyncCount, setFailedSyncCount] = useState(0);
   // Bumps whenever the failed queue is mutated, even when the count nets out
   // to the same length (one removal + one addition in a single drain). Memo
   // keys depending on queue *contents* should use this, not failedSyncCount.
@@ -76,7 +80,7 @@ export function useDataSync({ isOnline, isOnlineRef, setNotes, setTodos }: UseDa
   // Persists across effect re-runs so backoff isn't reset when hasPendingSync toggles.
   const delayRef = useRef(SYNC_RETRY_INTERVAL_MS);
 
-  const { drain, syncNow, syncPending } = useSyncDrain({
+  const { drain, syncNow, syncPending, syncFailedState } = useSyncDrain({
     isOnlineRef,
     delayRef,
     setHasPendingSync,
@@ -84,6 +88,38 @@ export function useDataSync({ isOnline, isOnlineRef, setNotes, setTodos }: UseDa
     setFailedSyncVersion,
     refreshFromServer,
   });
+
+  // The single place the sync state is seeded from the queues (see
+  // hooks/useClientMounted.ts for why it cannot happen in the initializers).
+  const reseedFromQueues = useCallback(() => {
+    setHasPendingSync(getPendingCount() > 0);
+    syncFailedState();
+  }, [syncFailedState]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- seeds from an external store; running it in the render path is the bug this fixes
+    reseedFromQueues();
+  }, [reseedFromQueues]);
+
+  // localStorage is shared across tabs but invisible to React, and failedSyncVersion
+  // only ever bumps for THIS tab's own mutations. So a discard in a second tab left
+  // this tab's indicator red while the inspector — which reads localStorage fresh on
+  // open — showed nothing. The storage event fires only in other tabs, which is
+  // exactly the gap. A null key means localStorage.clear().
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== null && event.key !== FAILED_SYNC_KEY && event.key !== SYNC_QUEUE_KEY) {
+        return;
+      }
+
+      reseedFromQueues();
+    };
+
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+    };
+  }, [reseedFromQueues]);
 
   // Single effect for processing the sync queue with exponential backoff.
   // Triggers when online status changes or hasPendingSync becomes true.
@@ -146,12 +182,12 @@ export function useDataSync({ isOnline, isOnlineRef, setNotes, setTodos }: UseDa
 
   return {
     hasPendingSync,
-    setHasPendingSync,
     failedSyncCount,
     failedSyncVersion,
     refreshFromServer,
     syncPending,
     syncNow,
+    reseedFromQueues,
     ...failedSyncActions,
   };
 }

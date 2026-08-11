@@ -19,7 +19,7 @@ import { Cloud, CloudAlert, CloudOff, CloudUpload, RefreshCcw } from 'lucide-rea
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export function SyncStatusIndicator() {
-  const { isOnline, hasPendingSync, failedSyncCount, syncNow } = useData();
+  const { isOnline, hasPendingSync, failedSyncCount, syncNow, reseedFromQueues } = useData();
   const [syncing, setSyncing] = useState(false);
   const [refreshError, setRefreshError] = useState(false);
   const [failedOpen, setFailedOpen] = useState(false);
@@ -103,6 +103,11 @@ export function SyncStatusIndicator() {
           variant="ghost"
           size="icon"
           onClick={() => {
+            // Re-read the queues before opening: the count is React state, the dialog
+            // reads localStorage fresh. Without this the two can contradict each other
+            // — a red icon over an empty inspector — whenever the queues were emptied
+            // outside this tab.
+            reseedFromQueues();
             setFailedOpen(true);
           }}
           aria-label={FAILED_SYNC_OPEN_LABEL}

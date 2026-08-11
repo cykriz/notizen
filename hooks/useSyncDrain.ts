@@ -134,5 +134,5 @@ export function useSyncDrain({
     void drain(false);
   }, [drain]);
 
-  return { drain, syncNow, syncPending };
+  return { drain, syncNow, syncPending, syncFailedState };
 }

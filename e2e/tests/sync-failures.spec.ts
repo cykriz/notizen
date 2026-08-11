@@ -27,6 +27,7 @@ import {
   noteIdFromUrl,
   openFailedSyncDialog,
   waitForPendingEntry,
+  watchForHydrationErrors,
 } from "./helpers";
 import {
   readCachedTodos,
@@ -65,10 +66,100 @@ async function failPuts(page: import("@playwright/test").Page, status: number) {
 }
 
 test.describe("Sync Failure Handling", () => {
+  // Every test in this file is also a hydration guard: these are the flows that leave
+  // pending/failed queue entries in localStorage, which is exactly the state that made
+  // the hydration render disagree with the server HTML (React #418).
+  let hydrationErrors: string[] = [];
+
   test.beforeEach(async ({ page }) => {
+    hydrationErrors = watchForHydrationErrors(page);
     await page.goto("/notes");
     await deleteAllNotes(page);
     await page.reload();
+  });
+
+  test.afterEach(() => {
+    expect(hydrationErrors).toEqual([]);
+  });
+
+  // Regression guard for React #418: the sync indicator's icon and the sidebar's
+  // sync-fehler row are both derived from localStorage, which does not exist during
+  // SSR. Reading either one in the render path makes the hydration render disagree
+  // with the server HTML. Loading /notes offline with BOTH queues non-empty is the
+  // cheapest way to catch the next such read.
+  test("loading offline with pending and failed entries hydrates cleanly", async ({
+    page,
+  }) => {
+    await createNote(page, "Hydration-Test", "Originaler Inhalt.");
+
+    // A failed entry needs a rejected round trip.
+    await editOffline(page, "Ungültiger Inhalt.");
+    await failPuts(page, 400);
+    await goOnline(page);
+    await expect(async () => {
+      expect(await readFailedQueue(page)).toHaveLength(1);
+    }).toPass({ timeout: 15_000 });
+
+    // Drop the 400 route first: it would intercept before the network and turn the
+    // next edit into a second FAILED entry instead of leaving it pending.
+    await page.unroute("**/api/notes/*");
+    await editOffline(page, "Noch nicht uebertragen.");
+    expect(await readPendingQueue(page)).not.toHaveLength(0);
+
+    // /notes is precached at service-worker install, so this is served from the
+    // cache and really does hydrate rather than falling back to /offline. Asserting
+    // the indicator rendered keeps an empty watcher from passing for a dead page;
+    // the afterEach owns the hydration assertion itself.
+    await page.goto("/notes");
+    await expect(
+      page.getByRole("button", { name: FAILED_SYNC_OPEN_LABEL }).first(),
+    ).toBeVisible({ timeout: 10_000 });
+  });
+
+  // The note-detail counterpart: /notes/[id] is where the preview-mode and CodeMirror
+  // theme fixes live, and neither is reachable from the /notes case above.
+  //
+  // Stays ONLINE and seeds the draft directly. The interesting input is only "server
+  // note empty, local content non-empty" — driving that offline would depend on
+  // warmPageCache having cached this URL's HTML in time, and a reload served from the
+  // offline shell renders a neutral placeholder that cannot show the bug at all.
+  test("reloading a note whose draft disagrees with the server hydrates cleanly", async ({
+    page,
+  }) => {
+    await createNote(page, "Draft-Hydration", "");
+    const id = noteIdFromUrl(page.url());
+
+    // Server content is empty -> the server renders the editor; the draft is non-empty
+    // -> after the mount the mode flips to preview. Reading the draft during hydration
+    // is what used to swap <CodeMirror> for the preview container mid-render.
+    await page.evaluate((noteId) => {
+      localStorage.setItem(
+        `notizen:draft:${noteId}`,
+        JSON.stringify({ title: "Draft-Hydration", content: "Nur im Draft vorhanden." }),
+      );
+    }, id);
+
+    await page.reload();
+    // Mode-agnostic on purpose: the assertion is that the draft content rendered at all,
+    // not which of the two subtrees won. afterEach owns the hydration assertion.
+    await expect(page.getByText("Nur im Draft vorhanden.").first()).toBeVisible({
+      timeout: 20_000,
+    });
+  });
+
+  // The theme leak needs the non-default theme: colorMode falls back to 'dark' before the
+  // mount, so a dark-mode client cannot reveal a mismatch on the CodeMirror wrapper.
+  test("reloading a note in light mode hydrates cleanly", async ({ page }) => {
+    await createNote(page, "Theme-Hydration", "Inhalt fuer den Editor.");
+    // next-themes has no explicit storageKey in app/providers.tsx, so this is its default.
+    await page.evaluate(() => {
+      localStorage.setItem("theme", "light");
+    });
+
+    await page.reload();
+    await expect(page.getByText("Inhalt fuer den Editor.").first()).toBeVisible({
+      timeout: 20_000,
+    });
   });
 
   test("CloudAlert opens the inspector instead of deleting", async ({ page }) => {

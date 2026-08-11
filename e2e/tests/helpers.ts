@@ -7,6 +7,35 @@ import { FAILED_SYNC_DIALOG_TITLE, FAILED_SYNC_OPEN_LABEL } from "../../lib/fail
 import type { ShareEntry } from "../../lib/fsSharesRegistry";
 import { clearLocalState, readPendingQueue } from "./storageHelpers";
 
+/**
+ * Collects anything that smells like a hydration mismatch, for the run of one test.
+ *
+ * Attach in `beforeEach` and assert empty in `afterEach`: every navigation a test
+ * makes then guards hydration for free, which matters because these bugs only appear
+ * on a reload with client-only state present — never in the assertions a feature test
+ * is actually written for. The e2e server runs a production build, so React reports
+ * #418 minified, and depending on the tree it arrives as an uncaught error OR only as
+ * console.error — hence both channels.
+ */
+export function watchForHydrationErrors(page: Page): string[] {
+  const found: string[] = [];
+  const collect = (text: string) => {
+    if (/\b418\b|hydrat/i.test(text)) {
+      found.push(text);
+    }
+  };
+
+  page.on("pageerror", (err) => {
+    collect(err.message);
+  });
+  page.on("console", (msg) => {
+    if (msg.type() === "error") {
+      collect(msg.text());
+    }
+  });
+  return found;
+}
+
 /** Wait for the auto-save PUT to /api/notes/ to complete successfully. */
 export async function waitForSave(page: Page): Promise<void> {
   await page.waitForResponse(

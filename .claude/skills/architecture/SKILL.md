@@ -22,6 +22,7 @@ See `lib/types.ts` for full definitions. Key types:
 
 ## Core Functions
 
+- `lib/utils.ts` — `cn`; `formatDate`/`formatDateTime` (every user-facing date goes through one of these, both pinned to `DISPLAY_TIME_ZONE`); `todayIso`/`isOverdue` (the calendar day is decided in that **same** zone — deciding it device-local while rendering it in Berlin made a due-today badge read as not-yet-due)
 - `lib/clearSwCaches.ts` — posts `SW_MSG_CLEAR_AUTH_CACHES` to the active SW (no-op outside browser / without `serviceWorker`)
 - `worker/offlineFallback.ts` — last-ditch SW responses (`offlineHtmlResponse`, `offlineDataResponse`) when even `/offline` isn't cached
 - `lib/fsNotes.ts` — CRUD for notes (listNotes, getNote, createNote, updateNote, deleteNote); re-exports attachment helpers
@@ -135,9 +136,11 @@ A valid share token grants read access to the shared note AND every attachment o
 | useAutoShowOutline | `hooks/useAutoShowOutline.ts` — opens the outline once content overflows the editor viewport |
 | ViewportEffects | `app/(app)/ViewportEffects.tsx` — mounts `useVisualViewportHeight` to expose `--app-h` and `data-keyboard-open` for the app shell |
 | useTagStateSync | `app/(app)/useTagStateSync.ts` — sidebar tag-path reconciliation (note open, tag edits, palette nav) |
-| useSyncDrain | `hooks/useSyncDrain.ts` — the two outbox drain paths: `syncNow` (user-initiated, pushes then pulls, rejects when the outbox is not empty afterwards) and `syncPending` (fired after every mutation, arms the retry loop, never pulls on its own). `useDataSync`'s backoff effect calls the same `drain`, so manual and automatic cannot drift |
+| useSyncDrain | `hooks/useSyncDrain.ts` — the two outbox drain paths: `syncNow` (user-initiated, pushes then pulls, rejects when the outbox is not empty afterwards) and `syncPending` (fired after every mutation, arms the retry loop, never pulls on its own). `useDataSync`'s backoff effect calls the same `drain`, so manual and automatic cannot drift. Also returns `syncFailedState` (re-reads the failed queue, guarded version bump), which `useDataSync` calls from its mount effect — both queue counts are seeded there rather than in the state initializers |
 | useTodoActions | `app/(app)/useTodoActions.ts` — the three todo mutations, split out of DataProvider; each writes through the offline layer, never a server action |
-| useFailedEntityIds | `app/(app)/useFailedEntityIds.ts` — failed-sync ids for one entity type, shared by the sidebar tag and the todo cards. Memo keyed on `failedSyncVersion`, which localStorage cannot signal on its own |
+| useFailedEntityIds | `app/(app)/useFailedEntityIds.ts` — failed-sync ids for one entity type, shared by the sidebar tag and the todo cards. Memo keyed on `failedSyncVersion`, which localStorage cannot signal on its own. Empty until mounted — see `useClientMounted` |
+| useClientMounted | `hooks/useClientMounted.ts` — false during SSR *and* the hydration render, true after. Carries the canonical write-up of the rule it exists for: nothing derived from `localStorage`, the clock or `next-themes` may reach the hydration render (React #418), and which of the two shapes — gate a derived value vs. seed SSR-neutral state and correct it in a mount effect — applies where. Other sites point here instead of restating it |
+| useColorMode | `hooks/useColorMode.ts` — `resolvedTheme`, but never before the mount; takes the pre-mount fallback so callers match their own surrounding markup (`MarkdownEditor` 'dark', `SharedNoteView` 'light'). Exists because both had a private copy of the expression and one call site forgot to use it |
 | CommandPalette | `app/(app)/CommandPalette.tsx` — Cmd+P search (@ prefix for tag navigation) |
 | tagNavigationStore | `app/(app)/tagNavigationStore.ts` — cross-component tag path navigation |
 | CommandPaletteClient | `app/(app)/CommandPaletteClient.tsx` — client-side command palette |

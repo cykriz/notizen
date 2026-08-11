@@ -19,7 +19,6 @@ import {
   setCachedTodos,
 } from '@/lib/localCache';
 import { cleanExpiredEntries, mergeById } from '@/lib/localCacheMerge';
-import { getPendingCount } from '@/lib/syncQueue';
 import { OFFLINE_SHELL_PATH } from '@/lib/constants';
 import { warmPageCache } from '@/lib/warmPageCache';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
@@ -46,7 +45,7 @@ export function DataProvider({ initialNotes, initialTodos, children }: DataProvi
   todosRef.current = todos;
   isOnlineRef.current = isOnline;
 
-  const { hasPendingSync, setHasPendingSync, failedSyncCount, failedSyncVersion, pushFailedSync, discardFailedSync, discardAllFailedSync, refreshFromServer, syncPending, syncNow } = useDataSync({
+  const { hasPendingSync, failedSyncCount, failedSyncVersion, pushFailedSync, discardFailedSync, discardAllFailedSync, refreshFromServer, syncPending, syncNow, reseedFromQueues } = useDataSync({
     isOnline,
     isOnlineRef,
     setNotes,
@@ -81,7 +80,7 @@ export function DataProvider({ initialNotes, initialTodos, children }: DataProvi
     setCachedTodos(mergedTodos);
 
     cleanExpiredEntries();
-    setHasPendingSync(getPendingCount() > 0);
+
     // Not redundant with install-time precache: that only stores the shell
     // HTML, NOT its `/notes/[id]` chunks. The static cache is build-versioned
     // (static-<buildId>), so it's empty after every deploy until something
@@ -168,6 +167,7 @@ export function DataProvider({ initialNotes, initialTodos, children }: DataProvi
         getCachedNoteContent: getCachedNote,
         refreshFromServer,
         syncNow,
+        reseedFromQueues,
       }}
     >
       {children}

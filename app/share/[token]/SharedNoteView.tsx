@@ -1,12 +1,11 @@
 'use client';
 
-import { useTheme } from 'next-themes';
 import { useCallback, useMemo, useRef } from 'react';
 import MarkdownPreview from '@uiw/react-markdown-preview/nohighlight';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { NoteOutline, extractHeadings } from '@/components/NoteOutline';
-import { useClientMounted } from '@/hooks/useClientMounted';
+import { useColorMode } from '@/hooks/useColorMode';
 import { remarkLooseListGaps } from '@/lib/remarkLooseListGaps';
 import { ReadAloudControls } from '@/components/ReadAloudControls';
 
@@ -42,10 +41,9 @@ function safeUrlTransform(url: string): string {
 }
 
 export function SharedNoteView({ title, content }: SharedNoteViewProps) {
-  const { resolvedTheme } = useTheme();
-  const mounted = useClientMounted();
   const previewScrollRef = useRef<HTMLDivElement>(null);
-  const colorMode = (mounted ? resolvedTheme : undefined) ?? 'light';
+  // 'light' matches the data-color-mode attribute this view renders.
+  const colorMode = useColorMode('light');
 
   const previewRemarkPlugins = useMemo(() => [remarkLooseListGaps], []);
 

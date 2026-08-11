@@ -33,6 +33,8 @@ export interface DataContextValue {
   restoreFromTrash: (type: SyncEntityType, id: string) => Promise<void>;
   getCachedNoteContent: (id: string) => Note | null;
   refreshFromServer: () => Promise<void>;
+  /** Re-read both sync queues from localStorage — they are invisible to React. */
+  reseedFromQueues: () => void;
   // User-initiated sync: pushes the outbox first, THEN pulls. refreshFromServer
   // only pulls, which is why the indicator uses this one — a pending change
   // would otherwise sit there with no way to send it on demand.

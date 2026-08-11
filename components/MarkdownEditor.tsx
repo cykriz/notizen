@@ -1,5 +1,4 @@
 'use client';
-import { useTheme } from 'next-themes';
 import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 
 import { usePreviewCheckbox } from '@/hooks/usePreviewCheckbox';
@@ -10,7 +9,7 @@ import { NoteLinkPicker } from '@/components/NoteLinkPicker';
 import { PreviewCheckboxContext } from '@/components/PreviewCheckbox';
 import { UploadOverlay } from '@/components/UploadOverlay';
 import { editorBasicSetup, staticExtensions } from '@/components/markdownEditorSetup';
-import { useClientMounted } from '@/hooks/useClientMounted';
+import { useColorMode } from '@/hooks/useColorMode';
 import { useFileDrop } from '@/hooks/useFileDrop';
 import { useLineTransform } from '@/hooks/useLineTransform';
 import { useNoteLinkPicker } from '@/hooks/useNoteLinkPicker';
@@ -51,8 +50,6 @@ export const MarkdownEditor = memo(
     { value, onChange, noteId, onFileUploaded, preview = 'edit', notes, onSwitchToEdit },
     ref,
   ) {
-    const { resolvedTheme } = useTheme();
-    const mounted = useClientMounted();
     const wrapperRef = useRef<HTMLDivElement>(null);
     const previewScrollRef = useRef<HTMLDivElement>(null);
     const cmRef = useRef<ReactCodeMirrorRef>(null);
@@ -191,7 +188,8 @@ export const MarkdownEditor = memo(
       [checkLinkTrigger, onChange],
     );
 
-    const colorMode = (mounted ? resolvedTheme : undefined) ?? 'dark';
+    // 'dark' matches the data-color-mode attribute the wrapper below renders.
+    const colorMode = useColorMode('dark');
     const { checkboxCtx, previewComponents } = usePreviewCheckbox(value, onChange);
     const previewRemarkPlugins = useMemo(() => [remarkSourceOffset, remarkLooseListGaps], []);
 
@@ -211,7 +209,7 @@ export const MarkdownEditor = memo(
             onChange={handleCMChange}
             onCreateEditor={handleCreateEditor}
             extensions={extensions}
-            theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
+            theme={colorMode === 'dark' ? 'dark' : 'light'}
             basicSetup={editorBasicSetup}
             className="flex-1 min-h-0"
             placeholder="Schreibe hier deine Notiz …"
