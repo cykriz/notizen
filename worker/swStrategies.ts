@@ -1,4 +1,5 @@
 import { OFFLINE_PATH } from '@/lib/constants';
+import { NOTES_PATH, NOTES_PATH_PREFIX } from '@/lib/pathConstants';
 import { offlineDataResponse, offlineHtmlResponse } from './offlineFallback';
 
 // Explicit type annotation (not `as const`): the `pages`/`static` names embed
@@ -88,7 +89,7 @@ export async function networkFirstWithFallback(
     if (cached) return cached;
     const pathname = new URL(request.url).pathname;
     if (pathname === '/') {
-      const home = await caches.match('/notes');
+      const home = await caches.match(NOTES_PATH);
       if (home) {
         return home;
       }
@@ -96,7 +97,7 @@ export async function networkFirstWithFallback(
     // Offline navigation to a note whose own HTML was never cached (e.g. a note
     // created offline): serve the generic note-detail shell so the SPA boots
     // and renders the note from localStorage, instead of the dead-end /offline.
-    if (pathname.startsWith('/notes/')) {
+    if (pathname.startsWith(NOTES_PATH_PREFIX)) {
       const shell = await caches.match(notesShellPath);
       if (shell) return shell;
     }

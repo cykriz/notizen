@@ -138,6 +138,16 @@ export interface UserSettings {
   retentionDays: number;
 }
 
+// What the service worker still lacks after a precache check + repair pass.
+// Shared by worker/swPrecache.ts and lib/ensurePrecache.ts so the page can log
+// and assert on the same shape the SW produces. All-zero/empty = healthy.
+export interface PrecacheReport {
+  // Pathnames from SW_PRECACHE_PATHS that are absent from the pages cache.
+  missingPages: string[];
+  // Build assets from the serwist manifest absent from the static cache.
+  missingStatic: number;
+}
+
 export interface TrashResponse {
   retentionDays: number;
   notes: TrashedNote[];

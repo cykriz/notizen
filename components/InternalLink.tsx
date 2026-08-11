@@ -5,6 +5,7 @@ import { Children } from 'react';
 
 import { MediaAttachment } from '@/components/MediaAttachment';
 import { mediaKindForFilename } from '@/lib/mediaTypes';
+import { NOTES_PATH_PREFIX } from '@/lib/pathConstants';
 
 // Anchored to the real route shape so only same-app attachment URLs become
 // players — a user-authored link to an external href ending in
@@ -28,7 +29,7 @@ export function InternalLinkRenderer({ href, children, ...props }: React.Compone
     }
   }
 
-  if (typeof href === 'string' && href.startsWith('/notes/')) {
+  if (typeof href === 'string' && href.startsWith(NOTES_PATH_PREFIX)) {
     return (
       <Link href={href} className="text-primary underline decoration-primary/40 hover:decoration-primary">
         {children}

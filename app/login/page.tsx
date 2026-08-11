@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { PREFIX } from '@/lib/localCache';
-import { clearSwCaches } from '@/lib/clearSwCaches';
+import { clearSwCachesWhenReady } from '@/lib/clearSwCaches';
 import { loginAction, type LoginState } from './actions';
 
 const initialState: LoginState = { error: null };
@@ -34,7 +34,9 @@ export default function LoginPage() {
 
   useEffect(() => {
     clearLocalCaches();
-    clearSwCaches();
+    // Second pass after the logout button's synchronous one, and the only pass
+    // that lands when the previous page was not yet controlled by the SW.
+    void clearSwCachesWhenReady();
   }, []);
 
   return (

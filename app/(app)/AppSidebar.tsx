@@ -4,6 +4,7 @@ import { Sidebar, useSidebar } from '@/components/ui/sidebar';
 import { useFinePointer } from '@/hooks/useFinePointer';
 import { useSwipeBack } from '@/hooks/useSwipeBack';
 import { FAILED_SYNC_TAG, SYNC_ENTITY } from '@/lib/constants';
+import { TODOS_PATH } from '@/lib/pathConstants';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { AppSidebarBody } from './AppSidebarBody';
@@ -33,7 +34,7 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
   const finePointer = useFinePointer();
   const pathname = usePathname();
   const router = useRouter();
-  const isTodos = isTabActive('/todos', pathname);
+  const isTodos = isTabActive(TODOS_PATH, pathname);
 
   // Augment notes with the synthetic FAILED_SYNC_TAG for sidebar display only.
   // useTagStateSync gets the un-augmented `notes` so opening a failed-sync note

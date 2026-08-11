@@ -3,6 +3,7 @@
 import { useEffect, useReducer, useState } from 'react';
 import { useData } from '@/app/(app)/dataContext';
 import { OFFLINE_SHELL_ID } from '@/lib/constants';
+import { NOTES_PATH_PREFIX } from '@/lib/pathConstants';
 import { setCachedNote } from '@/lib/localCache';
 import { warmPageCache } from '@/lib/warmPageCache';
 import type { Note } from '@/lib/types';
@@ -80,7 +81,7 @@ export function NotePageClient({
   // cold-load hits a genuine cached page (not the standalone /offline).
   // Separated into own effect: only fire on id change, not on every edit.
   useEffect(() => {
-    warmPageCache(`/notes/${resolvedId}`);
+    warmPageCache(`${NOTES_PATH_PREFIX}${resolvedId}`);
   }, [resolvedId]);
 
   // SW-served generic shell: until the post-mount effect resolves the real id

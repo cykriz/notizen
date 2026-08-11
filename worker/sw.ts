@@ -5,6 +5,7 @@ import {
   SW_BYPASS_API_PREFIXES,
   SW_INTERNAL_HEADER,
   SW_MSG_CLEAR_AUTH_CACHES,
+  SW_MSG_ENSURE_PRECACHE,
   SW_MSG_WARM_PAGE_CACHE,
 } from '@/lib/constants';
 import {
@@ -12,62 +13,37 @@ import {
   cacheFirst,
   networkFirst,
   networkFirstWithFallback,
-  shouldCacheNavigation,
   staleWhileRevalidate,
 } from './swStrategies';
+import { PROTECTED_PAGE_PATHS, STATIC_ASSET_PREFIX, ensurePrecached } from './swPrecache';
 import { cacheNavigationHtml } from './swWarm';
 
 declare const self: ServiceWorkerGlobalScope;
 
-const PRECACHE_URLS = [OFFLINE_PATH, '/notes', '/todos', OFFLINE_SHELL_PATH];
-// Pathnames protected from FIFO eviction in pages-v2. Frozen so the strategies
-// module can take it as ReadonlySet without copying.
-const PROTECTED_PAGE_PATHS: ReadonlySet<string> = new Set(PRECACHE_URLS);
-
 // ── Install ──────────────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
   self.skipWaiting();
-  event.waitUntil(Promise.all([precacheRoutes(), precacheStaticAssets()]));
+  event.waitUntil(
+    ensurePrecached().then(
+      (report) => {
+        // A precache that fails here (no valid session → 307 to /login, flaky
+        // mobile link) used to be silent and permanent: the pages/static caches
+        // are build-versioned, so a new deploy starts empty and nothing retried.
+        // Say so, and let the first authenticated (app) mount repair it.
+        if (report.missingPages.length > 0 || report.missingStatic > 0) {
+          console.warn('[sw] Precache unvollständig nach install:', report);
+        }
+      },
+      (error: unknown) => {
+        // Swallowed on purpose. CacheStorage itself can reject (private
+        // browsing, quota), and a rejected waitUntil fails the INSTALL — which
+        // would leave no service worker at all, and therefore no repair path
+        // either. An empty cache is recoverable; a missing SW is not.
+        console.warn('[sw] Precache beim Install fehlgeschlagen:', error);
+      },
+    ),
+  );
 });
-
-async function precacheRoutes(): Promise<void> {
-  const cache = await caches.open(CACHE.pages);
-  await Promise.allSettled(
-    PRECACHE_URLS.map(async (url) => {
-      const response = await fetch(url, { credentials: 'same-origin', redirect: 'follow' });
-      if (shouldCacheNavigation(response)) {
-        await cache.put(url, response);
-      }
-    }),
-  );
-}
-
-// Precache EVERY build asset under /_next/static into static-<buildId> at
-// install. Serwist injects the full build manifest at `self.__SW_MANIFEST`
-// (build-time esbuild define). This covers dynamically-imported chunks
-// (next/dynamic, e.g. MarkdownPreview) that never appear in any page's HTML
-// and so can't be warmed by HTML parsing — without them an offline cold-load
-// of a note hits ChunkLoadError. Manifest excludes files > 2 MiB.
-async function precacheStaticAssets(): Promise<void> {
-  const urls = (self.__SW_MANIFEST ?? [])
-    .map((entry) => (typeof entry === 'string' ? entry : entry.url))
-    .filter((url) => url.startsWith('/_next/static/'));
-  if (urls.length === 0) return;
-  const cache = await caches.open(CACHE.static);
-  await Promise.allSettled(
-    urls.map(async (url) => {
-      // Hashed filenames are immutable — skip if already cached.
-      if (await cache.match(url)) return;
-      const response = await fetch(url, {
-        credentials: 'same-origin',
-        headers: { [SW_INTERNAL_HEADER]: '1' },
-      });
-      if (response.ok) {
-        await cache.put(url, response);
-      }
-    }),
-  );
-}
 
 // ── Activate ─────────────────────────────────────────────────────────
 self.addEventListener('activate', (event) => {
@@ -87,11 +63,37 @@ self.addEventListener('message', (event) => {
   const msgEvent = event as ExtendableMessageEvent;
   const data = msgEvent.data;
   if (data?.type === SW_MSG_CLEAR_AUTH_CACHES) {
-    msgEvent.waitUntil(Promise.all([caches.delete(CACHE.api), caches.delete(CACHE.pages)]));
+    msgEvent.waitUntil(Promise.all([caches.delete(CACHE.api), clearUserPages()]));
   } else if (data?.type === SW_MSG_WARM_PAGE_CACHE && typeof data.url === 'string') {
     msgEvent.waitUntil(cacheNavigationHtml(data.url, PROTECTED_PAGE_PATHS));
+  } else if (data?.type === SW_MSG_ENSURE_PRECACHE) {
+    const port = msgEvent.ports[0] as MessagePort | undefined;
+    msgEvent.waitUntil(
+      ensurePrecached().then(
+        (report) => {
+          port?.postMessage(report);
+        },
+        () => {
+          port?.postMessage(null);
+        },
+      ),
+    );
   }
 });
+
+// Everything in the pages cache is user-specific HTML — /notes and /todos carry
+// the list, and even the note shell embeds the server-rendered sidebar — so all
+// of it goes on logout. /offline is the one exception: a public route with no
+// user data, and keeping it means a logged-out device still gets the themed
+// offline page instead of the inline 503 last resort.
+async function clearUserPages(): Promise<void> {
+  const cache = await caches.open(CACHE.pages);
+  for (const key of await cache.keys()) {
+    if (new URL(key.url).pathname !== OFFLINE_PATH) {
+      await cache.delete(key);
+    }
+  }
+}
 
 // ── Fetch ────────────────────────────────────────────────────────────
 self.addEventListener('fetch', (event) => {
@@ -115,7 +117,7 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') {
     event.respondWith(networkFirstWithFallback(request, CACHE.pages, PROTECTED_PAGE_PATHS, OFFLINE_SHELL_PATH));
-  } else if (url.pathname.startsWith('/_next/static/')) {
+  } else if (url.pathname.startsWith(STATIC_ASSET_PREFIX)) {
     event.respondWith(cacheFirst(request, CACHE.static));
   } else if (url.pathname.startsWith('/api/')) {
     event.respondWith(networkFirst(request, CACHE.api));

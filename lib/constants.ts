@@ -28,9 +28,13 @@ export const ERROR_RETRY_LABEL = 'Erneut versuchen';
 export const OFFLINE_SHELL_ID = '__offline_shell__';
 export const OFFLINE_SHELL_PATH = `/notes/${OFFLINE_SHELL_ID}`;
 
-// SW protocol / paths handled by the service worker
+// SW protocol / paths handled by the service worker. The route paths the SW
+// precaches live in lib/pathConstants.ts (this file is at its line cap).
 export const SW_MSG_CLEAR_AUTH_CACHES = 'CLEAR_AUTH_CACHES';
 export const SW_MSG_WARM_PAGE_CACHE = 'WARM_PAGE_CACHE';
+// Page → SW: verify the precache and refill whatever is missing. Answered on
+// event.ports[0] with a PrecacheReport.
+export const SW_MSG_ENSURE_PRECACHE = 'ENSURE_PRECACHE';
 // Header set on the SW's internal warm fetch so the fetch listener can skip
 // re-intercepting it (otherwise the warm response would also land in misc-v1
 // via staleWhileRevalidate).

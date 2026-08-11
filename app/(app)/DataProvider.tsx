@@ -19,8 +19,7 @@ import {
   setCachedTodos,
 } from '@/lib/localCache';
 import { cleanExpiredEntries, mergeById } from '@/lib/localCacheMerge';
-import { OFFLINE_SHELL_PATH } from '@/lib/constants';
-import { warmPageCache } from '@/lib/warmPageCache';
+import { ensurePrecache } from '@/lib/ensurePrecache';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useDataSync } from '@/hooks/useDataSync';
 import { DataContext } from './dataContext';
@@ -81,14 +80,6 @@ export function DataProvider({ initialNotes, initialTodos, children }: DataProvi
 
     cleanExpiredEntries();
 
-    // Not redundant with install-time precache: that only stores the shell
-    // HTML, NOT its `/notes/[id]` chunks. The static cache is build-versioned
-    // (static-<buildId>), so it's empty after every deploy until something
-    // warms it. This re-warm fills the shell's chunks into the new build's
-    // static cache (warmStaticAssets skips already-cached ones), so an offline
-    // nav to a never-cached note — e.g. one created offline — boots the SPA via
-    // the shell instead of hitting a missing chunk / the dead-end /offline page.
-    warmPageCache(OFFLINE_SHELL_PATH);
     const ttlTimer = setTimeout(() => {
       cleanExpiredEntries();
     }, 24 * 60 * 60 * 1000);
@@ -97,6 +88,19 @@ export function DataProvider({ initialNotes, initialTodos, children }: DataProvi
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only on mount
   }, []);
+
+  // The pages/static caches are build-versioned, so every deploy starts them
+  // empty, and the SW's own install-time refill is silently skipped when it has
+  // no valid session (307 to /login). This is the repair: the (app) tree is the
+  // one place guaranteed to be authenticated. Runs on mount (isOnline starts
+  // true) and on every reconnect; the SW only fetches what is actually missing.
+  useEffect(() => {
+    if (!isOnline) {
+      return;
+    }
+
+    void ensurePrecache();
+  }, [isOnline]);
 
   const handleCreateNote = useCallback(async (input: CreateNoteInput): Promise<Note> => {
     const { note, updatedList } = await createNoteOffline(input, notesRef.current, isOnlineRef.current);

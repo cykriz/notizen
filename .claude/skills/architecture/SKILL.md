@@ -23,7 +23,11 @@ See `lib/types.ts` for full definitions. Key types:
 ## Core Functions
 
 - `lib/utils.ts` — `cn`; `formatDate`/`formatDateTime` (every user-facing date goes through one of these, both pinned to `DISPLAY_TIME_ZONE`); `todayIso`/`isOverdue` (the calendar day is decided in that **same** zone — deciding it device-local while rendering it in Berlin made a due-today badge read as not-yet-due)
-- `lib/clearSwCaches.ts` — posts `SW_MSG_CLEAR_AUTH_CACHES` to the active SW (no-op outside browser / without `serviceWorker`)
+- `lib/pathConstants.ts` — route paths several layers must agree on (`NOTES_PATH`, `TODOS_PATH`, `NOTES_PATH_PREFIX`) plus `SW_PRECACHE_PATHS`, the documents the SW must always hold. Owned here, not in `lib/constants.ts` (line cap); consumed by `navTabs`, the worker and the e2e spec
+- `lib/swMessage.ts` — the page→SW channel (`postToServiceWorker`, `requestFromServiceWorker` over a MessageChannel, `runWhenIdle`). Addresses the SW via `serviceWorker.ready` → `registration.active`, **not** `controller`, so it also reaches the SW from the page that just installed it (first load after a deploy)
+- `lib/ensurePrecache.ts` — asks the SW to verify + repair its precache and warns when a gap survives. Called from `DataProvider` on mount and on every online edge, the only context guaranteed to hold a session (the SW's own install fetches get a 307 to /login without one)
+- `lib/clearSwCaches.ts` — `clearSwCaches` posts `SW_MSG_CLEAR_AUTH_CACHES` synchronously via `controller` (the logout button submits a form in the same tick, so an await could die with the document); `clearSwCachesWhenReady` is the `serviceWorker.ready` catch-up used on the /login mount, where nothing is navigating and `controller` may still be null
+- `worker/swPrecache.ts` — `ensurePrecached()`: which of `SW_PRECACHE_PATHS` / build assets are missing, refill only those, report what's left. One shared in-flight run; the slot is released on settle so later calls re-check
 - `worker/offlineFallback.ts` — last-ditch SW responses (`offlineHtmlResponse`, `offlineDataResponse`) when even `/offline` isn't cached
 - `lib/fsNotes.ts` — CRUD for notes (listNotes, getNote, createNote, updateNote, deleteNote); re-exports attachment helpers
 - `lib/fsAttachments.ts` — attachment CRUD (listAttachments, saveAttachment, deleteAttachment, getAttachmentFilePath)
