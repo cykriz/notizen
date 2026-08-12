@@ -5,6 +5,7 @@ import { useFinePointer } from '@/hooks/useFinePointer';
 import { useSwipeBack } from '@/hooks/useSwipeBack';
 import { FAILED_SYNC_TAG, SYNC_ENTITY } from '@/lib/constants';
 import { TODOS_PATH } from '@/lib/pathConstants';
+import { parentTagPath } from '@/lib/tagTree';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { AppSidebarBody } from './AppSidebarBody';
@@ -53,9 +54,7 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
 
   const [swipeEl, setSwipeEl] = useState<HTMLDivElement | null>(null);
   const handleTagBack = useCallback(() => {
-    const parts = currentTagPath.split('/');
-    parts.pop();
-    setCurrentTagPath(parts.join('/'));
+    setCurrentTagPath(parentTagPath(currentTagPath));
   }, [currentTagPath, setCurrentTagPath]);
   useSwipeBack(swipeEl, handleTagBack, isMobile && !isTodos && view === 'tags' && currentTagPath !== '');
 

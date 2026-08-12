@@ -65,15 +65,15 @@ export function FailedSyncRow({
               row as "Details anzeigen" and hiding the title, type, action and
               cause. The visible content is the better name.
 
-              `shrink` and `whitespace-normal` override buttonVariants' base
-              `shrink-0`/`whitespace-nowrap` (cn merges, last wins). Without them
-              flex-1 + min-w-0 can never constrain this button: it keeps its
+              `shrinkable` + `whitespace-normal` undo buttonVariants' base
+              `shrink-0`/`whitespace-nowrap`. Without them the button keeps its
               single-line intrinsic width, so the cause overflows the row and
               slides under the action icons — which is how a click meant for
               "Erneut versuchen" could land on "Verwerfen". */}
           <Button
             variant="ghost"
-            className="group h-auto min-w-0 shrink flex-1 items-start justify-start gap-2 whitespace-normal px-1 py-1 text-left"
+            shrinkable
+            className="group h-auto flex-1 items-start justify-start gap-2 whitespace-normal px-1 py-1 text-left"
           >
             {isNote ? <FileText className="mt-0.5 shrink-0" /> : <ListTodo className="mt-0.5 shrink-0" />}
             <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">

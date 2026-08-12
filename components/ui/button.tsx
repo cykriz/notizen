@@ -29,10 +29,20 @@ const buttonVariants = cva(
         'icon-sm': 'size-8',
         'icon-lg': 'size-10',
       },
+      // The base above ships `shrink-0`. A Button inside a `min-w-0` flex parent has
+      // to undo it, or it keeps its intrinsic width while the parent is squeezed,
+      // overflows, and paints over its siblings — which is how a click can land on
+      // the wrong control. Callers that need the rigid default again just pass
+      // `shrink-0` in className; it merges last and wins.
+      shrinkable: {
+        true: 'min-w-0 shrink',
+        false: '',
+      },
     },
     defaultVariants: {
       variant: 'default',
       size: 'default',
+      shrinkable: false,
     },
   },
 );
@@ -41,6 +51,9 @@ function Button({
   className,
   variant = 'default',
   size = 'default',
+  // Destructured rather than left in `props`: it is a styling variant, and React
+  // would warn about an unknown `shrinkable` attribute on the DOM element.
+  shrinkable = false,
   asChild = false,
   ...props
 }: React.ComponentProps<'button'> &
@@ -54,7 +67,7 @@ function Button({
       data-slot="button"
       data-variant={variant}
       data-size={size}
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(buttonVariants({ variant, size, shrinkable, className }))}
       {...props}
     />
   );

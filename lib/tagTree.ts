@@ -18,6 +18,14 @@ export function normalizeTagPath(raw: string): string {
     .join('/');
 }
 
+// Drops the last segment of a tag path — the parent folder.
+// 'a/b/c' -> 'a/b', 'a' -> '' (root), '' -> ''.
+export function parentTagPath(path: string): string {
+  const parts = path.split('/');
+  parts.pop();
+  return parts.join('/');
+}
+
 export function buildTagTree(notes: NoteSummary[]): TagNode[] {
   const root: TagNode[] = [];
 

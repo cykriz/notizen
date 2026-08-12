@@ -64,6 +64,23 @@ export async function createNote(
   return page.url();
 }
 
+/** Create a note and give it one tag path, committing it past the suggestion list. */
+export async function createNoteWithTag(
+  page: Page,
+  title: string,
+  content: string,
+  tag: string,
+): Promise<void> {
+  await createNote(page, title, content);
+  const tagInput = page.getByPlaceholder('Tags…');
+  await tagInput.click();
+  await tagInput.fill(tag);
+  // Close the suggestion list first — while it is open, Enter picks a suggestion
+  // instead of committing what was typed.
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Enter');
+}
+
 /** Go back online and wait for the app to detect it.
  *  Tries to wait for the health check so `isOnline` flips to true,
  *  but does not fail if the check is slow — the caller's own response

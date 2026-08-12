@@ -9,6 +9,7 @@ import {
   getNotesUnderPath,
   moveNoteToFolder,
   normalizeTagPath,
+  parentTagPath,
   replaceFolderTag,
 } from './tagTree';
 
@@ -51,6 +52,12 @@ describe('tagTree', () => {
     expect(normalizeTagPath('/')).toBe('');
     expect(normalizeTagPath('Projekte/2026')).toBe('projekte/2026');
     expect(normalizeTagPath('')).toBe('');
+  });
+
+  test('parentTagPath — drops the last segment', () => {
+    expect(parentTagPath('dev/python/fastapi')).toBe('dev/python');
+    expect(parentTagPath('dev')).toBe('');
+    expect(parentTagPath('')).toBe('');
   });
 });
 

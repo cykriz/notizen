@@ -2,8 +2,16 @@
 
 import { Button } from '@/components/ui/button';
 import { FAILED_SYNC_OPEN_LABEL } from '@/lib/failedSyncConstants';
-import { ChevronLeft, CloudAlert, Trash2 } from 'lucide-react';
+import { TAG_FOLDER_DELETE_LABEL, tagBreadcrumbJumpLabel } from '@/lib/tagConstants';
+import { parentTagPath } from '@/lib/tagTree';
+import { ChevronLeft, CloudAlert, Ellipsis, Trash2 } from 'lucide-react';
 import { DeleteTagFolderDialog } from './DeleteTagFolderDialog';
+
+// A 16rem sidebar fits roughly two readable segments beside the back and delete
+// buttons, and that cost stays constant however deep the path is. Deeper paths
+// collapse their prefix into one "…" button that walks up to the deepest hidden
+// ancestor — repeatedly, if the path is deeper than four.
+const MAX_VISIBLE_SEGMENTS = 2;
 
 interface TagBreadcrumbProps {
   currentPath: string;
@@ -28,11 +36,11 @@ export function TagBreadcrumb({
   setDeleteOpen,
 }: TagBreadcrumbProps) {
   const pathSegments = currentPath.split('/');
+  const hiddenCount = Math.max(0, pathSegments.length - MAX_VISIBLE_SEGMENTS);
+  const hiddenPath = pathSegments.slice(0, hiddenCount).join('/');
 
   const handleBack = () => {
-    const parts = currentPath.split('/');
-    parts.pop();
-    setCurrentPath(parts.join('/'));
+    setCurrentPath(parentTagPath(currentPath));
   };
 
   return (
@@ -40,21 +48,43 @@ export function TagBreadcrumb({
       <Button variant="ghost" size="icon-xs" onClick={handleBack} className="shrink-0">
         <ChevronLeft />
       </Button>
-      {pathSegments.map((seg, i) => (
-        <span key={i} className="flex min-w-0 items-center gap-0.5">
-          {i > 0 && <span className="shrink-0">/</span>}
-          <Button
-            variant="link"
-            size="xs"
-            onClick={() => {
-              setCurrentPath(pathSegments.slice(0, i + 1).join('/'));
-            }}
-            className="min-w-0 overflow-hidden max-w-24 py-2 h-auto"
-          >
-            <span className="truncate">{seg}</span>
-          </Button>
-        </span>
-      ))}
+      {hiddenCount > 0 && (
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          onClick={() => {
+            setCurrentPath(hiddenPath);
+          }}
+          className="shrink-0"
+          title={tagBreadcrumbJumpLabel(hiddenPath)}
+        >
+          <Ellipsis />
+        </Button>
+      )}
+      {pathSegments.slice(hiddenCount).map((seg, i) => {
+        // Keyed on the cumulative prefix, not the index: index 0 means a different
+        // folder before and after the prefix collapses.
+        const segmentPath = pathSegments.slice(0, hiddenCount + i + 1).join('/');
+        return (
+          <span key={segmentPath} className="flex min-w-0 items-center gap-0.5">
+            {(i > 0 || hiddenCount > 0) && <span className="shrink-0">/</span>}
+            {/* No max-width: flexbox hands the shortfall to the longest segments, so
+                the row fits at any depth without a cap leaving space unused. */}
+            <Button
+              variant="link"
+              size="xs"
+              shrinkable
+              onClick={() => {
+                setCurrentPath(segmentPath);
+              }}
+              className="h-auto px-1 py-2"
+              title={seg}
+            >
+              <span className="truncate">{seg}</span>
+            </Button>
+          </span>
+        );
+      })}
       {isFailedSyncTag ? (
         <Button
           variant="ghost"
@@ -74,7 +104,7 @@ export function TagBreadcrumb({
               setDeleteOpen(true);
             }}
             className="ml-auto shrink-0 text-destructive hover:text-destructive"
-            title="Ordner löschen"
+            title={TAG_FOLDER_DELETE_LABEL}
           >
             <Trash2 />
           </Button>
