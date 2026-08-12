@@ -13,7 +13,7 @@ import {
   TTS_ENGINE_STORAGE_KEY,
   type NeuralVoiceId,
 } from '@/lib/ttsConstants';
-import type { TtsEngine } from '@/lib/types';
+import type { TtsEngine } from '@/lib/ttsTypes';
 import { markdownToPlainText } from '@/lib/markdownToPlainText';
 import { readStoredOneOf, writeLocal } from '@/lib/localStorageState';
 import { useSpeech } from '@/hooks/useSpeech';

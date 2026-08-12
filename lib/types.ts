@@ -1,3 +1,10 @@
+// INVARIANT: no DOM globals in this file. It is reachable from worker/ — via
+// @/lib/constants (sw.ts, swWarm.ts, swStrategies.ts) and directly from
+// worker/swPrecache.ts — and worker/tsconfig.json has lib: ["webworker",
+// "esnext"] on purpose, so the service worker never gets window/document types.
+// A DOM reference here fails `bun run typecheck` (the worker project), which is
+// exactly how `SpeechSynthesisVoice` used to sit here unnoticed. DOM-typed
+// shapes belong in a leaf module the SW cannot reach — see lib/ttsTypes.ts.
 export interface NoteSummary {
   id: string;
   slug: string;
@@ -24,61 +31,13 @@ export interface Note extends NoteSummary {
 
 export type PreviewMode = 'edit' | 'preview';
 
-// TodoQuadrant, SpeechRate and NeuralVoiceId are derived from const values via
-// `typeof`, so the types live next to those values. Re-exported here so
-// consumers can import all types from '@/lib/types'.
+// TodoQuadrant is derived from a const value via `typeof`, so the type lives next
+// to that value. Re-exported here (unlike the read-aloud types, which moved to
+// lib/ttsTypes.ts) for two reasons: this file uses it itself below — QuadrantMeta
+// and Todo — so the import exists either way, and lib/constants.ts is already in
+// the service worker's type program and DOM-free, so the edge costs nothing.
 import type { TodoQuadrant } from './constants';
-import type { NeuralVoiceId, SpeechRate } from './ttsConstants';
-export type { NeuralVoiceId, SpeechRate, TodoQuadrant };
-
-// Read-aloud (text-to-speech) playback state machine. The neural engine adds a
-// 'loading' state (model download / synthesis before audio starts).
-export type SpeechState = 'idle' | 'playing' | 'paused';
-export type ReadAloudState = SpeechState | 'loading';
-
-// Why a neural play() failed: 'load' = the first chunk / model couldn't load
-// (nothing played yet → fall back to the system voice); 'chunk' = a later chunk
-// failed mid-note (already stopped → just show a notice, no restart).
-export type ReadAloudErrorKind = 'load' | 'chunk';
-
-// Which read-aloud engine is active: fast OS voices vs. natural neural (Piper).
-export type TtsEngine = 'system' | 'neural';
-
-// Return shape of the useSpeech hook (kept here so the hook file stays lean).
-export interface SpeechControls {
-  // Hydration-safe: false on the server + first client render, then flips true.
-  supported: boolean;
-  state: SpeechState;
-  rate: SpeechRate;
-  // Available German voices (most natural first) and the chosen one's voiceURI.
-  voices: SpeechSynthesisVoice[];
-  voiceURI: string | null;
-  setVoiceURI: (uri: string) => void;
-  setRate: (rate: SpeechRate) => void;
-  play: (text: string) => void;
-  pause: () => void;
-  resume: () => void;
-  stop: () => void;
-  cycleRate: () => void;
-}
-
-// Return shape of the useNeuralSpeech hook (Piper / vits-web engine).
-export interface NeuralSpeechControls {
-  supported: boolean;
-  state: ReadAloudState;
-  rate: SpeechRate;
-  // Model download progress (0..1) while state is 'loading', else null.
-  progress: number | null;
-  voiceId: NeuralVoiceId;
-  setVoiceId: (id: NeuralVoiceId) => void;
-  // onError fires when a play attempt fails; `kind` distinguishes an initial
-  // load failure (fall back to system) from a mid-note chunk failure (notice only).
-  play: (text: string, onError?: (kind: ReadAloudErrorKind) => void) => void;
-  pause: () => void;
-  resume: () => void;
-  stop: () => void;
-  cycleRate: () => void;
-}
+export type { TodoQuadrant };
 
 export type SyncEntityType = 'note' | 'todo';
 export type SyncAction = 'create' | 'update' | 'delete';

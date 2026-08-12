@@ -18,7 +18,7 @@ import {
   READ_ALOUD_VOICE_LABEL,
   type SpeechRate,
 } from '@/lib/ttsConstants';
-import type { ReadAloudState, TtsEngine } from '@/lib/types';
+import type { ReadAloudState, TtsEngine } from '@/lib/ttsTypes';
 
 const rateFormatter = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
 const formatRate = (rate: SpeechRate) => `${rateFormatter.format(rate)}×`;

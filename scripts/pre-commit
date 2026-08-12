@@ -4,8 +4,11 @@ set -euo pipefail
 echo "=== Pre-commit: lint ==="
 bun run lint:check
 
-echo "=== Pre-commit: typecheck ==="
-bunx tsc --noEmit
+# All three TS projects, not just the app: worker/ and e2e/ are excluded from the
+# root tsconfig (own lib/types), so bare `tsc --noEmit` never sees them. A type
+# error in the service worker went unnoticed for months that way.
+echo "=== Pre-commit: typecheck (app + worker + e2e) ==="
+bun run typecheck
 
 echo "=== Pre-commit: unit tests ==="
 bun test

@@ -8,6 +8,7 @@
     "start": "bun --bun next start",
     "lint": "eslint --fix --fix-type suggestion,problem,layout .",
     "lint:check": "eslint .",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p worker/tsconfig.json && tsc --noEmit -p e2e/tsconfig.json",
     "deploy": "sh scripts/deploy.sh",
     "user": "bun run scripts/manage-users.ts",
     "test": "bun test",

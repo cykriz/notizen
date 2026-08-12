@@ -4,8 +4,9 @@ Next.js 16 + React 19 + Bun + TypeScript (strict) + Tailwind v4 + shadcn/ui. Fil
 
 ## Commands
 
-- `bun install` (not npm), `bun run lint`, `bunx tsc --noEmit`
-- Run lint + tsc after every code change. Fix all errors before moving on.
+- `bun install` (not npm), `bun run lint`, `bun run typecheck`
+- Run lint + typecheck after every code change. Fix all errors before moving on.
+- `bun run typecheck` checks **all three** TS projects — app, `worker/`, `e2e/`. Never use bare `bunx tsc --noEmit`: the root tsconfig excludes `worker` and `e2e`, so it silently covers only the app (that is how a service-worker type error survived months unnoticed).
 - Dev server: `bun --bun next dev`
 - Add shadcn component: `npx shadcn@latest add <name>`
 - E2E tests: `bun run test:e2e` (headless), `bun run test:e2e:ui` (UI mode). Browser install: `bunx playwright install chromium`. Only Playwright's test *runner* falls back to `npx` (needs Node's module loader) — everything else (install, scripts, queries) uses `bun`/`bunx`.

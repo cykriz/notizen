@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { DEFAULT_SPEECH_RATE, SPEECH_LANG, nextSpeechRate, type SpeechRate } from '@/lib/ttsConstants';
-import type { SpeechControls, SpeechState } from '@/lib/types';
+import type { SpeechControls, SpeechState } from '@/lib/ttsTypes';
 import { splitIntoSpeechChunks } from '@/lib/markdownToPlainText';
 import { useClientMounted } from './useClientMounted';
 import { useSpeechVoices } from './useSpeechVoices';

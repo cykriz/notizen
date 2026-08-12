@@ -1,6 +1,10 @@
 // Read-aloud (Text-to-Speech) constants, split out of lib/constants.ts to keep
 // that file under the 200-line limit. SpeechRate / NeuralVoiceId are `typeof`-
-// derived, so they live next to their values and are re-exported from types.ts.
+// derived, so they live next to their values here — import them from this module
+// directly. Deliberately NOT re-exported from lib/types.ts any more: that barrel
+// was the only reason this file entered the service worker's type program, and
+// keeping the SW's reachable surface small is what worker/tsconfig.json is for.
+// The read-aloud interfaces built on these types live in lib/ttsTypes.ts.
 
 // Playback rates offered by the read-aloud speed cycle button.
 export const SPEECH_RATES = [0.75, 1, 1.25, 1.5, 2] as const;

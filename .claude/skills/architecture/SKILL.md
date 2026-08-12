@@ -5,7 +5,7 @@ description: Data model, filesystem layout, API routes, core functions, componen
 
 ## Data Model
 
-See `lib/types.ts` for full definitions. Key types:
+See `lib/types.ts` for full definitions (read-aloud types: `lib/ttsTypes.ts`, shares: `lib/shareTypes.ts`). Key types:
 
 - `NoteSummary` / `Note` — notes with tags, pinned, attachments
 - `Todo` — Eisenhower matrix quadrants (`do`, `schedule`, `inbox` → shown as "Eingang", `planned`)
@@ -51,6 +51,7 @@ See `lib/types.ts` for full definitions. Key types:
 - `lib/failedSyncDetail.ts` + `lib/failedSyncCause.ts` + `lib/failedSyncPayload.ts` — pure view model for the inspector (`toFailedSyncDetails` takes injected `sources`, so it unit-tests without a DOM). Defensive readers guard both `payload` and `failure`, which come from an unvalidated cast
 - `lib/failedSyncConstants.ts` — German strings for the inspector (`lib/constants.ts` is at its line cap)
 - `lib/syncStatusConstants.ts` — German strings for the sidebar sync indicator (same reason)
+- `lib/ttsTypes.ts` — read-aloud types (`SpeechControls`, `NeuralSpeechControls`, `ReadAloudState`, `TtsEngine`). Split out of `lib/types.ts` **not** for the line cap but because `SpeechControls` names `SpeechSynthesisVoice`: `lib/types.ts` is reachable from `worker/`, which is type-checked with `lib: webworker` and no `dom`. Keep DOM-typed shapes out of `lib/types.ts`
 - `lib/offlineNotes.ts` / `lib/offlineTodos.ts` — offline support for notes and todos. Both are thin over `sendOrQueue`; each keeps only its own cache adoption (`adoptServer*` writes the server row over the optimistic one, rebuilt from the CURRENT cache so a slower in-flight write cannot undo a faster one)
 - `lib/offlineTagFolder.ts` — offline tag-folder deletion (deleteTagFolderOffline, stripFolderTags)
 - `lib/fsShares.ts` — share registry CRUD (upsertShare, revokeShare, getShare, getShareByNote)

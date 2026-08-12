@@ -28,7 +28,7 @@ Two consumers:
 - ✅/⚠️/❌ Assumptions stated explicitly
 - ✅/⚠️/❌ Step order / dependencies clear
 - ✅/⚠️/❌ Error and edge cases considered
-- ✅/⚠️/❌ Verification/tests (unit: `bun test` with `bun:test`, point `NOTES_ROOT` at a temp dir, test pure FS/logic helpers; E2E: `bun run test:e2e` (Playwright); **no vitest/Jest**; after every change `bun run lint && bunx tsc --noEmit`)
+- ✅/⚠️/❌ Verification/tests (unit: `bun test` with `bun:test`, point `NOTES_ROOT` at a temp dir, test pure FS/logic helpers; E2E: `bun run test:e2e` (Playwright); **no vitest/Jest**; after every change `bun run lint && bun run typecheck` — `typecheck` covers app + `worker/` + `e2e/`; bare `bunx tsc --noEmit` only sees the app)
 - ✅/⚠️/❌ Rollback / reversibility
 - ✅/⚠️/❌ Affected files named concretely
 

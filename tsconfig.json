@@ -25,5 +25,10 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/dev/types/**/*.ts", "**/*.mts"],
+  // worker/ and e2e/ are NOT unchecked — they need different lib/types settings
+  // (webworker vs. dom; node/bun) and so have their own tsconfig.json each.
+  // Check all three with `bun run typecheck`; bare `tsc --noEmit` covers only the
+  // app and is how a service-worker type error stayed hidden for months. Anything
+  // added to this list needs its own project plus an entry in that script.
   "exclude": ["node_modules", "worker", "e2e"]
 }

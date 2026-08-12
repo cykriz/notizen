@@ -7,7 +7,7 @@ import {
   type NeuralVoiceId,
   type SpeechRate,
 } from '@/lib/ttsConstants';
-import type { ReadAloudErrorKind, ReadAloudState } from '@/lib/types';
+import type { ReadAloudErrorKind, ReadAloudState } from '@/lib/ttsTypes';
 import { splitIntoSpeechChunks } from '@/lib/markdownToPlainText';
 import { silentWavDataUri } from '@/lib/silentWav';
 // synthChunk runs the heavy WASM synthesis in a Web Worker (off the main thread),
