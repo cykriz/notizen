@@ -51,7 +51,10 @@ export async function trimCache(
 ): Promise<void> {
   const cache = await caches.open(cacheName);
   const keys = await cache.keys();
-  if (keys.length <= maxEntries) return;
+  if (keys.length <= maxEntries) {
+    return;
+  }
+
   // FIFO eviction by insertion order — precached entries sit at the head of
   // the list and would be evicted first. Skip them so precached shells stay
   // reliable once warming fills the cap.
@@ -79,6 +82,7 @@ export async function networkFirstWithFallback(
         .then(() => trimCache(cacheName, PAGES_CACHE_MAX, protectedPathnames))
         .catch(() => undefined);
     }
+
     return response;
   } catch {
     // ignoreVary: the warmed entry (cache.put with a string URL) carries no
@@ -86,7 +90,10 @@ export async function networkFirstWithFallback(
     // If Next emits `Vary: Accept` on the document, a vary-sensitive match
     // would miss and fall through to /offline, defeating the warm cache.
     const cached = await caches.match(request, { ignoreVary: true });
-    if (cached) return cached;
+    if (cached) {
+      return cached;
+    }
+
     const pathname = new URL(request.url).pathname;
     if (pathname === '/') {
       const home = await caches.match(NOTES_PATH);
@@ -94,15 +101,22 @@ export async function networkFirstWithFallback(
         return home;
       }
     }
+
     // Offline navigation to a note whose own HTML was never cached (e.g. a note
     // created offline): serve the generic note-detail shell so the SPA boots
     // and renders the note from localStorage, instead of the dead-end /offline.
     if (pathname.startsWith(NOTES_PATH_PREFIX)) {
       const shell = await caches.match(notesShellPath);
-      if (shell) return shell;
+      if (shell) {
+        return shell;
+      }
     }
+
     const fallback = await caches.match(OFFLINE_PATH);
-    if (fallback) return fallback;
+    if (fallback) {
+      return fallback;
+    }
+
     return offlineHtmlResponse();
   }
 }
@@ -113,7 +127,10 @@ export async function networkFirstWithFallback(
  * the small FIFO api cache). Missing Content-Length → treat as small.
  */
 function isCacheableApiResponse(response: Response): boolean {
-  if (!response.ok || response.status === 206) return false;
+  if (!response.ok || response.status === 206) {
+    return false;
+  }
+
   const len = response.headers.get('content-length');
   return len === null || Number(len) <= API_CACHE_MAX_BYTES;
 }
@@ -129,6 +146,7 @@ export async function networkFirst(request: Request, cacheName: string): Promise
         .then(() => trimCache(cacheName, API_CACHE_MAX))
         .catch(() => undefined);
     }
+
     return response;
   } catch {
     const cached = await caches.match(request);
@@ -139,13 +157,17 @@ export async function networkFirst(request: Request, cacheName: string): Promise
 /** Static assets: cache-first (hashed filenames = immutable). */
 export async function cacheFirst(request: Request, cacheName: string): Promise<Response> {
   const cached = await caches.match(request);
-  if (cached) return cached;
+  if (cached) {
+    return cached;
+  }
+
   try {
     const response = await fetch(request);
     if (response.ok) {
       const cache = await caches.open(cacheName);
       void cache.put(request, response.clone()).catch(() => undefined);
     }
+
     return response;
   } catch {
     return offlineDataResponse();
@@ -165,6 +187,7 @@ export async function staleWhileRevalidate(request: Request, cacheName: string):
           .then(() => trimCache(cacheName, MISC_CACHE_MAX))
           .catch(() => undefined);
       }
+
       return response;
     })
     .catch(() => undefined);

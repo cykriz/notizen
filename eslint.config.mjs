@@ -8,7 +8,11 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
 
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "worker/**", "e2e/**"]),
+  // worker/ and e2e/ are deliberately NOT ignored: they were, and 834 errors
+  // (incl. real `any`-unsafety in the SW message handler) accumulated unseen —
+  // the same blind spot the root tsconfig had for typechecking. `projectService`
+  // resolves both via their own tsconfig.json, so no extra config is needed.
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),
 
   ...tseslint.configs.strictTypeChecked.map((cfg) => ({
     ...cfg,

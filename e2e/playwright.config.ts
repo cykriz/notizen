@@ -6,7 +6,7 @@ import path from 'path';
 // computed path in an env var lets workers inherit the runner's value.
 const testNotesRoot =
   process.env.NOTIZEN_E2E_NOTES_ROOT ??
-  path.join(process.cwd(), `.test-notes-pw-${process.pid}`);
+  path.join(process.cwd(), `.test-notes-pw-${process.pid.toString()}`);
 process.env.NOTIZEN_E2E_NOTES_ROOT = testNotesRoot;
 
 export const TEST_NOTES_ROOT = testNotesRoot;
@@ -14,7 +14,7 @@ export const TEST_USER = { username: 'testuser', password: 'testpass123' };
 export const TEST_PORT = 3100;
 export const STORAGE_STATE = path.join(__dirname, '.auth', 'user.json');
 
-const isCI = !!process.env.CI;
+const isCI = (process.env.CI ?? '') !== '';
 
 export default defineConfig({
   testDir: './tests',
@@ -29,7 +29,7 @@ export default defineConfig({
   timeout: 60_000,
 
   use: {
-    baseURL: `http://localhost:${TEST_PORT}`,
+    baseURL: `http://localhost:${TEST_PORT.toString()}`,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     navigationTimeout: 30_000,
@@ -55,8 +55,8 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: `bun run scripts/manage-users.ts add ${TEST_USER.username} ${TEST_USER.password} || true; bun --bun next build && bun --bun next start --port ${TEST_PORT}`,
-    url: `http://localhost:${TEST_PORT}`,
+    command: `bun run scripts/manage-users.ts add ${TEST_USER.username} ${TEST_USER.password} || true; bun --bun next build && bun --bun next start --port ${TEST_PORT.toString()}`,
+    url: `http://localhost:${TEST_PORT.toString()}`,
     cwd: path.join(__dirname, '..'),
     reuseExistingServer: !isCI,
     env: { ...process.env, NOTES_ROOT: testNotesRoot },

@@ -27,7 +27,7 @@ button{padding:.5rem 1rem;border:1px solid currentColor;background:transparent;c
 </html>`;
 
 export const offlineHtmlResponse = (): Response =>
-  new Response(OFFLINE_HTML, { status: 503, headers: { "Content-Type": "text/html; charset=utf-8" } });
+  new Response(OFFLINE_HTML, { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 
 export const offlineDataResponse = (): Response =>
-  new Response("Offline", { status: 503, headers: { "Content-Type": "text/plain" } });
+  new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } });

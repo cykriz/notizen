@@ -1,11 +1,11 @@
-import { test, expect, type Page } from "@playwright/test";
-import { OFFLINE_PATH, QUADRANT_META, SW_MSG_ENSURE_PRECACHE } from "../../lib/constants";
-import { NOTES_PATH, NOTES_PATH_PREFIX, SW_PRECACHE_PATHS, TODOS_PATH } from "../../lib/pathConstants";
-import { goOffline, watchForHydrationErrors } from "./helpers";
+import { test, expect, type Page } from '@playwright/test';
+import { OFFLINE_PATH, QUADRANT_META, SW_MSG_ENSURE_PRECACHE } from '../../lib/constants';
+import { NOTES_PATH, NOTES_PATH_PREFIX, SW_PRECACHE_PATHS, TODOS_PATH } from '../../lib/pathConstants';
+import { goOffline, watchForHydrationErrors } from './helpers';
 
 // A note id that certainly has no cached HTML of its own — an offline
 // navigation here is exactly the reported production symptom.
-const UNKNOWN_NOTE_ID = "8f14e45f-ceea-467a-9c2f-1f2f3e4d5a6b";
+const UNKNOWN_NOTE_ID = '8f14e45f-ceea-467a-9c2f-1f2f3e4d5a6b';
 
 const ALL_PRECACHED = [...SW_PRECACHE_PATHS];
 
@@ -24,10 +24,10 @@ async function swReady(page: Page): Promise<void> {
  * registered, only the repair path can refill the cache.
  */
 async function wipePagesCache(page: Page): Promise<string[]> {
-  return page.evaluate(async () => {
+  return await page.evaluate(async () => {
     const removed: string[] = [];
     for (const name of await caches.keys()) {
-      if (name.startsWith("pages-")) {
+      if (name.startsWith('pages-')) {
         await caches.delete(name);
         removed.push(name);
       }
@@ -38,7 +38,7 @@ async function wipePagesCache(page: Page): Promise<string[]> {
 
 /** Which required documents the fallback chain would find (global, like caches.match in the SW). */
 async function cachedPaths(page: Page, paths: readonly string[]): Promise<string[]> {
-  return page.evaluate(async (candidates) => {
+  return await page.evaluate(async (candidates) => {
     const hits: string[] = [];
     for (const path of candidates) {
       if (await caches.match(path)) {
@@ -56,7 +56,7 @@ interface PrecacheReportShape {
 
 /** Ask the SW for its own precache report over the same MessageChannel the app uses. */
 async function requestPrecacheReport(page: Page): Promise<PrecacheReportShape | null> {
-  return page.evaluate(async (messageType) => {
+  return await page.evaluate(async (messageType) => {
     const registration = await navigator.serviceWorker.ready;
     const worker = registration.active;
     if (!worker) {
@@ -81,11 +81,11 @@ async function requestPrecacheReport(page: Page): Promise<PrecacheReportShape | 
 async function loadAndAwaitRepair(page: Page): Promise<void> {
   await page.goto(NOTES_PATH);
   await expect
-    .poll(async () => cachedPaths(page, SW_PRECACHE_PATHS), { timeout: 40_000 })
+    .poll(() => cachedPaths(page, SW_PRECACHE_PATHS), { timeout: 40_000 })
     .toEqual(ALL_PRECACHED);
 }
 
-test.describe("Service-Worker-Precache", () => {
+test.describe('Service-Worker-Precache', () => {
   let hydrationErrors: string[] = [];
 
   test.beforeEach(async ({ page }) => {
@@ -96,7 +96,7 @@ test.describe("Service-Worker-Precache", () => {
     // Without this the later assertions could pass on a cache that was never
     // populated in the first place.
     await expect
-      .poll(async () => cachedPaths(page, SW_PRECACHE_PATHS), { timeout: 40_000 })
+      .poll(() => cachedPaths(page, SW_PRECACHE_PATHS), { timeout: 40_000 })
       .toEqual(ALL_PRECACHED);
 
     // Drain: ensurePrecached shares one in-flight run, so awaiting a report here
@@ -111,7 +111,7 @@ test.describe("Service-Worker-Precache", () => {
     expect(hydrationErrors).toEqual([]);
   });
 
-  test("ein geleerter pages-Cache wird beim nächsten Online-Mount wieder aufgefüllt", async ({
+  test('ein geleerter pages-Cache wird beim nächsten Online-Mount wieder aufgefüllt', async ({
     page,
   }) => {
     // Leave the (app) tree before breaking things: /offline mounts no
@@ -134,7 +134,7 @@ test.describe("Service-Worker-Precache", () => {
     expect(report?.missingStatic).toBe(0);
   });
 
-  test("offline lädt die App auch nach einem geleerten Cache statt des 503-Notnagels", async ({
+  test('offline lädt die App auch nach einem geleerten Cache statt des 503-Notnagels', async ({
     page,
   }) => {
     // Same reason as above: break the cache from outside the (app) tree.
@@ -166,15 +166,15 @@ test.describe("Service-Worker-Precache", () => {
     expect(unknownNote?.status()).toBe(200);
   });
 
-  test("nach dem Abmelden bleibt /offline im Cache, die Nutzerseiten nicht", async ({ page }) => {
-    await page.getByRole("button", { name: "Abmelden" }).click();
+  test('nach dem Abmelden bleibt /offline im Cache, die Nutzerseiten nicht', async ({ page }) => {
+    await page.getByRole('button', { name: 'Abmelden' }).click();
     await page.waitForURL(/\/login/, { timeout: 15_000 });
 
     // The SW does the purge inside waitUntil, so poll for the end state.
     // /notes, /todos and the shell all embed the user's server-rendered list;
     // /offline is public and has no user data, so it is the one entry kept.
     await expect
-      .poll(async () => cachedPaths(page, SW_PRECACHE_PATHS), { timeout: 20_000 })
+      .poll(() => cachedPaths(page, SW_PRECACHE_PATHS), { timeout: 20_000 })
       .toEqual([OFFLINE_PATH]);
 
     await page.context().setOffline(true);

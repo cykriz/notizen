@@ -1,11 +1,11 @@
-import { type Locator, type Page, expect } from "@playwright/test";
-import fs from "fs/promises";
-import path from "path";
-import { TEST_NOTES_ROOT } from "../playwright.config";
-import { SHARES_DIR, SHARES_FILE } from "../../lib/constants";
-import { FAILED_SYNC_DIALOG_TITLE, FAILED_SYNC_OPEN_LABEL } from "../../lib/failedSyncConstants";
-import type { ShareEntry } from "../../lib/fsSharesRegistry";
-import { clearLocalState, readPendingQueue } from "./storageHelpers";
+import { type Locator, type Page, expect } from '@playwright/test';
+import fs from 'fs/promises';
+import path from 'path';
+import { TEST_NOTES_ROOT } from '../playwright.config';
+import { SHARES_DIR, SHARES_FILE } from '../../lib/constants';
+import { FAILED_SYNC_DIALOG_TITLE, FAILED_SYNC_OPEN_LABEL } from '../../lib/failedSyncConstants';
+import type { ShareEntry } from '../../lib/fsSharesRegistry';
+import { clearLocalState, readPendingQueue } from './storageHelpers';
 
 /**
  * Collects anything that smells like a hydration mismatch, for the run of one test.
@@ -25,11 +25,11 @@ export function watchForHydrationErrors(page: Page): string[] {
     }
   };
 
-  page.on("pageerror", (err) => {
+  page.on('pageerror', (err) => {
     collect(err.message);
   });
-  page.on("console", (msg) => {
-    if (msg.type() === "error") {
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') {
       collect(msg.text());
     }
   });
@@ -40,8 +40,8 @@ export function watchForHydrationErrors(page: Page): string[] {
 export async function waitForSave(page: Page): Promise<void> {
   await page.waitForResponse(
     (resp) =>
-      resp.url().includes("/api/notes/") &&
-      resp.request().method() === "PUT" &&
+      resp.url().includes('/api/notes/') &&
+      resp.request().method() === 'PUT' &&
       resp.ok(),
     { timeout: 10_000 },
   );
@@ -53,13 +53,13 @@ export async function createNote(
   title: string,
   content: string,
 ): Promise<string> {
-  await page.getByRole("button", { name: /Neue Notiz/ }).click();
+  await page.getByRole('button', { name: /Neue Notiz/ }).click();
   await page.waitForURL(/\/notes\/[^/]+$/, { timeout: 30_000 });
-  await expect(page.locator("#note-title")).toHaveValue("Unbenannt", { timeout: 10_000 });
-  await page.locator("#note-title").fill(title);
+  await expect(page.locator('#note-title')).toHaveValue('Unbenannt', { timeout: 10_000 });
+  await page.locator('#note-title').fill(title);
   const saved = waitForSave(page);
-  await page.locator(".cm-content").click();
-  await page.locator(".cm-content").pressSequentially(content);
+  await page.locator('.cm-content').click();
+  await page.locator('.cm-content').pressSequentially(content);
   await saved;
   return page.url();
 }
@@ -71,14 +71,14 @@ export async function createNote(
 export async function goOnline(page: Page): Promise<void> {
   const healthOk = page
     .waitForResponse(
-      (resp) => resp.url().includes("/api/health") && resp.ok(),
+      (resp) => resp.url().includes('/api/health') && resp.ok(),
       { timeout: 15_000 },
     )
-    .catch(() => {});
+    .catch(() => undefined);
   await page.context().setOffline(false);
   await page
-    .evaluate(() => window.dispatchEvent(new Event("online")))
-    .catch(() => {});
+    .evaluate(() => window.dispatchEvent(new Event('online')))
+    .catch(() => undefined);
   await healthOk;
 }
 
@@ -86,14 +86,17 @@ export async function goOnline(page: Page): Promise<void> {
  *  RSC payloads) to finish before cutting the connection. Without this,
  *  Next.js throws RuntimeChunkLoadError when an in-flight chunk fetch fails. */
 export async function goOffline(page: Page): Promise<void> {
-  await page.waitForLoadState("networkidle");
+  await page.waitForLoadState('networkidle');
   await page.context().setOffline(true);
 }
 
 /** Extract note ID from a /notes/<id> URL. */
 export function noteIdFromUrl(url: string): string {
   const match = /\/notes\/([^/?#]+)/.exec(url);
-  if (!match) throw new Error(`No note ID in URL: ${url}`);
+  if (!match) {
+    throw new Error(`No note ID in URL: ${url}`);
+  }
+
   return match[1];
 }
 
@@ -105,25 +108,51 @@ export async function deleteAllShares(): Promise<void> {
 }
 
 /** Read the raw share registry. Returns empty object if missing. */
-export async function readShareRegistry(): Promise<Record<string, ShareEntry>> {
+// Partial: an arbitrary token must type as a miss, so the lookup guards below
+// stay meaningful rather than reading as dead code — same reason as
+// FAILED_SYNC_CAUSE_BY_STATUS in lib/failedSyncConstants.ts.
+export async function readShareRegistry(): Promise<Partial<Record<string, ShareEntry>>> {
   try {
-    const raw = await fs.readFile(SHARES_FILE_PATH, "utf-8");
-    return JSON.parse(raw) as Record<string, ShareEntry>;
+    const raw = await fs.readFile(SHARES_FILE_PATH, 'utf-8');
+    return JSON.parse(raw) as Partial<Record<string, ShareEntry>>;
   } catch {
     return {};
   }
 }
 
+/** Entry for a token or a hard failure naming it — non-optional, so callers need
+ *  no `!`. Takes the registry instead of re-reading it, so setShareExpiry writes
+ *  back the object it validated rather than a second, possibly newer read. */
+function entryOrThrow(registry: Partial<Record<string, ShareEntry>>, token: string): ShareEntry {
+  const entry = registry[token];
+  if (entry === undefined) {
+    throw new Error(`Share token not found in registry: ${token}`);
+  }
+
+  return entry;
+}
+
+export async function getShareEntry(token: string): Promise<ShareEntry> {
+  return entryOrThrow(await readShareRegistry(), token);
+}
+
+/** `expiresAt` of a share, asserted present — every preset sets one, so a null
+ *  here is a real failure and not a case the caller should have to narrow. */
+export async function getShareExpiresAt(token: string): Promise<string> {
+  const { expiresAt } = await getShareEntry(token);
+  if (expiresAt === null) {
+    throw new Error(`Share has no expiresAt: ${token}`);
+  }
+
+  return expiresAt;
+}
+
 /** Overwrite a single share's expiresAt. Used to force expiry without time-travel. */
 export async function setShareExpiry(token: string, expiresAt: string): Promise<void> {
   const registry = await readShareRegistry();
-  const entry = registry[token];
-  if (!entry) {
-    throw new Error(`Share token not found in registry: ${token}`);
-  }
-  registry[token] = { ...entry, expiresAt };
+  registry[token] = { ...entryOrThrow(registry, token), expiresAt };
   await fs.mkdir(path.dirname(SHARES_FILE_PATH), { recursive: true });
-  await fs.writeFile(SHARES_FILE_PATH, JSON.stringify(registry, null, 2), "utf-8");
+  await fs.writeFile(SHARES_FILE_PATH, JSON.stringify(registry, null, 2), 'utf-8');
 }
 
 /** Wait for a queued mutation to appear (auto-save is debounced). */
@@ -136,10 +165,10 @@ export async function waitForPendingEntry(page: Page): Promise<void> {
 /** Click the failed-sync indicator and wait for the inspector to open. */
 export async function openFailedSyncDialog(page: Page): Promise<Locator> {
   await page
-    .getByRole("button", { name: FAILED_SYNC_OPEN_LABEL })
+    .getByRole('button', { name: FAILED_SYNC_OPEN_LABEL })
     .first()
     .click();
-  const dialog = page.getByRole("dialog");
+  const dialog = page.getByRole('dialog');
   await expect(dialog.getByText(FAILED_SYNC_DIALOG_TITLE)).toBeVisible({ timeout: 5_000 });
   return dialog;
 }
@@ -148,8 +177,8 @@ export async function openFailedSyncDialog(page: Page): Promise<Locator> {
  *  keeps rows from earlier tests, and a `.first()` locator silently targets the
  *  wrong card. */
 export async function deleteAllTodos(page: Page): Promise<void> {
-  const res = await page.request.get("/api/todos");
-  const todos: { id: string }[] = await res.json();
+  const res = await page.request.get('/api/todos');
+  const todos = (await res.json()) as { id: string }[];
   await Promise.all(todos.map((t) => page.request.delete(`/api/todos/${t.id}`)));
   await clearLocalState(page);
 }
@@ -157,8 +186,8 @@ export async function deleteAllTodos(page: Page): Promise<void> {
 /** Delete all notes via the API and clear localStorage so tests
  *  start with a completely clean slate (no stale cache/sync entries). */
 export async function deleteAllNotes(page: Page): Promise<void> {
-  const res = await page.request.get("/api/notes");
-  const notes: { id: string }[] = await res.json();
+  const res = await page.request.get('/api/notes');
+  const notes = (await res.json()) as { id: string }[];
   await Promise.all(
     notes.map((n) => page.request.delete(`/api/notes/${n.id}`)),
   );

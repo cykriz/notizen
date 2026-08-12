@@ -19,7 +19,10 @@ export async function cacheNavigationHtml(
   // IS that set, so the caller never has to pass it twice. Without the second
   // clause '/offline', '/notes' and '/todos' are unreachable for every warm
   // path — '/notes' has no trailing slash and fails the prefix test.
-  if (!url.startsWith(NOTES_PATH_PREFIX) && !protectedPathnames.has(url)) return;
+  if (!url.startsWith(NOTES_PATH_PREFIX) && !protectedPathnames.has(url)) {
+    return;
+  }
+
   try {
     const response = await fetch(url, {
       credentials: 'same-origin',
@@ -33,7 +36,10 @@ export async function cacheNavigationHtml(
         Accept: 'text/html',
       },
     });
-    if (!shouldCacheNavigation(response)) return;
+    if (!shouldCacheNavigation(response)) {
+      return;
+    }
+
     const htmlClone = response.clone();
     const cache = await caches.open(CACHE.pages);
     // await (not fire-and-forget like other strategies in this file) — we're
@@ -58,17 +64,26 @@ export async function cacheNavigationHtml(
  * (swPrecache) and the asset references parsed out of a warmed HTML document.
  */
 export async function ensureStaticAssets(urls: string[]): Promise<number> {
-  if (urls.length === 0) return 0;
+  if (urls.length === 0) {
+    return 0;
+  }
+
   const cache = await caches.open(CACHE.static);
   const results = await Promise.allSettled(
     urls.map(async (url) => {
       // Hashed filenames are immutable — skip if already cached.
-      if (await cache.match(url)) return;
+      if (await cache.match(url)) {
+        return;
+      }
+
       const response = await fetch(url, {
         credentials: 'same-origin',
         headers: { [SW_INTERNAL_HEADER]: '1' },
       });
-      if (!response.ok) throw new Error(`${url}: ${String(response.status)}`);
+      if (!response.ok) {
+        throw new Error(`${url}: ${String(response.status)}`);
+      }
+
       await cache.put(url, response);
     }),
   );

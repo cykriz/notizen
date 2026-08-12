@@ -22,7 +22,8 @@ declare const self: ServiceWorkerGlobalScope;
 
 // ── Install ──────────────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
-  self.skipWaiting();
+  // Fire-and-forget on purpose: the install must not wait on activation.
+  void self.skipWaiting();
   event.waitUntil(
     ensurePrecached().then(
       (report) => {
@@ -59,16 +60,32 @@ self.addEventListener('activate', (event) => {
 });
 
 // ── Messages ────────────────────────────────────────────────────────
+// `ExtendableMessageEvent.data` is `any` per spec, and the page posts an
+// unconstrained value (`postToServiceWorker(message: unknown)`), so the SW has to
+// validate rather than trust it — anything with a postMessage handle can reach
+// here. Narrowing once up front also keeps the branches free of untyped reads.
+interface SwMessage {
+  type: string;
+  url?: unknown;
+}
+
+function isSwMessage(data: unknown): data is SwMessage {
+  return typeof data === 'object' && data !== null && 'type' in data && typeof data.type === 'string';
+}
+
 self.addEventListener('message', (event) => {
-  const msgEvent = event as ExtendableMessageEvent;
-  const data = msgEvent.data;
-  if (data?.type === SW_MSG_CLEAR_AUTH_CACHES) {
-    msgEvent.waitUntil(Promise.all([caches.delete(CACHE.api), clearUserPages()]));
-  } else if (data?.type === SW_MSG_WARM_PAGE_CACHE && typeof data.url === 'string') {
-    msgEvent.waitUntil(cacheNavigationHtml(data.url, PROTECTED_PAGE_PATHS));
-  } else if (data?.type === SW_MSG_ENSURE_PRECACHE) {
-    const port = msgEvent.ports[0] as MessagePort | undefined;
-    msgEvent.waitUntil(
+  const data: unknown = event.data;
+  if (!isSwMessage(data)) {
+    return;
+  }
+
+  if (data.type === SW_MSG_CLEAR_AUTH_CACHES) {
+    event.waitUntil(Promise.all([caches.delete(CACHE.api), clearUserPages()]));
+  } else if (data.type === SW_MSG_WARM_PAGE_CACHE && typeof data.url === 'string') {
+    event.waitUntil(cacheNavigationHtml(data.url, PROTECTED_PAGE_PATHS));
+  } else if (data.type === SW_MSG_ENSURE_PRECACHE) {
+    const port = event.ports[0] as MessagePort | undefined;
+    event.waitUntil(
       ensurePrecached().then(
         (report) => {
           port?.postMessage(report);
@@ -102,18 +119,30 @@ self.addEventListener('fetch', (event) => {
   // carry this sentinel) don't re-enter this handler per the SW spec, so this
   // normally never matches. Kept in case a controlled client ever forwards a
   // request carrying the sentinel — it must bypass caching, not be re-stored.
-  if (request.headers.get(SW_INTERNAL_HEADER) !== null) return;
+  if (request.headers.get(SW_INTERNAL_HEADER) !== null) {
+    return;
+  }
+
   const url = new URL(request.url);
 
-  if (url.origin !== self.location.origin) return;
-  if (request.method !== 'GET') return;
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  if (request.method !== 'GET') {
+    return;
+  }
 
   // Public share routes must never be cached by the SW.
-  if (url.pathname.startsWith(SHARE_PATH_PREFIX)) return;
+  if (url.pathname.startsWith(SHARE_PATH_PREFIX)) {
+    return;
+  }
 
   // Online-only endpoints (trash management, user settings) bypass the SW so
   // they always hit the network and never serve stale data or evict note data.
-  if (SW_BYPASS_API_PREFIXES.some((p) => url.pathname.startsWith(p))) return;
+  if (SW_BYPASS_API_PREFIXES.some((p) => url.pathname.startsWith(p))) {
+    return;
+  }
 
   if (request.mode === 'navigate') {
     event.respondWith(networkFirstWithFallback(request, CACHE.pages, PROTECTED_PAGE_PATHS, OFFLINE_SHELL_PATH));

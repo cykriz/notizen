@@ -38,7 +38,10 @@ async function missingPagePaths(): Promise<string[]> {
 
 async function missingStaticUrls(): Promise<string[]> {
   const urls = manifestUrls();
-  if (urls.length === 0) return [];
+  if (urls.length === 0) {
+    return [];
+  }
+
   const cache = await caches.open(CACHE.static);
   // cache.keys() yields absolute request URLs while the manifest holds
   // root-relative paths — compare on pathname, the same normalisation trimCache
@@ -61,7 +64,10 @@ let inFlight: Promise<PrecacheReport> | null = null;
  * replaying a frozen report.
  */
 export function ensurePrecached(): Promise<PrecacheReport> {
-  if (inFlight !== null) return inFlight;
+  if (inFlight !== null) {
+    return inFlight;
+  }
+
   const run = runEnsure().finally(() => {
     inFlight = null;
   });
