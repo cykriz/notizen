@@ -14,9 +14,8 @@ so it can be taken over in one piece via the copy button.
 ## Procedure
 
 1. **Get the plan**
-   - If `$ARGUMENTS` is not empty → treat it as a file path and read it with `Read`; that is the review
-     input.
-   - Otherwise → take the plan last mentioned/pasted in the chat, or the plan mode plan, as input.
+   - `$ARGUMENTS` not empty → treat it as a file path and `Read` it; that is the review input.
+   - Otherwise → the plan last mentioned/pasted in the chat, or the plan mode plan.
    - If **no** plan can be found at all → ask once which plan to review, then stop.
 
 2. **Load the criteria and follow the procedure (mandatory)**
@@ -27,11 +26,9 @@ so it can be taken over in one piece via the copy button.
 3. **Write the review** following the template below.
 
 4. **Print it as ONE code block directly in the chat**, following the fence rule below. **No** other prose
-   outside the block, **no** second code block — at most a single short line before it (e.g. "Here is the
-   review to copy:").
+   outside the block, **no** second code block — at most a single short line before it.
    - **Never create a new file.** The review is only ever printed as a code block in the chat — no `Write`,
-     no saving to `.md`/`.claude/plans/` or similar. Only the plan under review may be read (in step 1)
-     via `Read`; nothing is written.
+     no saving to `.md`/`.claude/plans/` or similar. Only the plan under review may be read (in step 1).
 
 ## Review template (= content of the code block, in markdown)
 
@@ -66,22 +63,13 @@ prefix placeholder with your judgement. Mark lines that don't apply as `n/a` ins
 
 ## Fence rule — CORE REQUIREMENT: only ONE code block
 
-The review text is markdown itself and contains **backtick** fences (` ``` `, e.g. to quote code snippets
-from the plan). Wrapping it in a backtick block would let the first inner ` ``` ` run close the block
-early. Solution: wrap the outer block in **tilde fences (`~~~`)**.
+The review text is markdown itself and contains **backtick** fences, so a backtick outer block would be
+closed early by the first inner one. ⚠️ **Never use backtick fences (` ``` `) for the outer block** — it is
+**always** a tilde fence, which in CommonMark only a line of ≥ as many tildes can close.
 
-In CommonMark, tilde and backtick fences are **independent**: a tilde block is closed **only** by a line
-with at least as many **tildes** — backticks in the content **never** close it, no matter how many. That is
-more robust and simpler than counting backtick runs, because review content practically never contains
-tilde fences.
-
-1. First assemble the **complete** review markdown.
-2. Determine the **longest contiguous run of tildes N** within it (almost always 0).
-3. Pick the fence length **F = max(N + 1, 4)** — default 4 tildes, so even the rare case of a 3-tilde run
-   in the content is safely enclosed.
-4. Print the **entire** review in exactly one fence: a line with F tildes (optionally followed directly by
-   `markdown` as a language hint), then the review, then a line of its own with the same F tildes. Opening
-   and closing fence have the same count.
-
-**Never use backtick fences (` ``` `) for the outer block** — otherwise the first inner code fence breaks
-it open. The outer block is **always** a tilde fence.
+1. Assemble the **complete** review markdown first.
+2. Determine the longest contiguous run of tildes **N** within it (almost always 0).
+3. Fence length **F = max(N + 1, 4)**.
+4. Print the **entire** review in exactly one fence: a line of F tildes (default `~~~~`, optionally
+   followed directly by `markdown`), the review, then a line of its own with the same F tildes. Opening
+   and closing match.

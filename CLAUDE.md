@@ -6,10 +6,11 @@ Next.js 16 + React 19 + Bun + TypeScript (strict) + Tailwind v4 + shadcn/ui. Fil
 
 - `bun install` (not npm), `bun run lint`, `bun run typecheck`
 - Run lint + typecheck after every code change. Fix all errors before moving on.
-- `bun run typecheck` checks **all three** TS projects — app, `worker/`, `e2e/`. Never use bare `bunx tsc --noEmit`: the root tsconfig excludes `worker` and `e2e`, so it silently covers only the app (that is how a service-worker type error survived months unnoticed).
+- `bun run typecheck` checks **all three** TS projects — app, `worker/`, `e2e/`. Never use bare `bunx tsc --noEmit`: the root tsconfig excludes `worker` and `e2e`, so it silently covers only the app.
 - Dev server: `bun --bun next dev`
 - Add shadcn component: `npx shadcn@latest add <name>`
-- E2E tests: `bun run test:e2e` (headless), `bun run test:e2e:ui` (UI mode). Browser install: `bunx playwright install chromium`. Only Playwright's test *runner* falls back to `npx` (needs Node's module loader) — everything else (install, scripts, queries) uses `bun`/`bunx`.
+- Unit tests: `bun test` — `NOTES_ROOT` points at a temp dir, covers pure FS/logic helpers. **No vitest/Jest.**
+- E2E tests: `bun run test:e2e` (headless), `bun run test:e2e:ui` (UI mode). Browser install: `bunx playwright install chromium`. `npx` only for the test *runner* — see § Key Rules.
 - Install git hooks: `cp scripts/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit`
 
 ## Plan Review (automatic)
@@ -18,7 +19,7 @@ In plan mode, `ExitPlanMode` is gated by `scripts/plan-review-gate.ts` (register
 
 Review criteria live **only** in `.claude/plan-review-criteria.md`, shared by the `plan-reviewer` agent and the `/plan-review` command; it applies `.claude/review/checks.md` to plans by reference rather than copying it.
 
-A gate that silently passes looks exactly like a broken gate, so set `PLAN_REVIEW_GATE_DEBUG=/path/dump.jsonl` to have it log each hook payload plus the decision it made.
+Debug: `PLAN_REVIEW_GATE_DEBUG=/path/dump.jsonl` logs each hook payload plus the decision — a gate that silently passes looks exactly like a broken one.
 
 ## Code Review (automatic)
 
@@ -32,13 +33,16 @@ not this one.
 review that did *not* come out of it — otherwise every fix is another trigger and the chain never
 terminates.
 
-**Report contract:** the discipline of `scripts/plan-review-protocol.md` §§ 2 and 5 applies — verify
-each finding instead of adopting it, drop what does not hold with a reason, report compactly.
-Code-review deltas: the reviewer marks confidence as `[belegt|Vermutung]` (not `certain/likely/guess`)
-and anchors findings as `<Datei › Symbol>` rather than `file:line`, so verify a `Vermutung` by opening
-the symbol; **fixed findings stay silent** (they are visible in the diff); there is **no artifact and
-no gate**, so the diff is the only evidence; and what you do not fix **must** be named — *dropped* is
-fine, *unmentioned* is not.
+**Triage:** verify each finding instead of adopting it. The reviewer marks confidence as
+`[belegt|Vermutung]` (not `certain/likely/guess`) and anchors findings as `<Datei › Symbol>` rather
+than `file:line` — verify a `Vermutung` by opening the symbol.
+
+**Report to the user — maximum brevity:** one status line, then only **open** findings and real
+decisions for the user. **Fixed findings stay silent** (visible in the diff). Dropped ones are named
+on **one** line without reasons — by their anchor, since this reviewer issues no IDs
+(`verworfen: <Datei › Symbol>, …`). ⚠️ There is **no artifact and no gate** here, so
+the diff is the only evidence: *dropped* is fine, *unmentioned* is not — an unnamed finding disappears
+without trace.
 
 **Runtime gates:** the agent only names them (`GATES:`); you run them afterwards.
 

@@ -177,4 +177,4 @@ stay, under § "Skill Compliance": without it the loaded skill would be read and
 The original § "Output Format" and the layout of § "Copyable Fix Plan" are gone on purpose: they were
 report formatting for a human reader, and the reviewer now writes to an agent under the output
 contract in `.claude/agents/review-changes.md`. Their one piece of check substance — the fix ordering
-rule — survives above as § "Fix-Reihenfolge".
+rule — survives above as § "Fix Order".

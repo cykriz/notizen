@@ -19,9 +19,10 @@ any step of your planning, it comes before it.
    answered from the plan and the code, use `AskUserQuestion` — **before** `ExitPlanMode`. Anything you
    can decide yourself you decide yourself and record in the plan.
 
-5. **Output to the user: about 8 lines maximum.** One header line `Auto review: N findings`, then one
-   line per finding marked "adopted" (plus what changed in the plan) or "dropped" (plus the reason).
-   Always show the dropped ones — that is the user's control over false positives.
+5. **Output to the user — maximum brevity.** One status line `Auto review: N findings`, then only what
+   you could **not** decide yourself. **Adopted findings stay silent** — they are visible in the plan
+   file. Dropped ones are named on **one** line without reasons (`verworfen: F2, F5`); that line is the
+   user's control over false positives, so *dropped* is fine but *unmentioned* is not.
    **No** review markdown, **no** code block, no tilde block, no table, no meta prose about hooks or
    about a tool having blocked you.
 

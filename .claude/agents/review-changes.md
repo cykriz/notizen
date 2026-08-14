@@ -51,8 +51,13 @@ Der letzte Zweig ist der Default: im Zweifel lädst du `checks.md`. Regeldateien
 bewusst nicht im Fast Path — dort entsteht „dieselbe Regel zweimal", du brauchst also die Probes.
 
 **Passende SKILL.md finden:** `Grep` mit `path: <root>/.claude/skills`, `glob: **/SKILL.md`,
-`pattern: ^description:`, `output_mode: content`. Dann **nur** die Skills ganz lesen, deren
-Beschreibung zu einer geänderten Datei passt.
+`pattern: ^description:`, `output_mode: content`. Dann **nur** die Skills lesen, deren Beschreibung zu
+einer geänderten Datei passt.
+
+⚠️ **`architecture` ist gesplittet.** Seine `SKILL.md` ist ein Index: Datenmodell, Filesystem-Layout und
+eine Routing-Tabelle. Lade daraus **nur** die `references/*.md` der geänderten Pfadklasse, nie alle.
+Bei unklarem Pfad nennt die Tabelle den Default. Fehlt ein neues Modul/eine neue Route im Inventar der
+zuständigen Referenz, ist das ein Finding (`checks.md` § "Skill Compliance").
 
 ## 4. Erhebung deckeln
 

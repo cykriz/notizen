@@ -14,12 +14,16 @@ Two consumers:
 
 ## How to run this review
 
-1. **Read this file in full**, plus `.claude/review/checks.md` §§ "Step 1", "2a" and "Severity Floors".
-   Not from memory. Ignore its § "2b" — see "Not Checkable at the Plan Level" below.
-2. **Skills only as needed**: scan the `description` frontmatter of
-   `.claude/skills/**/SKILL.md` and read only those skills in full that match the files the plan touches.
-   `CLAUDE.md` if needed. Don't duplicate content — check it and point at it.
-3. **Evidence, not assertions**: back every claim about the existing code with `Read`/`Grep` and cite it
+1. **`CLAUDE.md` is already in your context** — judge against it and do **not** read it again. If it is
+   missing there, report that as `Lücke:`.
+2. **Read this file in full**, plus `.claude/review/checks.md` §§ "Step 1", "2a", "Severity Floors",
+   "Next.js Specifics" and "Style & Conventions" — every section this file points at. Not from memory.
+   Ignore its § "2b" apart from the one check named below — see "Not Checkable at the Plan Level".
+3. **Skills only as needed**: find the matching `SKILL.md` the same way `.claude/agents/review-changes.md`
+   § 3 describes (`Grep` over `.claude/skills/**/SKILL.md` for `^description:`), then read **only** the
+   matching skill — and from it only the reference file its routing table names for the paths the plan
+   touches. Don't duplicate content — check it and point at it.
+4. **Evidence, not assertions**: back every claim about the existing code with `Read`/`Grep` and cite it
    as `file:line`. Mark what you did not verify.
 
 ## Generic Quality
@@ -28,30 +32,30 @@ Two consumers:
 - ✅/⚠️/❌ Assumptions stated explicitly
 - ✅/⚠️/❌ Step order / dependencies clear
 - ✅/⚠️/❌ Error and edge cases considered
-- ✅/⚠️/❌ Verification/tests — the commands and their caveats are in `CLAUDE.md` § Commands; does the plan name the ones its changes need? (unit tests point `NOTES_ROOT` at a temp dir and cover pure FS/logic helpers; **no vitest/Jest**)
+- ✅/⚠️/❌ Verification/tests — does the plan name the commands its changes need (`CLAUDE.md` § Commands)? Unit tests point `NOTES_ROOT` at a temp dir and cover pure FS/logic helpers; **no vitest/Jest**
 - ✅/⚠️/❌ Rollback / reversibility
 - ✅/⚠️/❌ Affected files named concretely
 
 ## Notes App / Project Invariants (✅/⚠️/❌/n/a)
 
-The rules themselves live in `CLAUDE.md` and the skills — these lines are the checklist, not a second copy
-of the rules. Read the source before judging a line.
+The rules live in `CLAUDE.md` (in your context) and in the skills — these lines are the checklist, not a
+second copy. Where a line names files, those are the ones to look at; the rule itself you read at its source.
 
-- **Language** — user-facing text in German, recurring strings as constants (`CLAUDE.md`)
-- **File limit** — max 200 lines per file, tests excepted (`CLAUDE.md`); does the plan split files that would grow past it?
-- **Constants/types** — repeated literals → `lib/constants.ts`, types in `lib/types.ts` (`CLAUDE.md` § Code Rules)
+- **Language** — user-facing text and recurring strings (`CLAUDE.md` § Key Rules, § Code Rules)
+- **File limit** — does the plan split files that would grow past the cap (`CLAUDE.md` § Key Rules)?
+- **Constants/types** — `lib/constants.ts` / `lib/types.ts` (`CLAUDE.md` § Code Rules)
 - **No database** — filesystem only via `lib/fsNotes.ts`/`lib/fsTodos.ts`/`lib/fsShares.ts`, `NOTES_ROOT` as the root (`CLAUDE.md`, `architecture` skill)
-- **Offline-first (PWA)** — does every new feature work offline, and are new routes/data accounted for in `worker/sw.ts`/`swStrategies.ts`/`swWarm.ts`? New navigable pages need offline behaviour (`CLAUDE.md`, `architecture` skill)
+- **Offline-first (PWA)** — does every new feature work offline, and are new routes/data accounted for in `worker/sw.ts`/`worker/swStrategies.ts`/`worker/swWarm.ts`? New navigable pages need offline behaviour (`CLAUDE.md`, `architecture` skill)
 - **Service worker strategies** — per-request-type strategy and the SW message protocol stay consistent; `/share/` routes are never cached (`architecture` skill)
 - **Auth/proxy** — new routes behind auth or deliberately registered as a public path; session cookie contract untouched (`proxy` skill)
-- **Mutations/revalidation** — `revalidatePath()` after mutations, except on `dynamic = 'force-dynamic'` pages (`CLAUDE.md`)
-- **Server actions / API** — `zod`-validated inputs, error shape `{ error: string }`, auth gate; no leaked data (`architecture` skill)
+- **Mutations/revalidation** — `revalidatePath()` and its `dynamic = 'force-dynamic'` exception (`CLAUDE.md`)
+- **Server actions / API** — `zod`-validated inputs, error shape `{ error: string }`, auth gate; no leaked data (`architecture` skill → `.claude/skills/architecture/references/routes.md`)
 - **`'use client'`** — only where state/hooks/events require it; prefer server-side data fetching (`CLAUDE.md`, `checks.md` § "Next.js Specifics")
-- **Styling tokens** — Tailwind only, semantic colors, no `dark:`, `cn()` object syntax, shadcn over raw HTML (`CLAUDE.md` § Style Rules, `styling` skill)
-- **Packages** — no new package without updating the approved list; every import a direct dependency; no hand-written type shims (`CLAUDE.md`)
+- **Styling tokens** — Tailwind, semantic colors, no `dark:`, `cn()` object syntax, shadcn over raw HTML (`CLAUDE.md` § Style Rules, `styling` skill)
+- **Packages** — approved list, direct dependency, no hand-written type shims (`CLAUDE.md` § Key Rules, § Approved Packages)
 - **Tags** — hierarchical, slash-separated (`CLAUDE.md`)
-- **Next.js config** — no experimental features beyond the documented exception; `output: 'standalone'` stays (`CLAUDE.md`)
-- **Conventions** — PascalCase components, camelCase utils, kebab-case routes, page-specific components in the route folder (`checks.md` § "Style & Conventions")
+- **Next.js config** — no experimental features beyond the documented exception; `output: 'standalone'` stays (`CLAUDE.md`, `next.config.ts`)
+- **Conventions** — naming and co-location (`checks.md` § "Style & Conventions")
 
 Mark invariants that don't apply as `n/a` instead of omitting them.
 
@@ -88,8 +92,9 @@ What changes when the subject is a plan instead of a diff:
   much of the body actually differs, or propose two functions.
 - **Implicit ordering**: plan steps whose correctness depends on "must run before X" / "must stay
   synchronous" without the types enforcing it.
-- **Skill inventory**: the plan adds modules/routes without accounting for the entry in
-  `.claude/skills/architecture/SKILL.md` (or the matching skill).
+- **Skill inventory**: the plan adds modules/routes without accounting for the entry in the matching
+  `.claude/skills/architecture/references/*.md` (routing table in that skill's `SKILL.md`), or the
+  matching skill.
 
 ## Severity
 
