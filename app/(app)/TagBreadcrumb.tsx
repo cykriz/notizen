@@ -1,17 +1,19 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { FAILED_SYNC_OPEN_LABEL } from '@/lib/failedSyncConstants';
-import { TAG_FOLDER_DELETE_LABEL, tagBreadcrumbJumpLabel } from '@/lib/tagConstants';
-import { parentTagPath } from '@/lib/tagTree';
-import { ChevronLeft, CloudAlert, Ellipsis, Trash2 } from 'lucide-react';
+import {
+  TAG_BREADCRUMB_UP_LABEL,
+  TAG_FOLDER_DELETE_LABEL,
+  TAG_ROOT_LABEL,
+  tagBreadcrumbJumpLabel,
+} from '@/lib/tagConstants';
+import { ancestorTagPaths, leafTagSegment } from '@/lib/tagTree';
+import { cn } from '@/lib/utils';
+import { ChevronLeft, CloudAlert, Folder, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import { DeleteTagFolderDialog } from './DeleteTagFolderDialog';
-
-// A 16rem sidebar fits roughly two readable segments beside the back and delete
-// buttons, and that cost stays constant however deep the path is. Deeper paths
-// collapse their prefix into one "…" button that walks up to the deepest hidden
-// ancestor — repeatedly, if the path is deeper than four.
-const MAX_VISIBLE_SEGMENTS = 2;
 
 interface TagBreadcrumbProps {
   currentPath: string;
@@ -25,7 +27,11 @@ interface TagBreadcrumbProps {
   setDeleteOpen: (open: boolean) => void;
 }
 
-/** Back button + clickable path segments + the folder's trailing action. */
+/**
+ * The current folder's name plus its actions. A 16rem sidebar cannot hold the path
+ * and a readable folder name at once, so the path lives entirely in the back
+ * button's menu and the name gets the whole row.
+ */
 export function TagBreadcrumb({
   currentPath,
   setCurrentPath,
@@ -35,62 +41,70 @@ export function TagBreadcrumb({
   deleteOpen,
   setDeleteOpen,
 }: TagBreadcrumbProps) {
-  const pathSegments = currentPath.split('/');
-  const hiddenCount = Math.max(0, pathSegments.length - MAX_VISIBLE_SEGMENTS);
-  const hiddenPath = pathSegments.slice(0, hiddenCount).join('/');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const ancestors = ancestorTagPaths(currentPath);
 
-  const handleBack = () => {
-    setCurrentPath(parentTagPath(currentPath));
+  const jumpTo = (path: string) => {
+    setCurrentPath(path);
+    setMenuOpen(false);
   };
 
   return (
     <div className="flex min-w-0 items-center gap-1 overflow-hidden text-xs text-sidebar-foreground/70">
-      <Button variant="ghost" size="icon-xs" onClick={handleBack} className="shrink-0">
-        <ChevronLeft />
-      </Button>
-      {hiddenCount > 0 && (
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={() => {
-            setCurrentPath(hiddenPath);
-          }}
-          className="shrink-0"
-          title={tagBreadcrumbJumpLabel(hiddenPath)}
+      <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            // icon-xs carries its own enlarged hit area below md — see button.tsx.
+            className={cn('shrink-0', { 'bg-accent': menuOpen })}
+            aria-label={TAG_BREADCRUMB_UP_LABEL}
+            title={TAG_BREADCRUMB_UP_LABEL}
+          >
+            <ChevronLeft />
+          </Button>
+        </PopoverTrigger>
+        {/* Tag paths are free-form, so this list has no natural length limit. Radix can
+            flip or shift the popover to fit but never scroll it, so without the cap the
+            deepest ancestors of a very deep path fall off the screen unreachably. */}
+        <PopoverContent
+          align="start"
+          className="flex max-h-(--radix-popover-content-available-height) w-56 flex-col gap-1 overflow-y-auto p-1"
         >
-          <Ellipsis />
-        </Button>
-      )}
-      {pathSegments.slice(hiddenCount).map((seg, i) => {
-        // Keyed on the cumulative prefix, not the index: index 0 means a different
-        // folder before and after the prefix collapses.
-        const segmentPath = pathSegments.slice(0, hiddenCount + i + 1).join('/');
-        return (
-          <span key={segmentPath} className="flex min-w-0 items-center gap-0.5">
-            {(i > 0 || hiddenCount > 0) && <span className="shrink-0">/</span>}
-            {/* No max-width: flexbox hands the shortfall to the longest segments, so
-                the row fits at any depth without a cap leaving space unused. */}
-            <Button
-              variant="link"
-              size="xs"
-              shrinkable
-              onClick={() => {
-                setCurrentPath(segmentPath);
+          {/* Path order, so the menu reads like the path: root first, direct parent last. */}
+          <PathMenuRow
+            label={TAG_ROOT_LABEL}
+            onSelect={() => {
+              jumpTo('');
+            }}
+          />
+          {ancestors.map((ancestor, i) => (
+            <PathMenuRow
+              key={ancestor.path}
+              label={ancestor.segment}
+              depth={i + 1}
+              // Two ancestors of one path can share a segment name; the full path
+              // in the tooltip is what tells them apart.
+              title={tagBreadcrumbJumpLabel(ancestor.path)}
+              onSelect={() => {
+                jumpTo(ancestor.path);
               }}
-              className="h-auto px-1 py-2"
-              title={seg}
-            >
-              <span className="truncate">{seg}</span>
-            </Button>
-          </span>
-        );
-      })}
+            />
+          ))}
+        </PopoverContent>
+      </Popover>
+
+      {/* The full path is the tooltip, since the row itself no longer shows it. */}
+      <span className="sidebar-label font-medium text-sidebar-foreground" title={currentPath}>
+        {leafTagSegment(currentPath)}
+      </span>
+
       {isFailedSyncTag ? (
         <Button
           variant="ghost"
           size="icon-xs"
           onClick={onOpenFailedSync}
-          className="ml-auto shrink-0 text-destructive hover:text-destructive"
+          className="shrink-0 text-destructive hover:text-destructive"
           title={FAILED_SYNC_OPEN_LABEL}
         >
           <CloudAlert />
@@ -103,7 +117,7 @@ export function TagBreadcrumb({
             onClick={() => {
               setDeleteOpen(true);
             }}
-            className="ml-auto shrink-0 text-destructive hover:text-destructive"
+            className="shrink-0 text-destructive hover:text-destructive"
             title={TAG_FOLDER_DELETE_LABEL}
           >
             <Trash2 />
@@ -117,5 +131,35 @@ export function TagBreadcrumb({
         </>
       )}
     </div>
+  );
+}
+
+// One small step per level, so the rows read as a tree without pushing the deep ones
+// off the popover. Spelled out rather than computed: Tailwind scans source text, so a
+// class built from a variable is never generated. Deeper paths keep the last step.
+const INDENT_BY_DEPTH = ['ml-0', 'ml-2', 'ml-4', 'ml-6', 'ml-8'] as const;
+
+/** One jump target in the path menu, indented by how deep its folder sits. */
+function PathMenuRow({
+  label,
+  title,
+  depth = 0,
+  onSelect,
+}: {
+  label: string;
+  title?: string;
+  depth?: number;
+  onSelect: () => void;
+}) {
+  // The indent rides on the icon, not on the button's padding: `has-[>svg]:px-2` from
+  // the size variant has :has() specificity and would outrank a plain pl-* here.
+  const indent = INDENT_BY_DEPTH[Math.min(depth, INDENT_BY_DEPTH.length - 1)];
+
+  return (
+    // Touch height comes from .menu-row, so both popover menus agree on it.
+    <Button variant="ghost" className="menu-row" title={title} onClick={onSelect}>
+      <Folder className={indent} />
+      <span className="truncate">{label}</span>
+    </Button>
   );
 }

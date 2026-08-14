@@ -3,10 +3,12 @@ import { describe, expect, test } from 'bun:test';
 import { FAILED_SYNC_TAG } from './constants';
 import type { NoteSummary } from './types';
 import {
+  ancestorTagPaths,
   buildTagTree,
   getChildNodes,
   getNotesAtPath,
   getNotesUnderPath,
+  leafTagSegment,
   moveNoteToFolder,
   normalizeTagPath,
   parentTagPath,
@@ -58,6 +60,22 @@ describe('tagTree', () => {
     expect(parentTagPath('dev/python/fastapi')).toBe('dev/python');
     expect(parentTagPath('dev')).toBe('');
     expect(parentTagPath('')).toBe('');
+  });
+
+  test('leafTagSegment — the folder name without its parents', () => {
+    expect(leafTagSegment('dev/python/fastapi')).toBe('fastapi');
+    expect(leafTagSegment('dev')).toBe('dev');
+    expect(leafTagSegment('')).toBe('');
+  });
+
+  test('ancestorTagPaths — every folder above the path, top down', () => {
+    expect(ancestorTagPaths('dev/python/fastapi')).toEqual([
+      { path: 'dev', segment: 'dev' },
+      { path: 'dev/python', segment: 'python' },
+    ]);
+    // Depth 1 and root have no ancestor folder — only the breadcrumb's root entry.
+    expect(ancestorTagPaths('dev')).toEqual([]);
+    expect(ancestorTagPaths('')).toEqual([]);
   });
 });
 

@@ -20,8 +20,6 @@ interface NoteActionsMenuProps {
   onExpandTags: () => void;
 }
 
-const ROW_CLASS = 'w-full justify-start gap-2 font-normal';
-
 export function NoteActionsMenu({ noteId, onFileUploaded, onInsertLinks, onExpandTags }: NoteActionsMenuProps) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<MenuView>('menu');
@@ -61,7 +59,7 @@ export function NoteActionsMenu({ noteId, onFileUploaded, onInsertLinks, onExpan
 
         {view === 'menu' ? (
           <div className="flex flex-col gap-1">
-            <Button variant="ghost" className={ROW_CLASS} onClick={openPicker} disabled={uploading}>
+            <Button variant="ghost" className="menu-row" onClick={openPicker} disabled={uploading}>
               {uploading ? <Loader2 className="animate-spin" /> : <Paperclip />}
               Datei anhängen
             </Button>
@@ -75,7 +73,7 @@ export function NoteActionsMenu({ noteId, onFileUploaded, onInsertLinks, onExpan
 
             <Button
               variant="ghost"
-              className={ROW_CLASS}
+              className="menu-row"
               onClick={() => {
                 setView('share');
               }}
@@ -84,7 +82,7 @@ export function NoteActionsMenu({ noteId, onFileUploaded, onInsertLinks, onExpan
               Teilen
             </Button>
 
-            <Button variant="ghost" className={cn(ROW_CLASS, 'md:hidden')} onClick={handleTags}>
+            <Button variant="ghost" className="menu-row md:hidden" onClick={handleTags}>
               <Tag />
               Tags
             </Button>

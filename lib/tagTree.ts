@@ -26,6 +26,28 @@ export function parentTagPath(path: string): string {
   return parts.join('/');
 }
 
+// The last segment of a tag path — the folder's own name, without its parents.
+// 'a/b/c' -> 'c', 'a' -> 'a', '' -> ''.
+export function leafTagSegment(path: string): string {
+  return path.split('/').pop() ?? '';
+}
+
+export interface TagAncestor {
+  path: string;
+  segment: string;
+}
+
+// Every folder above `path`, from the topmost level down to the direct parent —
+// the breadcrumb's jump targets. Root is not included; it has no segment name and
+// its label is a constant. 'a/b/c' -> [a, a/b], 'a' -> [], '' -> [].
+export function ancestorTagPaths(path: string): TagAncestor[] {
+  const parts = path.split('/').filter((s) => s !== '');
+  return parts.slice(0, -1).map((segment, i) => ({
+    path: parts.slice(0, i + 1).join('/'),
+    segment,
+  }));
+}
+
 export function buildTagTree(notes: NoteSummary[]): TagNode[] {
   const root: TagNode[] = [];
 

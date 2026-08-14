@@ -13,7 +13,7 @@ import {
   CommandGroup,
   CommandItem,
 } from '@/components/ui/command';
-import { listAllTagPaths } from '@/lib/tagTree';
+import { leafTagSegment, listAllTagPaths } from '@/lib/tagTree';
 import { useReportedTransition } from './navigationLoading';
 import { viewStore } from './viewStore';
 import { tagNavigationStore } from './tagNavigationStore';
@@ -143,7 +143,7 @@ export function CommandPalette({ notes, todos }: CommandPaletteProps) {
                     <span className="truncate">{note.title}</span>
                     {note.tags.slice(0, 2).map((tag, i) => (
                       <Badge key={tag} variant="secondary" className={cn('text-xs px-1 py-0', { 'ml-auto': i === 0 })}>
-                        {tag.split('/').pop()}
+                        {leafTagSegment(tag)}
                       </Badge>
                     ))}
                   </CommandItem>

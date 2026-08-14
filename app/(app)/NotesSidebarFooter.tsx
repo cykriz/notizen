@@ -66,7 +66,7 @@ export function NotesSidebarFooter({
     return (
       <SidebarFooter>
         <div className="flex items-center gap-1">
-          <span className="sidebar-label">
+          <span className="sidebar-label text-muted-foreground">
             {selection.selectedIds.size} {SELECTED_COUNT_SUFFIX}
           </span>
           <AssignTagsPopover selection={selection} view={view} currentTagPath={currentTagPath} />

@@ -10,10 +10,22 @@
   @apply border-0 gap-2 overflow-hidden;
 }
 
-/* Non-clickable text label inside a sidebar row (e.g. footer state labels like
-   "Papierkorb" or the selection count). Fills the row and truncates. */
+/* Non-clickable text label inside a sidebar row (footer state labels like the
+   selection count, the tag breadcrumb's current folder). Fills the row and truncates.
+   Layout only — the colour stays at the call site, because this file is imported
+   unlayered and a colour baked in here could not be overridden by a utility. */
 .sidebar-label {
-  @apply min-w-0 flex-1 truncate px-1 text-xs text-muted-foreground;
+  @apply min-w-0 flex-1 truncate px-1 text-xs;
+}
+
+/* One row of a popover menu (NoteActionsMenu, the tag breadcrumb's path menu):
+   a full-width Button that reads as a menu entry rather than as a control.
+   The height belongs here, not at the call sites: a menu row is a finger target
+   below md and a mouse target from md up, and that must not differ per menu.
+   This file is imported unlayered (globals.css), so it outranks Tailwind
+   utilities — a call site can no longer override the height with `h-*`. */
+.menu-row {
+  @apply w-full justify-start gap-2 font-normal h-11 md:h-9;
 }
 
 .card-base {

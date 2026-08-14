@@ -34,7 +34,7 @@ See `lib/types.ts` for full definitions (read-aloud types: `lib/ttsTypes.ts`, sh
 - `lib/fsTodos.ts` — CRUD for todos (listTodos, getTodo, createTodo, updateTodo, deleteTodo)
 - `lib/fsTodosStore.ts` — the `todos.json` read/write layer under `fsTodos`; normalises quadrants on read, so the fix is persisted by the next write
 - `lib/quadrantAlias.ts` — `toUsableQuadrant`: the single rule for what a stored quadrant means. Retired values (pre-`cd9392c` `delegate`) are rewritten, anything else unrecognised falls back to Eingang rather than being dropped. Applied at BOTH entry points (`fsTodosStore` for `todos.json`, `schemas` for caches and responses), which is why per-quadrant records can be indexed directly
-- `lib/tagTree.ts` — hierarchical tag tree (buildTagTree, getChildNodes, getNotesAtPath, getNotesUnderPath, listAllTags, listAllTagPaths) plus the pure path-string helpers (normalizeTagPath, parentTagPath) and the folder-tag rewriters (replaceFolderTag, moveNoteToFolder)
+- `lib/tagTree.ts` — hierarchical tag tree (buildTagTree, getChildNodes, getNotesAtPath, getNotesUnderPath, listAllTags, listAllTagPaths) plus the pure path-string helpers (normalizeTagPath, parentTagPath, ancestorTagPaths, leafTagSegment) and the folder-tag rewriters (replaceFolderTag, moveNoteToFolder)
 - `lib/fsHelpers.ts` — shared filesystem helpers
 - `lib/schemas.ts` — Zod schemas plus the row-wise parsers. Two variants with different contracts: the lenient `parse*Rows` for cache reads (salvage what is readable), and the strict `parse*RowsStrict` for server responses, where **`null` means the caller MUST skip the merge** — `[]` would be read as "the server has nothing" and wipe the offline cache
 - `lib/apiHelpers.ts` — API utility helpers
@@ -51,6 +51,7 @@ See `lib/types.ts` for full definitions (read-aloud types: `lib/ttsTypes.ts`, sh
 - `lib/failedSyncDetail.ts` + `lib/failedSyncCause.ts` + `lib/failedSyncPayload.ts` — pure view model for the inspector (`toFailedSyncDetails` takes injected `sources`, so it unit-tests without a DOM). Defensive readers guard both `payload` and `failure`, which come from an unvalidated cast
 - `lib/failedSyncConstants.ts` — German strings for the inspector (`lib/constants.ts` is at its line cap)
 - `lib/syncStatusConstants.ts` — German strings for the sidebar sync indicator (same reason)
+- `lib/tagConstants.ts` — German strings for the sidebar tag navigation (same reason); most are the accessible names the e2e tests locate by, exceptions are marked
 - `lib/ttsTypes.ts` — read-aloud types (`SpeechControls`, `NeuralSpeechControls`, `ReadAloudState`, `TtsEngine`). Split out of `lib/types.ts` **not** for the line cap but because `SpeechControls` names `SpeechSynthesisVoice`: `lib/types.ts` is reachable from `worker/`, which is type-checked with `lib: webworker` and no `dom`. Keep DOM-typed shapes out of `lib/types.ts`
 - `lib/offlineNotes.ts` / `lib/offlineTodos.ts` — offline support for notes and todos. Both are thin over `sendOrQueue`; each keeps only its own cache adoption (`adoptServer*` writes the server row over the optimistic one, rebuilt from the CURRENT cache so a slower in-flight write cannot undo a faster one)
 - `lib/offlineTagFolder.ts` — offline tag-folder deletion (deleteTagFolderOffline, stripFolderTags)
@@ -130,7 +131,7 @@ A valid share token grants read access to the shared note AND every attachment o
 | TodosSidebarContent | `app/(app)/TodosSidebarContent.tsx` — todos sidebar content |
 | TagBrowser | `app/(app)/TagBrowser.tsx` — folder-style drill-down |
 | TagNavigation | `app/(app)/TagNavigation.tsx` — tag drill-down list, drag-to-move onto folders; renders TagBreadcrumb |
-| TagBreadcrumb | `app/(app)/TagBreadcrumb.tsx` — back button + clickable path segments + the folder's action. Past `MAX_VISIBLE_SEGMENTS` the prefix collapses into one "…" that walks up to the deepest hidden ancestor, repeatedly on very deep paths |
+| TagBreadcrumb | `app/(app)/TagBreadcrumb.tsx` — the current folder's name plus its action. A 16rem sidebar cannot hold the path and a readable folder name at once, so the row shows only the leaf (full width, `title` carries the whole path) and the back button opens a Popover listing root + every ancestor for a direct jump; rows are `h-11` below `md` for touch |
 | DataProvider | `app/(app)/DataProvider.tsx` — client-side data context |
 | DeleteNoteDialog | `app/(app)/DeleteNoteDialog.tsx` — note deletion confirmation |
 | DeleteTagFolderDialog | `app/(app)/DeleteTagFolderDialog.tsx` — tag folder deletion confirmation |
