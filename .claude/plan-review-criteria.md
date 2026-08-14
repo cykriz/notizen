@@ -1,6 +1,6 @@
 # Plan Review Criteria
 
-The **plan-level layer** over `.claude/commands/review.md`. That file is the single source for the
+The **plan-level layer** over `.claude/review/checks.md`. That file is the single source for the
 duplication probes, the simplicity checks and the severity floors; this file says how to apply them to a
 plan instead of a diff, and adds what only a plan can be judged on. Nothing is copied from it — a rule
 written twice is the defect `/review` rates highest.
@@ -14,9 +14,9 @@ Two consumers:
 
 ## How to run this review
 
-1. **Read this file in full**, plus `.claude/commands/review.md` §§ "Step 1", "2a" and "Severity Floors".
+1. **Read this file in full**, plus `.claude/review/checks.md` §§ "Step 1", "2a" and "Severity Floors".
    Not from memory. Ignore its § "2b" — see "Not Checkable at the Plan Level" below.
-2. **Skills only as needed**, like `/review` Step 0: scan the `description` frontmatter of
+2. **Skills only as needed**: scan the `description` frontmatter of
    `.claude/skills/**/SKILL.md` and read only those skills in full that match the files the plan touches.
    `CLAUDE.md` if needed. Don't duplicate content — check it and point at it.
 3. **Evidence, not assertions**: back every claim about the existing code with `Read`/`Grep` and cite it
@@ -28,7 +28,7 @@ Two consumers:
 - ✅/⚠️/❌ Assumptions stated explicitly
 - ✅/⚠️/❌ Step order / dependencies clear
 - ✅/⚠️/❌ Error and edge cases considered
-- ✅/⚠️/❌ Verification/tests (unit: `bun test` with `bun:test`, point `NOTES_ROOT` at a temp dir, test pure FS/logic helpers; E2E: `bun run test:e2e` (Playwright); **no vitest/Jest**; after every change `bun run lint && bun run typecheck` — `typecheck` covers app + `worker/` + `e2e/`; bare `bunx tsc --noEmit` only sees the app)
+- ✅/⚠️/❌ Verification/tests — the commands and their caveats are in `CLAUDE.md` § Commands; does the plan name the ones its changes need? (unit tests point `NOTES_ROOT` at a temp dir and cover pure FS/logic helpers; **no vitest/Jest**)
 - ✅/⚠️/❌ Rollback / reversibility
 - ✅/⚠️/❌ Affected files named concretely
 
@@ -46,18 +46,18 @@ of the rules. Read the source before judging a line.
 - **Auth/proxy** — new routes behind auth or deliberately registered as a public path; session cookie contract untouched (`proxy` skill)
 - **Mutations/revalidation** — `revalidatePath()` after mutations, except on `dynamic = 'force-dynamic'` pages (`CLAUDE.md`)
 - **Server actions / API** — `zod`-validated inputs, error shape `{ error: string }`, auth gate; no leaked data (`architecture` skill)
-- **`'use client'`** — only where state/hooks/events require it; prefer server-side data fetching (`CLAUDE.md`, `/review` § "Next.js Specifics")
+- **`'use client'`** — only where state/hooks/events require it; prefer server-side data fetching (`CLAUDE.md`, `checks.md` § "Next.js Specifics")
 - **Styling tokens** — Tailwind only, semantic colors, no `dark:`, `cn()` object syntax, shadcn over raw HTML (`CLAUDE.md` § Style Rules, `styling` skill)
 - **Packages** — no new package without updating the approved list; every import a direct dependency; no hand-written type shims (`CLAUDE.md`)
 - **Tags** — hierarchical, slash-separated (`CLAUDE.md`)
 - **Next.js config** — no experimental features beyond the documented exception; `output: 'standalone'` stays (`CLAUDE.md`)
-- **Conventions** — PascalCase components, camelCase utils, kebab-case routes, page-specific components in the route folder (`CLAUDE.md`)
+- **Conventions** — PascalCase components, camelCase utils, kebab-case routes, page-specific components in the route folder (`checks.md` § "Style & Conventions")
 
 Mark invariants that don't apply as `n/a` instead of omitting them.
 
 ## Duplication & Simplicity (Plan Level)
 
-Run probes 1–6 from `.claude/commands/review.md` § "Step 1" and every check from its § "2a" against what
+Run probes 1–6 from `.claude/review/checks.md` § "Step 1" and every check from its § "2a" against what
 the plan **intends to do** rather than against a diff. Give each one a `✅/⚠️/❌/n/a` line named after the
 probe. They are **actively run** — grep, read both sides. A probe you did not run must not be reported as
 "found nothing".
@@ -67,7 +67,7 @@ What changes when the subject is a plan instead of a diff:
 - **Extraction (probe 1)**: the tell is wording — "split out of", "moved to", or a new module whose
   exports mirror an existing file — with no sentence saying the original goes away.
 - **Prior art (probe 3)** — the probe that most often decides whether a plan is worth anything, because
-  there is no diff to read later. `/review` keys it on a new *exported function*; on a plan that trigger is
+  there is no diff to read later. `checks.md` keys it on a new *exported function*; on a plan that trigger is
   too narrow and has already let a duplicate through. Widen it on all four counts:
   - **Trigger on any logic the plan spells out, not just on new names.** A plan that inlines its logic
     proposes no symbol to grep for — an effect body, a `useMemo`, a snippet inside a diff block, three
@@ -83,7 +83,7 @@ What changes when the subject is a plan instead of a diff:
     original carries is more damaging than the duplication, not less.
 - **Cross-reference comments (probe 5)**: here it is the *plan's own* wording ("same as X", "mirrors Y"),
   not comments in finished code — for those see "Not Checkable at the Plan Level".
-- **Mode parameters** (`/review` § 2b, "Boolean and mode parameters" — the one 2b check that *is*
+- **Mode parameters** (`checks.md` § "2b", "Boolean and mode parameters" — the one 2b check that *is*
   decidable on a plan): a new boolean/mode parameter that forks a function body. The plan must say how
   much of the body actually differs, or propose two functions.
 - **Implicit ordering**: plan steps whose correctness depends on "must run before X" / "must stay
@@ -93,7 +93,7 @@ What changes when the subject is a plan instead of a diff:
 
 ## Severity
 
-The floors in `.claude/commands/review.md` § "Severity Floors" apply verbatim; read them there.
+The floors in `.claude/review/checks.md` § "Severity Floors" apply verbatim; read them there.
 `**High**/**Medium**/**Minor**` map to `high`/`medium`/`low`. Its nesting/decision-point floor does not
 apply (see below). Minimums, not ceilings — raise them when the damage warrants it.
 
@@ -107,7 +107,7 @@ Plan-level additions:
 
 ## Not Checkable at the Plan Level
 
-These dimensions from `/review` § "2b" need finished code and remain the job of `/review`. **No** findings
+These dimensions from `checks.md` § "2b" need finished code and remain the job of the code review. **No** findings
 are produced for them — guessing looks plausible and is wrong anyway:
 
 nesting depth, number of decision points, live variables held at once, reading span, comment load (the

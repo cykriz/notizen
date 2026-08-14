@@ -16,9 +16,31 @@ Next.js 16 + React 19 + Bun + TypeScript (strict) + Tailwind v4 + shadcn/ui. Fil
 
 In plan mode, `ExitPlanMode` is gated by `scripts/plan-review-gate.ts` (registered in `.claude/settings.json`): it denies the call until the `plan-reviewer` subagent has reviewed the plan, and returns `scripts/plan-review-protocol.md` as the reason. A deny here is expected behaviour, not a bug — follow the protocol, then call `ExitPlanMode` again. The gate never returns `allow`, so the user's approval dialog always happens.
 
-Review criteria live **only** in `.claude/plan-review-criteria.md`, shared by the `plan-reviewer` agent and the `/plan-review` command; it applies `.claude/commands/review.md` to plans by reference rather than copying it.
+Review criteria live **only** in `.claude/plan-review-criteria.md`, shared by the `plan-reviewer` agent and the `/plan-review` command; it applies `.claude/review/checks.md` to plans by reference rather than copying it.
 
 A gate that silently passes looks exactly like a broken gate, so set `PLAN_REVIEW_GATE_DEBUG=/path/dump.jsonl` to have it log each hook payload plus the decision it made.
+
+## Code Review (automatic)
+
+**Trigger:** after any change to a file in this repo — tracked or untracked — and **before** finishing
+the task, run subagent `review-changes`. How to call it, and the fallback when it does not resolve,
+live in `.claude/commands/review.md`; they are not repeated here. **Never review the changes
+yourself** — the check rules live in `.claude/review/checks.md` and belong in the subagent's context,
+not this one.
+
+**Exactly one run per task, not per file edit.** A second run only if changes appeared since the
+review that did *not* come out of it — otherwise every fix is another trigger and the chain never
+terminates.
+
+**Report contract:** the discipline of `scripts/plan-review-protocol.md` §§ 2 and 5 applies — verify
+each finding instead of adopting it, drop what does not hold with a reason, report compactly.
+Code-review deltas: the reviewer marks confidence as `[belegt|Vermutung]` (not `certain/likely/guess`)
+and anchors findings as `<Datei › Symbol>` rather than `file:line`, so verify a `Vermutung` by opening
+the symbol; **fixed findings stay silent** (they are visible in the diff); there is **no artifact and
+no gate**, so the diff is the only evidence; and what you do not fix **must** be named — *dropped* is
+fine, *unmentioned* is not.
+
+**Runtime gates:** the agent only names them (`GATES:`); you run them afterwards.
 
 ## Code Rules
 

@@ -24,7 +24,7 @@ and a stranger's plan checked against the notes app invariants produces plausibl
 
 Follow § "How to run this review" at the top of `.claude/plan-review-criteria.md` — it defines what to
 read, which skills to load, and the evidence standard. It is the plan-level layer over
-`.claude/commands/review.md`, which holds the probes and severity floors themselves.
+`.claude/review/checks.md`, which holds the probes and severity floors themselves.
 
 **The prior-art probe is not optional.** Every code snippet in the plan — named function, effect body,
 `useMemo`, loose statements — gets grepped against the repo the way § "Duplication & Simplicity" describes:

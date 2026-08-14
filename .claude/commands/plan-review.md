@@ -21,7 +21,7 @@ so it can be taken over in one piece via the copy button.
 
 2. **Load the criteria and follow the procedure (mandatory)**
    Work through § "How to run this review" at the top of `.claude/plan-review-criteria.md`: it defines what
-   to read (including which sections of `.claude/commands/review.md`), which skills to load, and the
+   to read (including which sections of `.claude/review/checks.md`), which skills to load, and the
    evidence standard. Do not work from memory.
 
 3. **Write the review** following the template below.
