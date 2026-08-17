@@ -8,13 +8,13 @@ import {
   SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { FAILED_SYNC_TAG, NOTE_DRAG_MIME, NOTE_IDS_DRAG_MIME, pathHasReservedSegment } from '@/lib/constants';
-import { buildTagTree, getChildNodes } from '@/lib/tagTree';
+import { buildTagTree, getChildNodes, isTagFolder } from '@/lib/tagTree';
 import type { NoteSummary } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Folder, Tag } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { FailedSyncDialog } from './FailedSyncDialog';
 import { TagBreadcrumb } from './TagBreadcrumb';
+import { TagNodeIcon } from './TagNodeIcon';
 import { useBatchTags } from './useBatchTags';
 
 interface TagNavigationProps {
@@ -123,28 +123,31 @@ export function TagNavigation({ notes, currentPath, setCurrentPath, onFolderDele
 
       {children.length > 0 && (
         <SidebarMenu>
-          {children.map((node) => (
-            <SidebarMenuItem key={node.fullPath}>
-              <SidebarMenuButton
-                onClick={() => {
-                  setCurrentPath(node.fullPath);
-                }}
-                onDragOver={(e) => {
-                  handleDragOverFolder(e, node.fullPath);
-                }}
-                onDrop={(e) => {
-                  handleDropOnFolder(e, node.fullPath);
-                }}
-                className={cn('h-auto', {
-                  'bg-primary/10 ring-2 ring-inset ring-primary/60': dragOverPath === node.fullPath,
-                })}
-              >
-                {node.children.length > 0 ? <Folder className="shrink-0" /> : <Tag className="shrink-0" />}
-                <span className="truncate">{node.segment}</span>
-              </SidebarMenuButton>
-              <SidebarMenuBadge>{node.noteCount}</SidebarMenuBadge>
-            </SidebarMenuItem>
-          ))}
+          {children.map((node) => {
+            const isFolder = isTagFolder(node);
+            return (
+              <SidebarMenuItem key={node.fullPath}>
+                <SidebarMenuButton
+                  onClick={() => {
+                    setCurrentPath(node.fullPath);
+                  }}
+                  onDragOver={(e) => {
+                    handleDragOverFolder(e, node.fullPath);
+                  }}
+                  onDrop={(e) => {
+                    handleDropOnFolder(e, node.fullPath);
+                  }}
+                  className={cn('h-auto', {
+                    'bg-primary/10 ring-2 ring-inset ring-primary/60': dragOverPath === node.fullPath,
+                  })}
+                >
+                  <TagNodeIcon isFolder={isFolder} leafClassName="text-sidebar-foreground/60" />
+                  <span className={cn('truncate', { 'font-medium': isFolder })}>{node.segment}</span>
+                </SidebarMenuButton>
+                <SidebarMenuBadge>{node.noteCount}</SidebarMenuBadge>
+              </SidebarMenuItem>
+            );
+          })}
         </SidebarMenu>
       )}
 

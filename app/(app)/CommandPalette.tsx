@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { FileText, Folder, ListChecks, Pin, Tag } from 'lucide-react';
+import { FileText, ListChecks, Pin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -14,6 +14,7 @@ import {
   CommandItem,
 } from '@/components/ui/command';
 import { leafTagSegment, listAllTagPaths } from '@/lib/tagTree';
+import { TagNodeIcon } from './TagNodeIcon';
 import { useReportedTransition } from './navigationLoading';
 import { viewStore } from './viewStore';
 import { tagNavigationStore } from './tagNavigationStore';
@@ -118,7 +119,7 @@ export function CommandPalette({ notes, todos }: CommandPaletteProps) {
                   handleTagSelect(entry.path);
                 }}
               >
-                {entry.isLeaf ? <Tag /> : <Folder />}
+                <TagNodeIcon isFolder={!entry.isLeaf} />
                 <span className="truncate">{entry.path}</span>
                 <Badge variant="secondary" className="ml-auto text-xs px-1 py-0">
                   {entry.noteCount}

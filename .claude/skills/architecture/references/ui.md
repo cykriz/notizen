@@ -32,6 +32,7 @@ Von hier mitbenutzt, aber nach Pfadklasse anderswo inventarisiert:
 | TagBrowser | `app/(app)/TagBrowser.tsx` — folder-style drill-down |
 | TagNavigation | `app/(app)/TagNavigation.tsx` — tag drill-down list, drag-to-move onto folders; renders TagBreadcrumb |
 | TagBreadcrumb | `app/(app)/TagBreadcrumb.tsx` — the current folder's name plus its action. A 16rem sidebar cannot hold the path and a readable folder name at once, so the row shows only the leaf (full width, `title` carries the whole path) and the back button opens a Popover listing root + every ancestor for a direct jump; rows are `h-11` below `md` for touch |
+| TagNodeIcon | `app/(app)/TagNodeIcon.tsx` — the folder-vs-leaf-tag icon for lists that mix both (TagNavigation, CommandPalette's tag mode). Owns the visual coding (filled + `text-primary` folder vs. dimmed outline tag) and the sr-only "Ordner" label, so the two lists cannot drift apart |
 | DataProvider | `app/(app)/DataProvider.tsx` — client-side data context |
 | DeleteNoteDialog | `app/(app)/DeleteNoteDialog.tsx` — note deletion confirmation |
 | DeleteTagFolderDialog | `app/(app)/DeleteTagFolderDialog.tsx` — tag folder deletion confirmation |

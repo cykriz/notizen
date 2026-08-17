@@ -48,6 +48,12 @@ export function ancestorTagPaths(path: string): TagAncestor[] {
   }));
 }
 
+// Ein Knoten mit Kindern ist ein Ordner. Die eine Stelle, an der diese Regel steht —
+// Sidebar, Command-Palette und die Sortierung lesen alle hier.
+export function isTagFolder(node: TagNode): boolean {
+  return node.children.length > 0;
+}
+
 export function buildTagTree(notes: NoteSummary[]): TagNode[] {
   const root: TagNode[] = [];
 
@@ -74,8 +80,17 @@ export function buildTagTree(notes: NoteSummary[]): TagNode[] {
   return sortTree(root);
 }
 
+// Ordner vor Blatt-Tags — die Konvention jedes Datei-Browsers (Finder, Explorer,
+// Drive). Position ist der schnellste Hinweis auf "hier geht es tiefer"; Icon und
+// Farbe bestätigen sie nur. Innerhalb jeder Gruppe bleibt es alphabetisch.
+//
+// Läuft bewusst erst am Ende von buildTagTree: der Comparator liest children.length,
+// das ist nur nach dem vollständigen Aufbau des Baums endgültig. Nicht vorziehen.
 function sortTree(nodes: TagNode[]): TagNode[] {
-  nodes.sort((a, b) => a.segment.localeCompare(b.segment));
+  nodes.sort((a, b) => {
+    const byKind = Number(isTagFolder(b)) - Number(isTagFolder(a));
+    return byKind !== 0 ? byKind : a.segment.localeCompare(b.segment);
+  });
   for (const n of nodes) {
     sortTree(n.children);
   }
@@ -166,7 +181,7 @@ export function listAllTagPaths(notes: NoteSummary[]): TagPathEntry[] {
       result.push({
         path: node.fullPath,
         noteCount: node.noteCount,
-        isLeaf: node.children.length === 0,
+        isLeaf: !isTagFolder(node),
       });
       walk(node.children);
     }
