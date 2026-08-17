@@ -22,6 +22,7 @@ import { TodosSidebarFooter } from './TodosSidebarFooter';
 import { useCreateNote } from './useCreateNote';
 import { useFailedEntityIds } from './useFailedEntityIds';
 import { useNoteSelection } from './useNoteSelection';
+import { useSidebarChrome } from './useSidebarChrome';
 import { useTagStateSync } from './useTagStateSync';
 import { viewStore } from './viewStore';
 
@@ -51,6 +52,14 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
 
   // Folder = tag prefix; never create under the synthetic sync-fehler folder.
   const folderParent = currentTagPath !== '' && currentTagPath !== FAILED_SYNC_TAG ? currentTagPath : '';
+
+  // Pinned rows, tag folders, and who owns the boundary above the tag navigator.
+  const { pinnedNotes, tagChildren, hasTagNav } = useSidebarChrome({
+    notes,
+    displayNotes,
+    currentTagPath,
+    tagView: !isTodos && view === 'tags',
+  });
 
   const [swipeEl, setSwipeEl] = useState<HTMLDivElement | null>(null);
   const handleTagBack = useCallback(() => {
@@ -130,13 +139,19 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
         onDoubleClick={isTodos || view === 'trash' || !finePointer ? undefined : handleSidebarDoubleClick}
         className="flex min-h-0 flex-1 flex-col gap-2"
       >
-        <SharedNotesEntry hidden={isTodos || view === 'trash'} />
+        <SharedNotesEntry
+          hidden={isTodos || view === 'trash'}
+          separator={pinnedNotes.length > 0 || !hasTagNav}
+        />
 
-        {!isTodos && view !== 'trash' && <PinnedNotesGroup notes={notes} />}
+        {!isTodos && view !== 'trash' && pinnedNotes.length > 0 && (
+          <PinnedNotesGroup notes={pinnedNotes} separator={!hasTagNav} />
+        )}
 
         {!isTodos && view === 'tags' && (
           <TagNavigation
             notes={displayNotes}
+            childNodes={tagChildren}
             currentPath={currentTagPath}
             setCurrentPath={setCurrentTagPath}
             onFolderDeleted={handleFolderDeleted}

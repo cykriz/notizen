@@ -15,9 +15,11 @@ import { SharedNotesDialog } from './SharedNotesDialog';
 
 interface SharedNotesEntryProps {
   hidden: boolean;
+  // Off when the block below draws its own upper boundary.
+  separator: boolean;
 }
 
-export function SharedNotesEntry({ hidden }: SharedNotesEntryProps) {
+export function SharedNotesEntry({ hidden, separator }: SharedNotesEntryProps) {
   const shares = useSyncExternalStore(
     sharedNotesStore.subscribe,
     sharedNotesStore.getSnapshot,
@@ -98,7 +100,7 @@ export function SharedNotesEntry({ hidden }: SharedNotesEntryProps) {
               <SidebarMenuBadge>{shares.length}</SidebarMenuBadge>
             </SidebarMenuItem>
           </SidebarMenu>
-          <SidebarSeparator />
+          {separator && <SidebarSeparator />}
         </>
       )}
       <SharedNotesDialog open={open} onOpenChange={setOpen} />

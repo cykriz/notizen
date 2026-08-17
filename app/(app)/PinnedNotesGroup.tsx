@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { Pin } from 'lucide-react';
 import {
@@ -15,21 +15,19 @@ import { NoteListItem } from './NoteListItem';
 import type { NoteSummary } from '@/lib/types';
 
 interface PinnedNotesGroupProps {
+  // Already filtered by AppSidebar — see the separator rationale there.
   notes: NoteSummary[];
+  // Off when the block below draws its own upper boundary.
+  separator: boolean;
 }
 
-export function PinnedNotesGroup({ notes }: PinnedNotesGroupProps) {
+export function PinnedNotesGroup({ notes, separator }: PinnedNotesGroupProps) {
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
-  const pinnedNotes = useMemo(() => notes.filter((n) => n.pinned), [notes]);
 
   const onNavigate = useCallback(() => {
     setOpenMobile(false);
   }, [setOpenMobile]);
-
-  if (pinnedNotes.length === 0) {
-    return null;
-  }
 
   return (
     <>
@@ -39,7 +37,7 @@ export function PinnedNotesGroup({ notes }: PinnedNotesGroupProps) {
         </SidebarGroupLabel>
         <SidebarGroupContent className="max-h-[calc(0.4*var(--app-h))] overflow-y-auto">
           <SidebarMenu>
-            {pinnedNotes.map((note) => (
+            {notes.map((note) => (
               <NoteListItem
                 key={note.id}
                 note={note}
@@ -51,7 +49,7 @@ export function PinnedNotesGroup({ notes }: PinnedNotesGroupProps) {
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
-      <SidebarSeparator />
+      {separator && <SidebarSeparator />}
     </>
   );
 }

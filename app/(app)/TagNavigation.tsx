@@ -7,10 +7,10 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { FAILED_SYNC_TAG, NOTE_DRAG_MIME, NOTE_IDS_DRAG_MIME, pathHasReservedSegment } from '@/lib/constants';
-import { buildTagTree, getChildNodes } from '@/lib/tagTree';
+import type { TagNode } from '@/lib/tagTree';
 import type { NoteSummary } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FailedSyncDialog } from './FailedSyncDialog';
 import { TagBreadcrumb } from './TagBreadcrumb';
 import { TagFolderIcon } from './TagFolderIcon';
@@ -18,19 +18,21 @@ import { useBatchTags } from './useBatchTags';
 
 interface TagNavigationProps {
   notes: NoteSummary[];
+  // The folders at currentPath. Derived in AppSidebar, because whether this panel
+  // renders at all also decides whether the block above it draws a separator —
+  // one predicate, one place.
+  childNodes: TagNode[];
   currentPath: string;
   setCurrentPath: (path: string) => void;
   onFolderDeleted: () => void;
   exitSelection?: () => void;
 }
 
-export function TagNavigation({ notes, currentPath, setCurrentPath, onFolderDeleted, exitSelection }: TagNavigationProps) {
+export function TagNavigation({ notes, childNodes, currentPath, setCurrentPath, onFolderDeleted, exitSelection }: TagNavigationProps) {
   const { applyFolderTag } = useBatchTags();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [failedSyncOpen, setFailedSyncOpen] = useState(false);
   const [dragOverPath, setDragOverPath] = useState<string | null>(null);
-  const tree = useMemo(() => buildTagTree(notes), [notes]);
-  const children = useMemo(() => getChildNodes(tree, currentPath), [tree, currentPath]);
   const isFailedSyncTag = currentPath === FAILED_SYNC_TAG;
 
   // Auto-pop when the synthetic sync-fehler folder vanishes via a background
@@ -92,7 +94,7 @@ export function TagNavigation({ notes, currentPath, setCurrentPath, onFolderDele
     />
   );
 
-  if (children.length === 0 && currentPath === '') {
+  if (childNodes.length === 0 && currentPath === '') {
     return failedSyncDialog;
   }
 
@@ -124,9 +126,9 @@ export function TagNavigation({ notes, currentPath, setCurrentPath, onFolderDele
         />
       )}
 
-      {children.length > 0 && (
+      {childNodes.length > 0 && (
         <SidebarMenu>
-          {children.map((node) => (
+          {childNodes.map((node) => (
             <SidebarMenuItem key={node.fullPath}>
               <SidebarMenuButton
                 onClick={() => {
