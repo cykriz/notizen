@@ -35,6 +35,9 @@ export function AttachmentList({ noteId, attachments, onDeleted, className }: At
   const [error, setError] = useState<string | null>(null);
   const [openPlayer, setOpenPlayer] = useState<string | null>(null);
 
+  // Both failure modes read the same to the user, and the message lives once:
+  // a rejecting response used to be swallowed entirely, leaving the attachment
+  // listed with no explanation.
   const handleDelete = async (attId: string) => {
     setDeleting(attId);
     setError(null);
@@ -44,12 +47,15 @@ export function AttachmentList({ noteId, attachments, onDeleted, className }: At
       });
       if (res.ok) {
         onDeleted?.(attId);
+        return;
       }
     } catch {
-      setError('Löschen fehlgeschlagen');
+      // Network error — same message as a rejecting response.
     } finally {
       setDeleting(null);
     }
+
+    setError('Löschen fehlgeschlagen');
   };
 
   if (attachments.length === 0) {
@@ -107,13 +113,14 @@ export function AttachmentList({ noteId, attachments, onDeleted, className }: At
                   </Popover>
                 )}
                 <Button variant="ghost" size="icon-xs" asChild>
-                  <a href={downloadUrl} download={att.originalName}>
+                  <a href={downloadUrl} download={att.originalName} aria-label="Herunterladen">
                     <Download />
                   </a>
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon-xs"
+                  aria-label="Anhang löschen"
                   onClick={() => {
                     void handleDelete(att.id);
                   }}

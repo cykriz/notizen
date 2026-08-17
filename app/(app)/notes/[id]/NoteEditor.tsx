@@ -27,7 +27,7 @@ interface NoteEditorProps {
 }
 
 export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
-  const { updateNote } = useData();
+  const { updateNote, attachmentChanged } = useData();
   const initial = useNoteInitialState(note);
   const [title, setTitle] = useState(initial.title);
   const [content, setContent] = useState(initial.content);
@@ -123,6 +123,7 @@ export function NoteEditor({ note, allTags, notes }: NoteEditorProps) {
     initialAttachments: note.attachments,
     contentRef,
     onContentChange: handleContentChange,
+    onAttachmentChange: attachmentChanged,
   });
 
   const editorRef = useRef<MarkdownEditorHandle>(null);

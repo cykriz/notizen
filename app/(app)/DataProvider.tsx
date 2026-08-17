@@ -10,6 +10,11 @@ import {
   updateNoteOffline,
 } from '@/lib/offlineNotes';
 import { batchUpdateNotesOffline, foldNoteUpdates } from '@/lib/offlineNotesBatch';
+import {
+  type AttachmentChange,
+  applyAttachmentChange,
+  cacheAttachmentChange,
+} from '@/lib/offlineAttachments';
 import { deleteTagFolderOffline } from '@/lib/offlineTagFolder';
 import {
   getCachedNote,
@@ -128,6 +133,17 @@ export function DataProvider({ initialNotes, initialTodos, children }: DataProvi
     syncPending();
   }, [syncPending]);
 
+  // No await, no syncPending: the attachment itself is already written on the
+  // server (POST/DELETE are online-only, nothing to queue). Only the local
+  // count follows. The prev-updater is deliberate — a multi-file upload reports
+  // once per file, and notesRef only refreshes on a commit, so a snapshot-based
+  // patch would keep just the last delta. The cache write stays outside it
+  // (StrictMode runs updaters twice).
+  const handleAttachmentChanged = useCallback((noteId: string, change: AttachmentChange) => {
+    setNotes((prev) => applyAttachmentChange(prev, noteId, change));
+    cacheAttachmentChange(noteId, change);
+  }, []);
+
   const handleDeleteTagFolder = useCallback(async (path: string) => {
     const before = notesRef.current;
     const after = await deleteTagFolderOffline(path, before, isOnlineRef.current);
@@ -166,6 +182,7 @@ export function DataProvider({ initialNotes, initialTodos, children }: DataProvi
         updateNotes: handleUpdateNotes,
         deleteNote: handleDeleteNote,
         deleteTagFolder: handleDeleteTagFolder,
+        attachmentChanged: handleAttachmentChanged,
         ...todoActions,
         restoreFromTrash,
         getCachedNoteContent: getCachedNote,

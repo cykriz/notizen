@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { SYNC_QUEUE_KEY, TODOS_KEY, type SyncQueueEntry } from '../../lib/localCache';
+import { NOTES_LIST_KEY, SYNC_QUEUE_KEY, TODOS_KEY, type SyncQueueEntry } from '../../lib/localCache';
 import { FAILED_SYNC_KEY } from '../../lib/failedSyncQueue';
 
 // Direct localStorage access for the sync queues and caches, split out of
@@ -59,6 +59,11 @@ export async function seedPendingQueue(
     }));
     localStorage.setItem(key, JSON.stringify(full));
   }, { key: SYNC_QUEUE_KEY, seed: entries });
+}
+
+/** Read the cached note list (notizen:notes-list). */
+export async function readCachedNotes(page: Page): Promise<Record<string, unknown>[]> {
+  return await readKey<Record<string, unknown>>(page, NOTES_LIST_KEY);
 }
 
 /** Read the cached todo list (notizen:todos). */

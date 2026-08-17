@@ -3,6 +3,7 @@
 import { createContext, useContext } from 'react';
 import type { Note, NoteSummary, SyncEntityType, Todo } from '@/lib/types';
 import type { CreateNoteInput, UpdateNoteInput } from '@/lib/offlineNotes';
+import type { AttachmentChange } from '@/lib/offlineAttachments';
 import type { CreateTodoInput, UpdateTodoInput } from '@/lib/offlineTodos';
 import type { PushResult } from '@/hooks/useFailedSyncActions';
 
@@ -25,6 +26,9 @@ export interface DataContextValue {
   updateNotes: (updates: { id: string; input: UpdateNoteInput }[]) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   deleteTagFolder: (path: string) => Promise<void>;
+  // Attachment mutations are network-only and never touch note.md, so no save
+  // and no revalidate carries the new count into the sidebar — this does.
+  attachmentChanged: (noteId: string, change: AttachmentChange) => void;
   createTodo: (input: CreateTodoInput) => Promise<Todo>;
   updateTodo: (id: string, input: UpdateTodoInput) => Promise<void>;
   deleteTodo: (id: string) => Promise<void>;

@@ -41,6 +41,7 @@ Kuratiert, nicht vollständig — s. `SKILL.md`. Komponenten/Hooks: `references/
 - `lib/ttsTypes.ts` — read-aloud types (`SpeechControls`, `NeuralSpeechControls`, `ReadAloudState`, `TtsEngine`). Split out of `lib/types.ts` **not** for the line cap but because `SpeechControls` names `SpeechSynthesisVoice`: `lib/types.ts` is reachable from `worker/`, which is type-checked with `lib: webworker` and no `dom`. Keep DOM-typed shapes out of `lib/types.ts`
 - `lib/offlineNotes.ts` / `lib/offlineTodos.ts` — offline support for notes and todos. Both are thin over `sendOrQueue`; each keeps only its own cache adoption (`adoptServer*` writes the server row over the optimistic one, rebuilt from the CURRENT cache so a slower in-flight write cannot undo a faster one)
 - `lib/offlineTagFolder.ts` — offline tag-folder deletion (deleteTagFolderOffline, stripFolderTags)
+- `lib/offlineAttachments.ts` — local reconciliation after an attachment POST/DELETE (`applyAttachmentChange` pure for `setNotes(prev => …)`, `cacheAttachmentChange` for both localStorage entries). Attachments never enter the sync queue and never touch `note.md`/`updatedAt`, so no save and no revalidate carries the new `attachmentCount` into the sidebar
 - `lib/fsShares.ts` — share registry CRUD (upsertShare, revokeShare, getShare, getShareByNote)
 - `lib/fsSharesRegistry.ts` — share registry I/O + locking (read/write, prune, withSharesLock, removeUserShares)
 - `lib/fsSharesQuery.ts` — read-side share queries (`listSharesByUsername` returns `UserShareRecord[]`)
