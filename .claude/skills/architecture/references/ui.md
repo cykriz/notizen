@@ -31,7 +31,7 @@ Von hier mitbenutzt, aber nach Pfadklasse anderswo inventarisiert:
 | TodosSidebarContent | `app/(app)/TodosSidebarContent.tsx` — todos sidebar content |
 | TagBrowser | `app/(app)/TagBrowser.tsx` — folder-style drill-down |
 | TagNavigation | `app/(app)/TagNavigation.tsx` — tag drill-down list, drag-to-move onto folders; renders TagBreadcrumb |
-| TagBreadcrumb | `app/(app)/TagBreadcrumb.tsx` — the current folder's name plus its action. A 16rem sidebar cannot hold the path and a readable folder name at once, so the row shows only the leaf (full width, `title` carries the whole path) and the back button opens a Popover listing root + every ancestor for a direct jump; rows are `h-11` below `md` for touch |
+| TagBreadcrumb | `app/(app)/TagBreadcrumb.tsx` — the current folder's name plus its action. A 16rem sidebar cannot hold the path and a readable folder name at once, so the row shows only the leaf (full width, `title` carries the whole path) and the back button carries the path: with two or more targets (`ChevronsLeft`) it opens a Popover listing root + every ancestor for a direct jump, one level below root (`ChevronLeft`, root the only target) it jumps there itself instead of showing a one-row menu; rows are `h-11` below `md` for touch |
 | TagFolderIcon | `app/(app)/TagFolderIcon.tsx` — the icon of a tag-navigation row, shared by TagNavigation and CommandPalette's tag mode. Same icon for every row regardless of sub-tags; rationale in the file's header comment |
 | DataProvider | `app/(app)/DataProvider.tsx` — client-side data context |
 | DeleteNoteDialog | `app/(app)/DeleteNoteDialog.tsx` — note deletion confirmation |

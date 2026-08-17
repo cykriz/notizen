@@ -80,7 +80,8 @@ describe('tagTree', () => {
       { path: 'dev', segment: 'dev' },
       { path: 'dev/python', segment: 'python' },
     ]);
-    // Depth 1 and root have no ancestor folder — only the breadcrumb's root entry.
+    // Depth 1 and root have no ancestor folder, so root is the breadcrumb's only jump
+    // target there — which is why it navigates straight to it instead of opening a menu.
     expect(ancestorTagPaths('dev')).toEqual([]);
     expect(ancestorTagPaths('')).toEqual([]);
   });

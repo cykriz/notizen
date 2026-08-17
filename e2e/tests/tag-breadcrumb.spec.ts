@@ -1,5 +1,10 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
-import { TAG_BREADCRUMB_UP_LABEL, TAG_FOLDER_DELETE_LABEL, TAG_ROOT_LABEL } from '../../lib/tagConstants';
+import {
+  TAG_BREADCRUMB_TO_ROOT_LABEL,
+  TAG_BREADCRUMB_UP_LABEL,
+  TAG_FOLDER_DELETE_LABEL,
+  TAG_ROOT_LABEL,
+} from '../../lib/tagConstants';
 import { createNote, createNoteWithTag, deleteAllNotes, watchForHydrationErrors } from './helpers';
 
 // The leaf is the case this layout exists for: a two-word folder name that the old
@@ -11,6 +16,9 @@ const LEAF_SEGMENT = 'mentale gesundheit';
 const ANCESTOR_SEGMENTS = ['persönlich', 'gesundheit', 'lebensmittelunverträglichkeiten'];
 // Every row of the path menu, in the order it renders.
 const PATH_MENU_NAMES = [TAG_ROOT_LABEL, ...ANCESTOR_SEGMENTS];
+// One segment, so root is the only jump target: the back button's direct form. Shares no
+// name with DEEP_TAG's segments, so no locator in this file can match across the two.
+const FLAT_TAG = 'werkzeug';
 // Minimum comfortable touch target; `.menu-row` carries the height for it.
 const TOUCH_TARGET_PX = 44;
 const PHONE_VIEWPORT = { width: 390, height: 844 };
@@ -20,9 +28,17 @@ function currentLabel(page: Page, path: string): Locator {
   return page.getByTitle(path, { exact: true });
 }
 
-/** A row of a `.menu-row` popover menu, by its visible text. */
+/** A row of a `.menu-row` popover menu, by its visible text — or any button, by its
+ *  accessible name, which is how the icon-only breadcrumb buttons are located here. */
 function menuRow(page: Page, name: string): Locator {
   return page.getByRole('button', { name, exact: true });
+}
+
+/** The icon a button renders, found by the class lucide stamps with the icon's own name.
+ *  The label alone cannot tell the back button's two forms apart from the user's side —
+ *  the chevrons are what announce, before the click, whether a menu is coming. */
+function icon(button: Locator, name: string): Locator {
+  return button.locator(`svg.lucide-${name}`);
 }
 
 /** Laid-out height, ignoring the popover's zoom-in-95 open animation — a transformed
@@ -122,6 +138,55 @@ test.describe('Tag breadcrumb', () => {
 
     await menuRow(page, 'gesundheit').click();
     await expect(currentLabel(page, 'persönlich/gesundheit')).toHaveText('gesundheit');
+  });
+
+  // A menu of one row is not a menu, it is a click in front of the click. Root being the
+  // only target left is the whole condition, so this is the shallowest path there is.
+  test('a top-level folder jumps to the root without a menu', async ({ page }) => {
+    await createNoteWithTag(page, 'Flache Notiz', 'Inhalt.', FLAT_TAG);
+    await expect(currentLabel(page, FLAT_TAG)).toHaveText(FLAT_TAG, { timeout: 15_000 });
+
+    // The menu form does not exist at this depth, and the single chevron says as much
+    // before anyone clicks.
+    const back = menuRow(page, TAG_BREADCRUMB_TO_ROOT_LABEL);
+    await expect(menuRow(page, TAG_BREADCRUMB_UP_LABEL)).toHaveCount(0);
+    await expect(icon(back, 'chevron-left')).toBeVisible();
+
+    await back.click();
+
+    // Root is exactly the state without a breadcrumb — TagNavigation renders it only
+    // below root. The folder row in the tag list is no usable proof of arrival: its
+    // accessible name carries TagFolderIcon's sr-only "Ordner", while an exact match on
+    // the bare tag name hits the tag chip in the open note instead.
+    await expect(currentLabel(page, FLAT_TAG)).toHaveCount(0);
+    await expect(back).toHaveCount(0);
+    // Last on purpose: by now a popover would have rendered, so a count of 0 means none
+    // was ever mounted — the click navigated rather than opening a one-row menu.
+    await expect(menuRow(page, TAG_ROOT_LABEL)).toHaveCount(0);
+  });
+
+  // The switch-over along one path, rather than at a special case: two targets are still
+  // a menu, and only the step below that turns the button into a plain jump.
+  test('the back button drops its menu once only the root is left', async ({ page }) => {
+    await createNoteWithTag(page, 'Tiefe Notiz', 'Inhalt.', DEEP_TAG);
+    await expect(currentLabel(page, DEEP_TAG)).toHaveText(LEAF_SEGMENT, { timeout: 15_000 });
+
+    const menuTrigger = menuRow(page, TAG_BREADCRUMB_UP_LABEL);
+    await expect(icon(menuTrigger, 'chevrons-left')).toBeVisible();
+
+    // Depth 4 -> 'persönlich/gesundheit': root plus one ancestor is a real choice, so the
+    // menu stays. Nobody may implement this as `ancestors.length <= 1`.
+    await menuTrigger.click();
+    await menuRow(page, 'gesundheit').click();
+    await expect(currentLabel(page, 'persönlich/gesundheit')).toHaveText('gesundheit');
+    await expect(menuTrigger).toBeVisible();
+
+    // -> 'persönlich': only root left above, so the button changes both role and icon.
+    await menuTrigger.click();
+    await menuRow(page, 'persönlich').click();
+    await expect(currentLabel(page, 'persönlich')).toHaveText('persönlich');
+    await expect(menuTrigger).toHaveCount(0);
+    await expect(icon(menuRow(page, TAG_BREADCRUMB_TO_ROOT_LABEL), 'chevron-left')).toBeVisible();
   });
 
   // Each test creates its note at the desktop viewport first — below `md` the tag

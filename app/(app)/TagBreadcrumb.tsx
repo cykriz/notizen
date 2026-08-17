@@ -4,14 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { FAILED_SYNC_OPEN_LABEL } from '@/lib/failedSyncConstants';
 import {
+  TAG_BREADCRUMB_TO_ROOT_LABEL,
   TAG_BREADCRUMB_UP_LABEL,
   TAG_FOLDER_DELETE_LABEL,
   TAG_ROOT_LABEL,
   tagBreadcrumbJumpLabel,
 } from '@/lib/tagConstants';
 import { ancestorTagPaths, leafTagSegment } from '@/lib/tagTree';
-import { cn } from '@/lib/utils';
-import { ChevronLeft, CloudAlert, Folder, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronsLeft, CloudAlert, Folder, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { DeleteTagFolderDialog } from './DeleteTagFolderDialog';
 
@@ -29,8 +29,9 @@ interface TagBreadcrumbProps {
 
 /**
  * The current folder's name plus its actions. A 16rem sidebar cannot hold the path
- * and a readable folder name at once, so the path lives entirely in the back
- * button's menu and the name gets the whole row.
+ * and a readable folder name at once, so the path lives entirely in the back button —
+ * as its menu, or one level below root as the jump the button makes itself — and the
+ * name gets the whole row.
  */
 export function TagBreadcrumb({
   currentPath,
@@ -41,58 +42,84 @@ export function TagBreadcrumb({
   deleteOpen,
   setDeleteOpen,
 }: TagBreadcrumbProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
+  // The path whose menu is open, not a bare flag: the path also moves without the user
+  // (useTagStateSync re-targets it when a sync alters the open note's tags), and a value
+  // left over from the old path can never match the new one, so a menu whose folder is
+  // gone cannot reappear by itself.
+  const [openFor, setOpenFor] = useState('');
   const ancestors = ancestorTagPaths(currentPath);
+  // One level below root, the menu would hold a single row — a click in front of the
+  // click. The button jumps there itself instead, and the chevrons say which it is:
+  // one for the one step, two for a choice of several.
+  const hasMenu = ancestors.length > 0;
+  const upLabel = hasMenu ? TAG_BREADCRUMB_UP_LABEL : TAG_BREADCRUMB_TO_ROOT_LABEL;
 
   const jumpTo = (path: string) => {
     setCurrentPath(path);
-    setMenuOpen(false);
+    setOpenFor('');
   };
+
+  // The same jump the menu's root row makes — one level below root the button *is* that
+  // row, so the two must not be able to drift apart.
+  const jumpToRoot = () => {
+    jumpTo('');
+  };
+
+  const upButton = (
+    <Button
+      variant="ghost"
+      size="icon-xs"
+      // icon-xs carries its own enlarged hit area below md — see button.tsx. The open
+      // highlight rides on Radix's data-state, which only a popover trigger ever carries,
+      // so the direct-jump form needs no open state of its own to stay unhighlighted.
+      className="shrink-0 data-[state=open]:bg-accent"
+      aria-label={upLabel}
+      title={upLabel}
+      // Only the direct jump handles its own click; in the menu form the click belongs to
+      // PopoverTrigger, which composes its handler onto this element.
+      onClick={hasMenu ? undefined : jumpToRoot}
+    >
+      {hasMenu ? <ChevronsLeft /> : <ChevronLeft />}
+    </Button>
+  );
 
   return (
     <div className="flex min-w-0 items-center gap-1 overflow-hidden text-xs text-sidebar-foreground/70">
-      <Popover open={menuOpen} onOpenChange={setMenuOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            // icon-xs carries its own enlarged hit area below md — see button.tsx.
-            className={cn('shrink-0', { 'bg-accent': menuOpen })}
-            aria-label={TAG_BREADCRUMB_UP_LABEL}
-            title={TAG_BREADCRUMB_UP_LABEL}
-          >
-            <ChevronLeft />
-          </Button>
-        </PopoverTrigger>
-        {/* Tag paths are free-form, so this list has no natural length limit. Radix can
-            flip or shift the popover to fit but never scroll it, so without the cap the
-            deepest ancestors of a very deep path fall off the screen unreachably. */}
-        <PopoverContent
-          align="start"
-          className="flex max-h-(--radix-popover-content-available-height) w-56 flex-col gap-1 overflow-y-auto p-1"
+      {hasMenu ? (
+        <Popover
+          open={openFor === currentPath}
+          onOpenChange={(open) => {
+            setOpenFor(open ? currentPath : '');
+          }}
         >
-          {/* Path order, so the menu reads like the path: root first, direct parent last. */}
-          <PathMenuRow
-            label={TAG_ROOT_LABEL}
-            onSelect={() => {
-              jumpTo('');
-            }}
-          />
-          {ancestors.map((ancestor, i) => (
-            <PathMenuRow
-              key={ancestor.path}
-              label={ancestor.segment}
-              depth={i + 1}
-              // Two ancestors of one path can share a segment name; the full path
-              // in the tooltip is what tells them apart.
-              title={tagBreadcrumbJumpLabel(ancestor.path)}
-              onSelect={() => {
-                jumpTo(ancestor.path);
-              }}
-            />
-          ))}
-        </PopoverContent>
-      </Popover>
+          <PopoverTrigger asChild>{upButton}</PopoverTrigger>
+          {/* Tag paths are free-form, so this list has no natural length limit. Radix can
+              flip or shift the popover to fit but never scroll it, so without the cap the
+              deepest ancestors of a very deep path fall off the screen unreachably. */}
+          <PopoverContent
+            align="start"
+            className="flex max-h-(--radix-popover-content-available-height) w-56 flex-col gap-1 overflow-y-auto p-1"
+          >
+            {/* Path order, so the menu reads like the path: root first, direct parent last. */}
+            <PathMenuRow label={TAG_ROOT_LABEL} onSelect={jumpToRoot} />
+            {ancestors.map((ancestor, i) => (
+              <PathMenuRow
+                key={ancestor.path}
+                label={ancestor.segment}
+                depth={i + 1}
+                // Two ancestors of one path can share a segment name; the full path
+                // in the tooltip is what tells them apart.
+                title={tagBreadcrumbJumpLabel(ancestor.path)}
+                onSelect={() => {
+                  jumpTo(ancestor.path);
+                }}
+              />
+            ))}
+          </PopoverContent>
+        </Popover>
+      ) : (
+        upButton
+      )}
 
       {/* The full path is the tooltip, since the row itself no longer shows it. */}
       <span className="sidebar-label font-medium text-sidebar-foreground" title={currentPath}>
