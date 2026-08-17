@@ -34,11 +34,11 @@ describe('tagTree', () => {
     expect(getChildNodes(tree, 'dev')).toHaveLength(2);
   });
 
-  test('buildTagTree — folders sort before leaf tags, alphabetically within each group', () => {
+  test('buildTagTree — children sort alphabetically, whether or not they have sub-tags', () => {
     const mixed: NoteSummary[] = [
       { id: '4', slug: 's4', title: 'D', createdAt: '', updatedAt: '', attachmentCount: 0, tags: ['p/m', 'p/a', 'p/z/tief'], pinned: false },
     ];
-    expect(getChildNodes(buildTagTree(mixed), 'p').map((n) => n.segment)).toEqual(['z', 'a', 'm']);
+    expect(getChildNodes(buildTagTree(mixed), 'p').map((n) => n.segment)).toEqual(['a', 'm', 'z']);
   });
 
   test('getNotesAtPath — filters exact match', () => {

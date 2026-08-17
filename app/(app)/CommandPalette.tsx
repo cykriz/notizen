@@ -14,7 +14,7 @@ import {
   CommandItem,
 } from '@/components/ui/command';
 import { leafTagSegment, listAllTagPaths } from '@/lib/tagTree';
-import { TagNodeIcon } from './TagNodeIcon';
+import { TagFolderIcon } from './TagFolderIcon';
 import { useReportedTransition } from './navigationLoading';
 import { viewStore } from './viewStore';
 import { tagNavigationStore } from './tagNavigationStore';
@@ -119,7 +119,7 @@ export function CommandPalette({ notes, todos }: CommandPaletteProps) {
                   handleTagSelect(entry.path);
                 }}
               >
-                <TagNodeIcon isFolder={!entry.isLeaf} />
+                <TagFolderIcon />
                 <span className="truncate">{entry.path}</span>
                 <Badge variant="secondary" className="ml-auto text-xs px-1 py-0">
                   {entry.noteCount}

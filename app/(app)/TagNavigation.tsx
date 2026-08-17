@@ -5,16 +5,15 @@ import {
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { FAILED_SYNC_TAG, NOTE_DRAG_MIME, NOTE_IDS_DRAG_MIME, pathHasReservedSegment } from '@/lib/constants';
-import { buildTagTree, getChildNodes, isTagFolder } from '@/lib/tagTree';
+import { buildTagTree, getChildNodes } from '@/lib/tagTree';
 import type { NoteSummary } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useEffect, useMemo, useState } from 'react';
 import { FailedSyncDialog } from './FailedSyncDialog';
 import { TagBreadcrumb } from './TagBreadcrumb';
-import { TagNodeIcon } from './TagNodeIcon';
+import { TagFolderIcon } from './TagFolderIcon';
 import { useBatchTags } from './useBatchTags';
 
 interface TagNavigationProps {
@@ -32,11 +31,6 @@ export function TagNavigation({ notes, currentPath, setCurrentPath, onFolderDele
   const [dragOverPath, setDragOverPath] = useState<string | null>(null);
   const tree = useMemo(() => buildTagTree(notes), [notes]);
   const children = useMemo(() => getChildNodes(tree, currentPath), [tree, currentPath]);
-  const hasNotesAtLevel = useMemo(
-    () =>
-      currentPath === '' ? notes.some((n) => n.tags.length === 0) : notes.some((n) => n.tags.includes(currentPath)),
-    [notes, currentPath],
-  );
   const isFailedSyncTag = currentPath === FAILED_SYNC_TAG;
 
   // Auto-pop when the synthetic sync-fehler folder vanishes via a background
@@ -103,8 +97,17 @@ export function TagNavigation({ notes, currentPath, setCurrentPath, onFolderDele
   }
 
   return (
+    // Eigene Fläche für den Navigationsteil: das ist die Grenze, die zählt — Container
+    // gegen Notiz. `bg-background` statt `bg-sidebar-accent`, weil letzteres exakt der
+    // Hover-Ton der Zeilen ist und den Hover verschlucken würde; so wächst der
+    // Hover-Kontrast stattdessen, weil die Zeilen von einer entfernteren Fläche starten.
+    //
+    // Der Ring trägt die Grenze im Light-Theme, wo die Füllung allein nicht reicht:
+    // --background 1.0 gegen --sidebar 0.985 sind 1,5% Helligkeit. `ring` statt `border`,
+    // weil ein Ring keine Box-Breite kostet — die Breadcrumb-Zeile darunter ist auf jedes
+    // Pixel angewiesen, um tiefe Pfade unabgeschnitten zu zeigen.
     <div
-      className="flex max-h-[calc(0.5*var(--app-h))] flex-col gap-1 overflow-y-auto"
+      className="flex max-h-[calc(0.5*var(--app-h))] flex-col gap-1 overflow-y-auto rounded-lg bg-background p-1 ring-1 ring-sidebar-border"
       onDragLeave={handleContainerDragLeave}
     >
       {currentPath !== '' && (
@@ -123,35 +126,30 @@ export function TagNavigation({ notes, currentPath, setCurrentPath, onFolderDele
 
       {children.length > 0 && (
         <SidebarMenu>
-          {children.map((node) => {
-            const isFolder = isTagFolder(node);
-            return (
-              <SidebarMenuItem key={node.fullPath}>
-                <SidebarMenuButton
-                  onClick={() => {
-                    setCurrentPath(node.fullPath);
-                  }}
-                  onDragOver={(e) => {
-                    handleDragOverFolder(e, node.fullPath);
-                  }}
-                  onDrop={(e) => {
-                    handleDropOnFolder(e, node.fullPath);
-                  }}
-                  className={cn('h-auto', {
-                    'bg-primary/10 ring-2 ring-inset ring-primary/60': dragOverPath === node.fullPath,
-                  })}
-                >
-                  <TagNodeIcon isFolder={isFolder} leafClassName="text-sidebar-foreground/60" />
-                  <span className={cn('truncate', { 'font-medium': isFolder })}>{node.segment}</span>
-                </SidebarMenuButton>
-                <SidebarMenuBadge>{node.noteCount}</SidebarMenuBadge>
-              </SidebarMenuItem>
-            );
-          })}
+          {children.map((node) => (
+            <SidebarMenuItem key={node.fullPath}>
+              <SidebarMenuButton
+                onClick={() => {
+                  setCurrentPath(node.fullPath);
+                }}
+                onDragOver={(e) => {
+                  handleDragOverFolder(e, node.fullPath);
+                }}
+                onDrop={(e) => {
+                  handleDropOnFolder(e, node.fullPath);
+                }}
+                className={cn('h-auto', {
+                  'bg-primary/10 ring-2 ring-inset ring-primary/60': dragOverPath === node.fullPath,
+                })}
+              >
+                <TagFolderIcon />
+                <span className="truncate">{node.segment}</span>
+              </SidebarMenuButton>
+              <SidebarMenuBadge>{node.noteCount}</SidebarMenuBadge>
+            </SidebarMenuItem>
+          ))}
         </SidebarMenu>
       )}
-
-      {hasNotesAtLevel && children.length > 0 && <SidebarSeparator />}
 
       {failedSyncDialog}
     </div>

@@ -158,6 +158,9 @@ function PathMenuRow({
   return (
     // Touch height comes from .menu-row, so both popover menus agree on it.
     <Button variant="ghost" className="menu-row" title={title} onClick={onSelect}>
+      {/* Neutrales Outline-Icon, nicht das gefüllte TagFolderIcon der Navigationszeilen:
+          dieses Menü listet ausschließlich Ordner, und der Indent trägt hier die
+          Information. Getönte Füllung auf jeder Zeile wäre nur Gewicht ohne Aussage. */}
       <Folder className={indent} />
       <span className="truncate">{label}</span>
     </Button>

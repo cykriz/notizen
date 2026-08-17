@@ -48,12 +48,6 @@ export function ancestorTagPaths(path: string): TagAncestor[] {
   }));
 }
 
-// Ein Knoten mit Kindern ist ein Ordner. Die eine Stelle, an der diese Regel steht —
-// Sidebar, Command-Palette und die Sortierung lesen alle hier.
-export function isTagFolder(node: TagNode): boolean {
-  return node.children.length > 0;
-}
-
 export function buildTagTree(notes: NoteSummary[]): TagNode[] {
   const root: TagNode[] = [];
 
@@ -80,17 +74,12 @@ export function buildTagTree(notes: NoteSummary[]): TagNode[] {
   return sortTree(root);
 }
 
-// Ordner vor Blatt-Tags — die Konvention jedes Datei-Browsers (Finder, Explorer,
-// Drive). Position ist der schnellste Hinweis auf "hier geht es tiefer"; Icon und
-// Farbe bestätigen sie nur. Innerhalb jeder Gruppe bleibt es alphabetisch.
-//
-// Läuft bewusst erst am Ende von buildTagTree: der Comparator liest children.length,
-// das ist nur nach dem vollständigen Aufbau des Baums endgültig. Nicht vorziehen.
+// Rein alphabetisch, ohne Vorsortierung nach "hat Unter-Tags": jede Zeile der
+// Tag-Navigation ist ein Ordner, ob sie Unter-Tags hat oder nicht. Eine Umordnung
+// nach einem Merkmal, das die Liste nicht zeigt, wäre nur eine unerklärte Abweichung
+// vom Alphabet — und vorhersagbare Positionen sind hier mehr wert.
 function sortTree(nodes: TagNode[]): TagNode[] {
-  nodes.sort((a, b) => {
-    const byKind = Number(isTagFolder(b)) - Number(isTagFolder(a));
-    return byKind !== 0 ? byKind : a.segment.localeCompare(b.segment);
-  });
+  nodes.sort((a, b) => a.segment.localeCompare(b.segment));
   for (const n of nodes) {
     sortTree(n.children);
   }
@@ -169,7 +158,6 @@ export function listAllTags(notes: NoteSummary[]): string[] {
 export interface TagPathEntry {
   path: string;
   noteCount: number;
-  isLeaf: boolean;
 }
 
 export function listAllTagPaths(notes: NoteSummary[]): TagPathEntry[] {
@@ -178,11 +166,7 @@ export function listAllTagPaths(notes: NoteSummary[]): TagPathEntry[] {
 
   function walk(nodes: TagNode[]) {
     for (const node of nodes) {
-      result.push({
-        path: node.fullPath,
-        noteCount: node.noteCount,
-        isLeaf: !isTagFolder(node),
-      });
+      result.push({ path: node.fullPath, noteCount: node.noteCount });
       walk(node.children);
     }
   }
