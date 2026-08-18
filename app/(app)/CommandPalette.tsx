@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { FileText, ListChecks, Pin } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { ListChecks } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   CommandDialog,
@@ -13,7 +12,9 @@ import {
   CommandGroup,
   CommandItem,
 } from '@/components/ui/command';
-import { leafTagSegment, listAllTagPaths } from '@/lib/tagTree';
+import { NoteCommandItem } from '@/components/NoteCommandItem';
+import { noteSearchText, rankByQuery, sortNotesForPalette } from '@/lib/commandSearch';
+import { listAllTagPaths } from '@/lib/tagTree';
 import { TagFolderIcon } from './TagFolderIcon';
 import { useReportedTransition } from './navigationLoading';
 import { viewStore } from './viewStore';
@@ -25,6 +26,9 @@ interface CommandPaletteProps {
   todos: Todo[];
 }
 
+const todoSearchText = (todo: Todo) => todo.title;
+const tagPathText = (entry: { path: string }) => entry.path;
+
 export function CommandPalette({ notes, todos }: CommandPaletteProps) {
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
@@ -33,19 +37,19 @@ export function CommandPalette({ notes, todos }: CommandPaletteProps) {
 
   const isTagMode = inputValue.startsWith('@');
   const tagQuery = isTagMode ? inputValue.slice(1).toLowerCase() : '';
+  const noteQuery = isTagMode ? '' : inputValue;
+
+  const sortedNotes = useMemo(() => sortNotesForPalette(notes), [notes]);
+  const visibleNotes = useMemo(() => rankByQuery(sortedNotes, noteQuery, noteSearchText), [sortedNotes, noteQuery]);
+  const visibleTodos = useMemo(() => rankByQuery(todos, noteQuery, todoSearchText), [todos, noteQuery]);
 
   const allTagPaths = useMemo(() => listAllTagPaths(notes), [notes]);
-  const filteredTags = useMemo(() => {
-    if (!isTagMode) {
-      return [];
-    }
-
-    if (tagQuery === '') {
-      return allTagPaths;
-    }
-
-    return allTagPaths.filter((entry) => entry.path.toLowerCase().includes(tagQuery));
-  }, [isTagMode, tagQuery, allTagPaths]);
+  // Fuzzy and ranked, unlike TagInput's substring filter in the editor — deliberately not
+  // unified: different widget, and fuzzy matching there was not asked for.
+  const filteredTags = useMemo(
+    () => (isTagMode ? rankByQuery(allTagPaths, tagQuery, tagPathText) : []),
+    [isTagMode, tagQuery, allTagPaths],
+  );
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -99,8 +103,10 @@ export function CommandPalette({ notes, todos }: CommandPaletteProps) {
       title="Befehlspalette"
       description="Suche nach Notizen, Aufgaben oder Tags…"
       showCloseButton={false}
-      commandProps={isTagMode ? { shouldFilter: false } : undefined}
     >
+      {/* Kept controlled: uncontrolled would let cmdk update its `search` synchronously, but
+          reopening during Radix's exit animation would hit the still-mounted store with the
+          old search while inputValue is already '' — a wrong tag mode. */}
       <CommandInput
         placeholder={isTagMode ? 'Tag suchen…' : 'Suchen…'}
         value={inputValue}
@@ -129,36 +135,26 @@ export function CommandPalette({ notes, todos }: CommandPaletteProps) {
           </CommandGroup>
         ) : (
           <>
-            {notes.length > 0 && (
+            {visibleNotes.length > 0 && (
               <CommandGroup heading="Notizen">
-                {notes.map((note) => (
-                  <CommandItem
+                {visibleNotes.map((note) => (
+                  <NoteCommandItem
                     key={note.id}
-                    value={note.id}
-                    keywords={[note.title, ...note.tags.map((t) => `#${t}`)]}
+                    note={note}
                     onSelect={() => {
                       navigate(`/notes/${note.id}`);
                     }}
-                  >
-                    {note.pinned ? <Pin /> : <FileText />}
-                    <span className="truncate">{note.title}</span>
-                    {note.tags.slice(0, 2).map((tag, i) => (
-                      <Badge key={tag} variant="secondary" className={cn('text-xs px-1 py-0', { 'ml-auto': i === 0 })}>
-                        {leafTagSegment(tag)}
-                      </Badge>
-                    ))}
-                  </CommandItem>
+                  />
                 ))}
               </CommandGroup>
             )}
 
-            {todos.length > 0 && (
+            {visibleTodos.length > 0 && (
               <CommandGroup heading="Aufgaben">
-                {todos.map((todo) => (
+                {visibleTodos.map((todo) => (
                   <CommandItem
                     key={todo.id}
                     value={todo.id}
-                    keywords={[todo.title]}
                     onSelect={() => {
                       navigate('/todos');
                     }}

@@ -125,6 +125,11 @@ export const SYNC_RETRY_INTERVAL_MS = 10_000;
 export const SYNC_RETRY_MAX_INTERVAL_MS = 5 * 60_000; // 5 min cap
 export const DRAFT_DEBOUNCE_MS = 300;
 
+// Max rows a command palette / note picker renders per group. Every row is a live
+// CommandItem with its own store subscription, so an uncapped list makes typing crawl
+// once a vault grows — and the 300px result box shows ~6 rows anyway.
+export const COMMAND_RESULT_LIMIT = 50;
+
 export const QUADRANT = {
   DO: 'do',
   SCHEDULE: 'schedule',

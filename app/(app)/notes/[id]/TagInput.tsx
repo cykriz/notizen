@@ -109,7 +109,6 @@ export function TagInput({ tags, allTags, onChange, className, compact, onCollap
         ))}
       </span>
       <Command
-        shouldFilter={false}
         loop
         className="relative inline w-16 focus-within:w-48 focus-within:flex-1 transition-all duration-150 overflow-visible bg-transparent h-auto rounded-none text-inherit"
       >

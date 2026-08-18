@@ -1,17 +1,15 @@
 'use client';
 
-import { FileText, Pin } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
+import { useMemo, useState } from 'react';
 import {
   CommandDialog,
   CommandInput,
   CommandList,
   CommandEmpty,
   CommandGroup,
-  CommandItem,
 } from '@/components/ui/command';
-import { leafTagSegment } from '@/lib/tagTree';
+import { NoteCommandItem } from '@/components/NoteCommandItem';
+import { noteSearchText, rankByQuery, sortNotesForPalette } from '@/lib/commandSearch';
 import type { NoteSummary } from '@/lib/types';
 
 interface NoteLinkPickerProps {
@@ -19,6 +17,45 @@ interface NoteLinkPickerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSelect: (note: NoteSummary) => void;
+}
+
+/**
+ * The query lives in here rather than in NoteLinkPicker on purpose: this component only exists
+ * while the dialog is open, so closing it discards the search by unmounting — no reset to keep
+ * in sync with `open`, which the parent owns and can flip without going through onOpenChange.
+ *
+ * With cmdk's filtering off (the Command default), the query has to be tracked somewhere:
+ * without it there is nothing to rank against and the picker would just list the first
+ * COMMAND_RESULT_LIMIT notes.
+ */
+function NoteLinkPickerContent({ notes, onOpenChange, onSelect }: Omit<NoteLinkPickerProps, 'open'>) {
+  const [query, setQuery] = useState('');
+
+  const sortedNotes = useMemo(() => sortNotesForPalette(notes), [notes]);
+  const visibleNotes = useMemo(() => rankByQuery(sortedNotes, query, noteSearchText), [sortedNotes, query]);
+
+  return (
+    <>
+      <CommandInput placeholder="Notiz suchen…" value={query} onValueChange={setQuery} />
+      <CommandList>
+        <CommandEmpty>Keine Notizen gefunden.</CommandEmpty>
+        {visibleNotes.length > 0 && (
+          <CommandGroup heading="Notizen">
+            {visibleNotes.map((note) => (
+              <NoteCommandItem
+                key={note.id}
+                note={note}
+                onSelect={() => {
+                  onSelect(note);
+                  onOpenChange(false);
+                }}
+              />
+            ))}
+          </CommandGroup>
+        )}
+      </CommandList>
+    </>
+  );
 }
 
 export function NoteLinkPicker({ notes, open, onOpenChange, onSelect }: NoteLinkPickerProps) {
@@ -30,33 +67,7 @@ export function NoteLinkPicker({ notes, open, onOpenChange, onSelect }: NoteLink
       description="Suche nach einer Notiz zum Verknüpfen…"
       showCloseButton={false}
     >
-      <CommandInput placeholder="Notiz suchen…" />
-      <CommandList>
-        <CommandEmpty>Keine Notizen gefunden.</CommandEmpty>
-        {notes.length > 0 && (
-          <CommandGroup heading="Notizen">
-            {notes.map((note) => (
-              <CommandItem
-                key={note.id}
-                value={note.id}
-                keywords={[note.title, ...note.tags.map((t) => `#${t}`)]}
-                onSelect={() => {
-                  onSelect(note);
-                  onOpenChange(false);
-                }}
-              >
-                {note.pinned ? <Pin /> : <FileText />}
-                <span className="truncate">{note.title}</span>
-                {note.tags.slice(0, 2).map((tag, i) => (
-                  <Badge key={tag} variant="secondary" className={cn('text-[10px] px-1 py-0', { 'ml-auto': i === 0 })}>
-                    {leafTagSegment(tag)}
-                  </Badge>
-                ))}
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        )}
-      </CommandList>
+      <NoteLinkPickerContent notes={notes} onOpenChange={onOpenChange} onSelect={onSelect} />
     </CommandDialog>
   );
 }

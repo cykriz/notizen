@@ -25,6 +25,7 @@ Kuratiert, nicht vollständig — s. `SKILL.md`. Komponenten/Hooks: `references/
 - `lib/schemas.ts` — Zod schemas plus the row-wise parsers. Two variants with different contracts: the lenient `parse*Rows` for cache reads (salvage what is readable), and the strict `parse*RowsStrict` for server responses, where **`null` means the caller MUST skip the merge** — `[]` would be read as "the server has nothing" and wipe the offline cache
 - `lib/apiHelpers.ts` — API utility helpers
 - `lib/tryFetch.ts` — fetch wrapper
+- `lib/commandSearch.ts` — ranking for the command palette and note picker (rankByQuery, noteSearchText, sortNotesForPalette). Both callers pass cmdk `shouldFilter: false` and rank here instead, because cmdk scores the CommandItem `value` — the note id — as part of the haystack, so a UUID both matched hex-only queries in every note and outscored real titles. Ranking here also means React owns the row order, instead of cmdk re-appending rows in the DOM
 - `lib/localCache.ts` — client-side local cache CRUD (notes, todos, sync queue)
 - `lib/localCacheMerge.ts` — merge, tombstones, and cache expiry cleanup. Failed sync entries deliberately never expire: they are the only record of unsynced content, and they are what keeps `notizen:note:<id>` + drafts + the list keys out of the TTL sweep
 - `lib/syncQueue.ts` — offline sync queue management (`enqueueMutation`, `processSyncQueue`, `requeueFailedEntry`)

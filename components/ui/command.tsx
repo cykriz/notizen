@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Command as CommandPrimitive } from 'cmdk';
+import { Command as CommandPrimitive, useCommandState } from 'cmdk';
 import { SearchIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -15,6 +15,11 @@ function Command({ className, ...props }: React.ComponentProps<typeof CommandPri
         'bg-popover text-popover-foreground flex h-full w-full flex-col overflow-hidden rounded-md',
         className,
       )}
+      // App-wide default: cmdk neither filters nor sorts. Its scorer would pull the CommandItem
+      // `value` — a note id here — into the search haystack, and its sort re-appends rows in the
+      // DOM behind React's back. Every list in this app ranks explicitly instead, see
+      // lib/commandSearch.ts. Before the spread, so a caller can still opt back in.
+      shouldFilter={false}
       {...props}
     />
   );
@@ -42,17 +47,13 @@ function CommandDialog({
   children,
   className,
   showCloseButton = true,
-  commandProps,
   ...props
 }: React.ComponentProps<typeof Dialog> & {
   title?: string;
   description?: string;
   className?: string;
   showCloseButton?: boolean;
-  commandProps?: Partial<React.ComponentProps<typeof CommandPrimitive>>;
 }) {
-  const { className: commandClassName, ...restCommandProps } = commandProps ?? {};
-
   return (
     <Dialog {...props}>
       <DialogHeader className="sr-only">
@@ -60,9 +61,7 @@ function CommandDialog({
         <DialogDescription>{description}</DialogDescription>
       </DialogHeader>
       <DialogContent className={cn('overflow-hidden p-0', className)} showCloseButton={showCloseButton}>
-        <Command className={cn(COMMAND_DIALOG_CLASSES, commandClassName)} {...restCommandProps}>
-          {children}
-        </Command>
+        <Command className={COMMAND_DIALOG_CLASSES}>{children}</Command>
       </DialogContent>
     </Dialog>
   );
@@ -84,12 +83,36 @@ function CommandInput({ className, ...props }: React.ComponentProps<typeof Comma
   );
 }
 
-function CommandList({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.List>) {
+// `ref` is deliberately not accepted: the internal one below owns the scroll reset, and a
+// caller-supplied ref would have to be merged with it rather than silently replace it.
+type CommandListProps = Omit<React.ComponentProps<typeof CommandPrimitive.List>, 'ref'>;
+
+function CommandList({ className, ...props }: CommandListProps) {
+  const listRef = React.useRef<HTMLDivElement>(null);
+  const search = useCommandState((state) => state.search);
+
+  // cmdk scrolls only the *selected* row into view, and skips even that when the selection is
+  // unchanged (its setState bails on Object.is). Nothing ever reset scrollTop, so scrolling by
+  // wheel and then refining the query in a way that keeps the same row on top left the offset
+  // untouched with the best hit above the fold — the reason the top result "wasn't there" until
+  // you scrolled up. Every new query starts at the top instead. Keyed on `search`, not on the
+  // selected value, so arrow-key navigation is untouched.
+  //
+  // This covers every list fed by `CommandInput`. TagInput drives its own `Input` instead, so
+  // cmdk's `search` stays '' there and the reset never fires — harmless, its suggestion list is
+  // capped at 8 rows and never scrolls.
+  React.useEffect(() => {
+    if (listRef.current) {
+      listRef.current.scrollTop = 0;
+    }
+  }, [search]);
+
   return (
     <CommandPrimitive.List
       data-slot="command-list"
       className={cn('max-h-75 scroll-py-1 overflow-x-hidden overflow-y-auto', className)}
       {...props}
+      ref={listRef}
     />
   );
 }

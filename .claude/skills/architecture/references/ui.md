@@ -16,6 +16,7 @@ Von hier mitbenutzt, aber nach Pfadklasse anderswo inventarisiert:
 | MarkdownEditorToolbar | `components/MarkdownEditorToolbar.tsx` — editor toolbar |
 | MarkdownPreview | `components/MarkdownPreview.tsx` — rendered markdown view |
 | NoteLinkPicker | `components/NoteLinkPicker.tsx` — reusable note search dialog |
+| NoteCommandItem | `components/NoteCommandItem.tsx` — one note row in a cmdk list, shared by NoteLinkPicker and CommandPalette |
 | InternalLink | `components/InternalLink.tsx` — internal note link renderer |
 | SyncStatusIndicator | `components/SyncStatusIndicator.tsx` — offline sync status |
 | AttachmentList | `components/AttachmentList.tsx` — display note attachments |
