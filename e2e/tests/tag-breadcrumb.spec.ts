@@ -5,7 +5,13 @@ import {
   TAG_FOLDER_DELETE_LABEL,
   TAG_ROOT_LABEL,
 } from '../../lib/tagConstants';
-import { createNote, createNoteWithTag, deleteAllNotes, watchForHydrationErrors } from './helpers';
+import {
+  PHONE_VIEWPORT,
+  createNote,
+  createNoteWithTag,
+  deleteAllNotes,
+  watchForHydrationErrors,
+} from './helpers';
 
 // The leaf is the case this layout exists for: a two-word folder name that the old
 // two-segment row cut down to "mentale ge…". The ancestors are deliberately long —
@@ -21,7 +27,6 @@ const PATH_MENU_NAMES = [TAG_ROOT_LABEL, ...ANCESTOR_SEGMENTS];
 const FLAT_TAG = 'werkzeug';
 // Minimum comfortable touch target; `.menu-row` carries the height for it.
 const TOUCH_TARGET_PX = 44;
-const PHONE_VIEWPORT = { width: 390, height: 844 };
 
 /** The breadcrumb's current-folder label, found by the full path it carries as its title. */
 function currentLabel(page: Page, path: string): Locator {

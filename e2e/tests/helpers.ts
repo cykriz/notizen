@@ -7,6 +7,11 @@ import { FAILED_SYNC_DIALOG_TITLE, FAILED_SYNC_OPEN_LABEL } from '../../lib/fail
 import type { ShareEntry } from '../../lib/fsSharesRegistry';
 import { clearLocalState, readPendingQueue } from './storageHelpers';
 
+/** One phone for every mobile spec, so touch-target and mobile-only-UI assertions
+ *  cannot drift apart across files. Below `lg` (1024px), which is where `useIsMobile`
+ *  and the mobile-only chrome switch over. */
+export const PHONE_VIEWPORT = { width: 390, height: 844 };
+
 /**
  * Collects anything that smells like a hydration mismatch, for the run of one test.
  *

@@ -19,11 +19,12 @@ All defined as CSS variables in `app/globals.css` (`:root` for light, `.dark` fo
 
 ## Shared CSS Classes (`app/custom-components.css`)
 
-Global classes for consistent visuals. Extract a class into this file **only once it has a second consumer** — one-off custom styles stay inline at the call site. Use plain CSS values — avoid `@apply` beyond well-known Tailwind v4 utilities (Turbopack can fail on unresolved utilities).
+Global classes for consistent visuals. Extract a class into this file **only once it has a second consumer** — one-off custom styles stay inline at the call site. One exception: a declaration Tailwind cannot express readably inline (a `mask-image` with derived geometry, say) may come here with a single consumer, and then says so in its row. Use plain CSS values — avoid `@apply` beyond well-known Tailwind v4 utilities (Turbopack can fail on unresolved utilities).
 
 | Class | Used on | Controls |
 |---|---|---|
-| `.card-base` | Card, MobileBottomNav | `rounded-xl shadow-sm` — shared panel look (no border) |
+| `.card-base` | Card | `rounded-xl shadow-sm` — shared panel look (no border). MobileBottomNav dropped it: a mask clips a box-shadow away, so its tab surfaces set their radius directly |
+| `.nav-cutout-left`, `.nav-cutout-right` | MobileBottomNav tabs | `mask-image` arc that cuts the search circle's clearance out of a tab's inner edge. Single consumer, per the exception above: a concave edge is impossible with border-radius, and the geometry needs the comment next to it — inline it would be a 100-character arbitrary property twice. Radius deliberately stays at the call site (unlayered file) |
 | `.sidebar-inner` | Desktop sidebar, mobile SheetContent | `flex h-full w-full flex-col p-2 gap-2` |
 | `.sidebar-panel` | Desktop sidebar, mobile SheetContent | `border-0 gap-2` |
 | `.note-section-padding` | Note section elements | `px-4 py-2` |

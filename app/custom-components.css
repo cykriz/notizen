@@ -32,6 +32,44 @@
   @apply rounded-xl shadow-sm;
 }
 
+/* MobileBottomNav's search circle, and the arc its two neighbours curve around it: one geometry,
+   decided here. The circle's own `size-(--nav-search)` and negative margin read these variables at
+   the call site, and the masks below derive radius and centre from them — a changed diameter must not
+   leave a stale cut-out behind. A concave edge is impossible with border-radius, which only ever
+   rounds outward.
+   `black` is an alpha stop, not a paint colour: a mask reads only alpha, so the colour rule does not
+   apply. A mask also clips whatever falls outside the box, so the tabs carry no shadow of their own;
+   the circle does. Radius stays at the call site — this file is unlayered and would outrank it. */
+.bottom-nav {
+  --nav-search: 4rem;
+  /* How far the tabs run under the circle, and how much clear space is left around it. */
+  --nav-search-overlap: 0.5rem;
+  --nav-search-clearance: 0.5rem;
+}
+
+.nav-cutout-left,
+.nav-cutout-right {
+  --cut-radius: calc(var(--nav-search) / 2 + var(--nav-search-clearance));
+  --cut-offset: calc(var(--nav-search) / 2 - var(--nav-search-overlap));
+  mask-repeat: no-repeat;
+}
+
+.nav-cutout-right {
+  mask-image: radial-gradient(
+    circle calc(var(--cut-radius) + 0.5rem) at calc(100% + var(--cut-offset)) 50%,
+    transparent calc(var(--cut-radius) - 0.04rem),
+    black calc(var(--cut-radius) + 0.04rem)
+  );
+}
+
+.nav-cutout-left {
+  mask-image: radial-gradient(
+    circle calc(var(--cut-radius) + 0.5rem) at calc(var(--cut-offset) * -1) 50%,
+    transparent calc(var(--cut-radius) - 0.04rem),
+    black calc(var(--cut-radius) + 0.04rem)
+  );
+}
+
 .note-outline-aside {
   @apply hidden md:flex flex-col shrink-0;
   width: clamp(14rem, 20vw, 22rem);

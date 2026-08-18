@@ -24,7 +24,7 @@ import type { NoteSummary, Todo } from '@/lib/types';
 interface CommandPaletteProps {
   notes: NoteSummary[];
   todos: Todo[];
-  /** Owned by CommandPaletteClient, together with the Mod+P binding — see the note there. */
+  /** Lives in `paletteStore`; the Mod+P binding sits in CommandPaletteClient — see the note there. */
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -40,9 +40,9 @@ const tagPathText = (entry: { path: string }) => entry.path;
 
 /**
  * The query lives in here, and this component only exists while the dialog is open: closing discards
- * the search by unmounting, so there is no reset to keep in sync with `open` — which the parent owns
- * and flips directly on Mod+P, without ever passing through `onOpenChange`. Same split, for the same
- * reason, as `NoteLinkPickerContent`.
+ * the search by unmounting, so there is no reset to keep in sync with `open` — which lives in
+ * `paletteStore` and is flipped directly by both Mod+P and the mobile search button, without ever
+ * passing through `onOpenChange`. Same split, for the same reason, as `NoteLinkPickerContent`.
  */
 function CommandPaletteContent({ notes, todos, onClose }: CommandPaletteContentProps) {
   const [inputValue, setInputValue] = useState('');
@@ -168,6 +168,10 @@ export function CommandPalette({ notes, todos, open, onOpenChange }: CommandPale
       title="Befehlspalette"
       description="Suche nach Notizen, Aufgaben oder Tags…"
       showCloseButton={false}
+      // Top-anchored below lg, centred from lg up: on a phone the on-screen keyboard covers the
+      // lower half of the viewport, and DialogContent's own `top-1/2` put the result list behind it.
+      // `lg` is the same 1024px boundary as `MOBILE_BREAKPOINT` in hooks/use-mobile.ts.
+      className="top-4 translate-y-0 lg:top-1/2 lg:-translate-y-1/2"
     >
       <CommandPaletteContent notes={notes} todos={todos} onClose={handleClose} />
     </CommandDialog>

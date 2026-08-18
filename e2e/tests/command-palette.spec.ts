@@ -1,5 +1,5 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
-import { deleteAllNotes, watchForHydrationErrors } from './helpers';
+import { PHONE_VIEWPORT, deleteAllNotes, watchForHydrationErrors } from './helpers';
 
 // Enough notes to overflow the 300px result box (~6 rows), so "is the top hit visible" is a
 // real question and not trivially true.
@@ -32,6 +32,38 @@ function resultList(page: Page): Locator {
 
 function rows(page: Page): Locator {
   return page.locator('[cmdk-item]');
+}
+
+/** The palette's positioned box, or a hard failure — an absent box must not read as a
+ *  passing position, which is what any `?? fallback` on `boundingBox()` would do. */
+async function dialogBox(page: Page): Promise<{ y: number; height: number }> {
+  const box = await page.locator('[data-slot=dialog-content]').boundingBox();
+  if (box === null) {
+    throw new Error('the palette dialog has no bounding box — it is not rendered');
+  }
+
+  return box;
+}
+
+/** The viewport, or a hard failure — same reason as `dialogBox` above. */
+function viewportOf(page: Page): { height: number } {
+  const viewport = page.viewportSize();
+  if (viewport === null) {
+    throw new Error('the page has no viewport size');
+  }
+
+  return viewport;
+}
+
+/** The bottom bar's search button: the only pointer-driven way into the palette. */
+function searchButton(page: Page): Locator {
+  return page.getByRole('button', { name: 'Suchen', exact: true });
+}
+
+/** The sidebar in its mobile form. `/notes` opens it on mount (MobileSidebarOpener) and its
+ *  overlay covers the bottom bar, so a mobile test has to dismiss it exactly as a user does. */
+function mobileSidebar(page: Page): Locator {
+  return page.locator('[data-slot=sidebar][data-mobile=true]');
 }
 
 /** Create a note through the API — far faster than driving the editor, and the only way to
@@ -232,6 +264,44 @@ test.describe('Befehlspalette', () => {
     await expect(page.getByRole('heading', { name: 'Neue Aufgabe' })).toBeVisible();
     await expect(rows(page).nth(1)).toHaveAttribute('data-selected', 'true');
   });
+
+  test('der Such-Button der Bottom-Nav öffnet die Palette auf dem Handy', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+
+    // Dismissed first, and awaited rather than blind-dismissed: the sheet opens from an effect that
+    // runs after the resize, so an early Escape would be swallowed. While it is open the rest of the
+    // page is `aria-hidden` (Radix modal), which puts the bar outside the a11y tree entirely.
+    await expect(mobileSidebar(page)).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(mobileSidebar(page)).toBeHidden();
+
+    const nav = page.getByRole('navigation', { name: 'Hauptnavigation' });
+    await expect(nav).toBeVisible();
+
+    await waitForAppHydrated(page);
+    const input = page.getByPlaceholder('Suchen…');
+    await searchButton(page).click();
+    await expect(input).toBeVisible();
+
+    // Top-anchored below `lg`: centred, the result list sat behind the on-screen keyboard.
+    expect((await dialogBox(page)).y).toBeLessThan(100);
+
+    await input.fill(TARGET_TITLE);
+    await expect(rows(page).first()).toHaveText(new RegExp(TARGET_TITLE));
+
+    await page.keyboard.press('Escape');
+    await expect(input).toBeHidden();
+    await expect(nav).toBeVisible();
+  });
+
+  // The other half of the same class: nothing about the mobile anchoring may reach the desktop.
+  test('auf dem Desktop bleibt die Palette vertikal zentriert', async ({ page }) => {
+    await openPalette(page);
+
+    const box = await dialogBox(page);
+    const offCentre = Math.abs(box.y + box.height / 2 - viewportOf(page).height / 2);
+    expect(offCentre).toBeLessThan(40);
+  });
 });
 
 // Own context, own describe, and no seeding on purpose: the route below has to be installed before
@@ -243,15 +313,22 @@ test.describe('Befehlspalette — erster Mod+P nach dem Seitenwechsel', () => {
   // and the negative control below would quietly pass against the very code it is meant to catch.
   test.use({ serviceWorkers: 'block' });
 
-  test('der Druck landet, während der Palette-Chunk noch unterwegs ist', async ({ page }) => {
+  interface ChunkGate {
+    /** Resolves once the chunk request is parked in the handler — the state these tests need
+     *  (chunk in flight, dialog not mounted). A barrier, never a retry of the interaction. */
+    waitUntilHeld: () => Promise<void>;
+    release: () => void;
+  }
+
+  /** Hold the palette's chunk back instead of racing it: from localhost it arrives in a few ms,
+   *  so on a fast machine the window the bug lived in would be invisible. */
+  async function holdPaletteChunk(page: Page): Promise<ChunkGate> {
     let release = (): void => undefined;
     let held = 0;
     const gate = new Promise<void>((resolve) => {
       release = resolve;
     });
 
-    // Hold the palette's chunk back instead of racing it: from localhost it arrives in a few ms,
-    // so on a fast machine the window the bug lived in would be invisible.
     await page.route(/_next\/static\/chunks\/.*\.js$/, async (route) => {
       const res = await route.fetch();
       const body = await res.text();
@@ -263,19 +340,47 @@ test.describe('Befehlspalette — erster Mod+P nach dem Seitenwechsel', () => {
       await route.fulfill({ response: res, body });
     });
 
+    return {
+      // The chunk is requested only after hydration (measured), so `waitForAppHydrated` does not
+      // imply it. Without this check a missed interception would let a test pass quietly against
+      // the very code it must catch.
+      waitUntilHeld: async () => {
+        await expect(() => {
+          expect(held, 'palette chunk was never intercepted — the test would prove nothing').toBeGreaterThan(0);
+        }).toPass({ timeout: 10_000 });
+      },
+      release: () => {
+        release();
+      },
+    };
+  }
+
+  test('der Druck landet, während der Palette-Chunk noch unterwegs ist', async ({ page }) => {
+    const chunk = await holdPaletteChunk(page);
+
     await page.goto('/notes');
     await waitForAppHydrated(page);
-
-    // The chunk is requested only after hydration (measured), so the barrier above does not imply
-    // it yet. This waits for the request to be parked in the handler — it establishes the state the
-    // test needs (chunk in flight, dialog not mounted) and is not a retry of the press. Without the
-    // check a missed interception would let the test pass quietly against the code it must catch.
-    await expect(() => {
-      expect(held, 'palette chunk was never intercepted — the test would prove nothing').toBeGreaterThan(0);
-    }).toPass({ timeout: 10_000 });
+    await chunk.waitUntilHeld();
 
     await page.keyboard.press('ControlOrMeta+p');
-    release();
+    chunk.release();
+
+    await expect(page.getByPlaceholder('Suchen…')).toBeVisible();
+  });
+
+  // Same guarantee for the tap, and it needs its own test: the button is a second owner of the
+  // store, and it is the only entry point on a device that has no Mod key to retry with.
+  test('der Tap auf den Such-Button landet ebenso', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    const chunk = await holdPaletteChunk(page);
+
+    // /todos, not /notes: no sidebar sheet opens on mount there, so nothing covers the bottom bar.
+    await page.goto('/todos');
+    await waitForAppHydrated(page);
+    await chunk.waitUntilHeld();
+
+    await searchButton(page).click();
+    chunk.release();
 
     await expect(page.getByPlaceholder('Suchen…')).toBeVisible();
   });

@@ -12,4 +12,4 @@ Referenz des `architecture` Skills. Geladen bei Änderungen an `page.tsx`, `layo
 - `app/(app)/error.tsx` — Error boundary
 - `app/share/[token]/page.tsx` — Public read-only shared note view (no `loading.tsx`: a Suspense boundary would flush 200 headers before `notFound()` could set 404)
 - `app/share/layout.tsx`, `app/share/error.tsx`, `app/share/not-found.tsx` — share segment overrides (suppress PWA metadata, render anonymous error / 404 UI)
-- Mobile: bottom tab bar via MobileBottomNav (`md:hidden`)
+- Mobile: bottom tab bar via MobileBottomNav (`lg:hidden`) — Notizen / Suche / Aufgaben, the middle button opening the command palette
