@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { QuadrantCard } from './QuadrantCard';
 import { quadrants } from './quadrantStyles';
 import { TodoDialog } from './TodoDialog';
 import { useFailedEntityIds } from '../useFailedEntityIds';
+import { useGlobalShortcut } from '@/hooks/useGlobalShortcut';
 import { QUADRANT, SYNC_ENTITY } from '@/lib/constants';
+import { SHORTCUT } from '@/lib/globalShortcuts';
 import type { Todo, TodoQuadrant } from '@/lib/fsTodos';
 import type { NoteSummary } from '@/lib/types';
 
@@ -82,20 +84,11 @@ export function EisenhowerMatrix({ todos, notes }: EisenhowerMatrixProps) {
     }
   }, []);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'n' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        if (!dialogOpen) {
-          handleAdd(QUADRANT.INBOX);
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [dialogOpen, handleAdd]);
+  useGlobalShortcut(SHORTCUT.CREATE, () => {
+    if (!dialogOpen) {
+      handleAdd(QUADRANT.INBOX);
+    }
+  });
 
   return (
     <>

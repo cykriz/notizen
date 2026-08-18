@@ -21,6 +21,10 @@ const DECOY_TITLE = 'Wocheneinkauf';
 const HEX_TARGET_ID = 'f0e1d2c3-4b8e-11ee-9f21-0242ac120002';
 const HEX_TARGET_TITLE = 'ABC-Analyse';
 
+// The dialog title of CommandPalette — a literal only that component has, so it identifies the
+// lazily loaded chunk in a build where the file names are hashed.
+const PALETTE_CHUNK_MARKER = 'Befehlspalette';
+
 /** The scroll container cmdk renders — the element carrying max-h/overflow-y. */
 function resultList(page: Page): Locator {
   return page.locator('[data-slot=command-list]');
@@ -53,20 +57,25 @@ async function apiCreateNote(
   }
 }
 
+/**
+ * Waits until the layout's mount effects have run — a barrier, not a retry.
+ *
+ * `useVisualViewportHeight` sets `--app-h` inline on <html> from a mount effect, and
+ * `ViewportEffects` sits in the same layout pass as `CommandPaletteClient`. React flushes a pass's
+ * passive effects in one task, so seeing the style from the outside means every layout effect ran —
+ * including the one that binds Mod+P. What it does NOT wait for is the palette's lazy chunk, which
+ * is exactly the gap the shortcut has to survive.
+ */
+async function waitForAppHydrated(page: Page): Promise<void> {
+  await expect(page.locator('html')).toHaveAttribute('style', /--app-h/);
+}
+
+/** One press, no retry: swallowing the first Mod+P is the bug, not a condition to work around. */
 async function openPalette(page: Page): Promise<Locator> {
   const input = page.getByPlaceholder('Suchen…');
-
-  // CommandPalette is loaded via dynamic(ssr:false), so right after a navigation its window
-  // listener for Mod+P is not attached yet and the very first press is simply swallowed
-  // (verified — a second press a moment later always lands). Pressing only while the dialog
-  // is still closed keeps this from toggling it shut again.
-  await expect(async () => {
-    if (!(await input.isVisible())) {
-      await page.keyboard.press('ControlOrMeta+p');
-    }
-
-    await expect(input).toBeVisible({ timeout: 2_000 });
-  }).toPass({ timeout: 20_000 });
+  await waitForAppHydrated(page);
+  await page.keyboard.press('ControlOrMeta+p');
+  await expect(input).toBeVisible();
 
   return input;
 }
@@ -185,5 +194,89 @@ test.describe('Befehlspalette', () => {
 
     await expect(rows(page).first()).toHaveText(new RegExp(TARGET_TAG.replace('/', '\\/')));
     expect(await scrollTopOf(page)).toBe(0);
+  });
+
+  test('Mod+P schließt die offene Palette und verwirft die Suche', async ({ page }) => {
+    const input = await openPalette(page);
+    await input.fill(TARGET_TITLE);
+
+    await page.keyboard.press('ControlOrMeta+p');
+    await expect(input).toBeHidden();
+
+    // The shortcut used to bypass the close handler, so only Escape and a selected row cleared the
+    // query — reopening showed the old search, and after an `@` query even the wrong input mode.
+    await page.keyboard.press('ControlOrMeta+p');
+    await expect(input).toHaveValue('');
+  });
+
+  // The reported case is Ctrl+P, and it is the one key whose damage cannot be read back: it closes
+  // the palette, so cmdk's selection move and the close land in the SAME React commit and the list
+  // is gone a commit later. Ctrl+N goes through the identical cmdk branch (`case "n"` sits next to
+  // `case "p"` in its vimBindings switch) and through the identical global listener — and on /todos
+  // its owner opens a dialog instead of closing the palette, so the selection survives to be
+  // asserted. Anything that puts the global listener back into the bubble phase fails here.
+  test('ein Mod-Shortcut bei offener Palette bewegt die Auswahl nicht mehr', async ({ page }) => {
+    await page.goto('/todos');
+    const input = await openPalette(page);
+    await input.fill(COMMON_WORD);
+
+    // Without cmdk's `loop`, moving off row 1 first is what makes a stray move observable at all.
+    await page.keyboard.press('ArrowDown');
+    await expect(rows(page).nth(1)).toHaveAttribute('data-selected', 'true');
+
+    // Control, not ControlOrMeta: cmdk's vimBindings check ctrlKey only, so Cmd+N never reached
+    // them on macOS and the test would prove nothing there.
+    await page.keyboard.press('Control+n');
+
+    // The shortcut itself still has to work — the fix claims the key, it does not swallow it.
+    await expect(page.getByRole('heading', { name: 'Neue Aufgabe' })).toBeVisible();
+    await expect(rows(page).nth(1)).toHaveAttribute('data-selected', 'true');
+  });
+});
+
+// Own context, own describe, and no seeding on purpose: the route below has to be installed before
+// the very first navigation of this browser context. Any earlier `goto` would put the palette chunk
+// into the memory cache, where Chromium serves it without a network request Playwright could hold.
+test.describe('Befehlspalette — erster Mod+P nach dem Seitenwechsel', () => {
+  // Mandatory: the SW precaches every /_next/static/ asset including next/dynamic chunks
+  // (worker/swPrecache.ts). A cached chunk arrives without a request, page.route would never fire,
+  // and the negative control below would quietly pass against the very code it is meant to catch.
+  test.use({ serviceWorkers: 'block' });
+
+  test('der Druck landet, während der Palette-Chunk noch unterwegs ist', async ({ page }) => {
+    let release = (): void => undefined;
+    let held = 0;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+
+    // Hold the palette's chunk back instead of racing it: from localhost it arrives in a few ms,
+    // so on a fast machine the window the bug lived in would be invisible.
+    await page.route(/_next\/static\/chunks\/.*\.js$/, async (route) => {
+      const res = await route.fetch();
+      const body = await res.text();
+      if (body.includes(PALETTE_CHUNK_MARKER)) {
+        held++;
+        await gate;
+      }
+
+      await route.fulfill({ response: res, body });
+    });
+
+    await page.goto('/notes');
+    await waitForAppHydrated(page);
+
+    // The chunk is requested only after hydration (measured), so the barrier above does not imply
+    // it yet. This waits for the request to be parked in the handler — it establishes the state the
+    // test needs (chunk in flight, dialog not mounted) and is not a retry of the press. Without the
+    // check a missed interception would let the test pass quietly against the code it must catch.
+    await expect(() => {
+      expect(held, 'palette chunk was never intercepted — the test would prove nothing').toBeGreaterThan(0);
+    }).toPass({ timeout: 10_000 });
+
+    await page.keyboard.press('ControlOrMeta+p');
+    release();
+
+    await expect(page.getByPlaceholder('Suchen…')).toBeVisible();
   });
 });

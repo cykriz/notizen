@@ -41,7 +41,8 @@ Von hier mitbenutzt, aber nach Pfadklasse anderswo inventarisiert:
 | NoteListItem | `app/(app)/NoteListItem.tsx` — note list entry |
 | MobileBottomNav | `app/(app)/MobileBottomNav.tsx` — bottom tab bar (`md:hidden`) |
 | useVisualViewportHeight | `hooks/useVisualViewportHeight.ts` — tracks `window.visualViewport`; sets `--app-h` on `<html>` and toggles `data-keyboard-open` so the app shell shrinks and mobile UI hides when the on-screen keyboard opens |
-| useNoteKeyboardShortcuts | `hooks/useNoteKeyboardShortcuts.ts` — Escape / Cmd+O / Cmd+Shift+O shortcuts for the note editor |
+| useNoteKeyboardShortcuts | `hooks/useNoteKeyboardShortcuts.ts` — the note editor's Escape (two-stage: leave edit mode, else offer to delete an untitled note) plus Mod+O / Mod+Shift+O via `useGlobalShortcut`. Escape keeps its own bubble-phase listener: it is no Mod combo, and its `preventDefault` is what `useNoteSelection` reads to see the key was consumed |
+| useGlobalShortcut | `hooks/useGlobalShortcut.ts` — binds one of the combos in `lib/globalShortcuts.ts` for a component's lifetime; the only sanctioned way to add a global Mod shortcut. Reads the handler through a ref, so an inline closure sees the current render and re-registration is limited to a changed combo. Cannot bridge the mount: whatever must survive a page load has to be bound from a statically imported component, as `CommandPaletteClient` does |
 | useFocusOnEditMode | `hooks/useFocusOnEditMode.ts` — focuses MarkdownEditor when preview switches to edit |
 | useAutoShowOutline | `hooks/useAutoShowOutline.ts` — opens the outline once content overflows the editor viewport |
 | ViewportEffects | `app/(app)/ViewportEffects.tsx` — mounts `useVisualViewportHeight` to expose `--app-h` and `data-keyboard-open` for the app shell |
@@ -52,9 +53,9 @@ Von hier mitbenutzt, aber nach Pfadklasse anderswo inventarisiert:
 | useFailedEntityIds | `app/(app)/useFailedEntityIds.ts` — failed-sync ids for one entity type, shared by the sidebar tag and the todo cards. Memo keyed on `failedSyncVersion`, which localStorage cannot signal on its own. Empty until mounted — see `useClientMounted` |
 | useClientMounted | `hooks/useClientMounted.ts` — false during SSR *and* the hydration render, true after. Carries the canonical write-up of the rule it exists for: nothing derived from `localStorage`, the clock or `next-themes` may reach the hydration render (React #418), and which of the two shapes — gate a derived value vs. seed SSR-neutral state and correct it in a mount effect — applies where. Other sites point here instead of restating it |
 | useColorMode | `hooks/useColorMode.ts` — `resolvedTheme`, but never before the mount; takes the pre-mount fallback so callers match their own surrounding markup (`MarkdownEditor` 'dark', `SharedNoteView` 'light'). Exists because both had a private copy of the expression and one call site forgot to use it |
-| CommandPalette | `app/(app)/CommandPalette.tsx` — Cmd+P search (@ prefix for tag navigation) |
+| CommandPalette | `app/(app)/CommandPalette.tsx` — the search dialog (@ prefix for tag navigation). Controlled: `open` and the Mod+P binding belong to `CommandPaletteClient`. The query and the ranking sit in an inner `CommandPaletteContent` that Radix mounts only while the dialog is open, so closing discards the search by unmounting — the same split as `NoteLinkPickerContent`, and for the same reason: the parent flips `open` on Mod+P without ever passing through `onOpenChange`, so no close handler sees every way out |
 | tagNavigationStore | `app/(app)/tagNavigationStore.ts` — cross-component tag path navigation |
-| CommandPaletteClient | `app/(app)/CommandPaletteClient.tsx` — client-side command palette |
+| CommandPaletteClient | `app/(app)/CommandPaletteClient.tsx` — loads the palette via `dynamic(ssr:false)` and owns Mod+P plus its `open` state. Both live out here because this file is in the layout's static bundle while the dialog's chunk is fetched only after hydration — binding the shortcut inside it swallowed the first press after every page load |
 | NoteEditor | `app/(app)/notes/[id]/NoteEditor.tsx` — note editing logic |
 | NoteHeader | `app/(app)/notes/[id]/NoteHeader.tsx` — note header component |
 | NotePageClient | `app/(app)/notes/[id]/NotePageClient.tsx` — note page client logic |

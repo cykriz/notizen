@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
 import { Plus, FolderPlus, Tags, List, ListChecks, Trash2, ArrowLeft } from 'lucide-react';
+import { useGlobalShortcut } from '@/hooks/useGlobalShortcut';
+import { SHORTCUT } from '@/lib/globalShortcuts';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { SidebarFooter } from '@/components/ui/sidebar';
@@ -37,28 +38,14 @@ export function NotesSidebarFooter({
   selection,
   currentTagPath,
 }: NotesSidebarFooterProps) {
-  const pendingRef = useRef(pending);
-
-  useEffect(() => {
-    pendingRef.current = pending;
-  }, [pending]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'n' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        // No note creation while browsing the trash.
-        if (!pendingRef.current && viewStore.getSnapshot() !== 'trash') {
-          handleCreate();
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [handleCreate]);
+  // No ref dance around `pending` any more: useGlobalShortcut reads the handler through a ref of
+  // its own, so this closure is always the current render's.
+  useGlobalShortcut(SHORTCUT.CREATE, () => {
+    // No note creation while browsing the trash.
+    if (!pending && viewStore.getSnapshot() !== 'trash') {
+      handleCreate();
+    }
+  });
 
   // Selection mode: hide the browse controls; show the count, the tag action and
   // a back arrow to leave.

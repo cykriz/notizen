@@ -2,6 +2,8 @@
 
 import * as React from 'react'
 import { useIsMobile } from '@/hooks/use-mobile'
+import { useGlobalShortcut } from '@/hooks/useGlobalShortcut'
+import { SHORTCUT } from '@/lib/globalShortcuts'
 import { cn } from '@/lib/utils'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
@@ -9,7 +11,7 @@ const SIDEBAR_COOKIE_NAME = 'sidebar_state'
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 export const SIDEBAR_WIDTH = '16rem'
 const SIDEBAR_WIDTH_ICON = '3rem'
-const SIDEBAR_KEYBOARD_SHORTCUT = 'b'
+// The shortcut key itself now lives in lib/globalShortcuts.ts, with the rest of the app's combos.
 
 export interface SidebarContextProps {
   state: 'expanded' | 'collapsed'
@@ -72,22 +74,7 @@ export function SidebarProvider({
     }
   }, [isMobile, setOpen, setOpenMobile])
 
-  React.useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (
-        event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
-        (event.metaKey || event.ctrlKey)
-      ) {
-        event.preventDefault()
-        toggleSidebar()
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown); 
-    }
-  }, [toggleSidebar])
+  useGlobalShortcut(SHORTCUT.SIDEBAR, toggleSidebar)
 
   const state = open ? 'expanded' : 'collapsed'
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { ListChecks } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -24,13 +24,27 @@ import type { NoteSummary, Todo } from '@/lib/types';
 interface CommandPaletteProps {
   notes: NoteSummary[];
   todos: Todo[];
+  /** Owned by CommandPaletteClient, together with the Mod+P binding — see the note there. */
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+interface CommandPaletteContentProps {
+  notes: NoteSummary[];
+  todos: Todo[];
+  onClose: () => void;
 }
 
 const todoSearchText = (todo: Todo) => todo.title;
 const tagPathText = (entry: { path: string }) => entry.path;
 
-export function CommandPalette({ notes, todos }: CommandPaletteProps) {
-  const [open, setOpen] = useState(false);
+/**
+ * The query lives in here, and this component only exists while the dialog is open: closing discards
+ * the search by unmounting, so there is no reset to keep in sync with `open` — which the parent owns
+ * and flips directly on Mod+P, without ever passing through `onOpenChange`. Same split, for the same
+ * reason, as `NoteLinkPickerContent`.
+ */
+function CommandPaletteContent({ notes, todos, onClose }: CommandPaletteContentProps) {
   const [inputValue, setInputValue] = useState('');
   const router = useRouter();
   const startNavigation = useReportedTransition();
@@ -51,62 +65,32 @@ export function CommandPalette({ notes, todos }: CommandPaletteProps) {
     [isTagMode, tagQuery, allTagPaths],
   );
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'p' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setOpen((prev) => !prev);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
-
   const navigate = useCallback(
     (path: string) => {
-      setOpen(false);
-      setInputValue('');
+      onClose();
       startNavigation(() => {
         router.push(path);
       });
     },
-    [router, startNavigation],
+    [onClose, router, startNavigation],
   );
 
   const handleTagSelect = useCallback(
     (path: string) => {
-      setOpen(false);
-      setInputValue('');
+      onClose();
       tagNavigationStore.navigateTo(path);
       viewStore.set('tags');
       startNavigation(() => {
         router.push('/notes');
       });
     },
-    [router, startNavigation],
+    [onClose, router, startNavigation],
   );
 
-  const handleOpenChange = useCallback((v: boolean) => {
-    setOpen(v);
-    if (!v) {
-      setInputValue('');
-    }
-  }, []);
-
   return (
-    <CommandDialog
-      open={open}
-      onOpenChange={handleOpenChange}
-      title="Befehlspalette"
-      description="Suche nach Notizen, Aufgaben oder Tags…"
-      showCloseButton={false}
-    >
-      {/* Kept controlled: uncontrolled would let cmdk update its `search` synchronously, but
-          reopening during Radix's exit animation would hit the still-mounted store with the
-          old search while inputValue is already '' — a wrong tag mode. */}
+    <>
+      {/* Controlled, because with cmdk's filtering off (the Command default) the query has to be
+          tracked somewhere: without it there is nothing to rank against. */}
       <CommandInput
         placeholder={isTagMode ? 'Tag suchen…' : 'Suchen…'}
         value={inputValue}
@@ -168,6 +152,24 @@ export function CommandPalette({ notes, todos }: CommandPaletteProps) {
           </>
         )}
       </CommandList>
+    </>
+  );
+}
+
+export function CommandPalette({ notes, todos, open, onOpenChange }: CommandPaletteProps) {
+  const handleClose = useCallback(() => {
+    onOpenChange(false);
+  }, [onOpenChange]);
+
+  return (
+    <CommandDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Befehlspalette"
+      description="Suche nach Notizen, Aufgaben oder Tags…"
+      showCloseButton={false}
+    >
+      <CommandPaletteContent notes={notes} todos={todos} onClose={handleClose} />
     </CommandDialog>
   );
 }

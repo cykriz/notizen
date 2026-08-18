@@ -2,12 +2,14 @@
 
 import { Sidebar, useSidebar } from '@/components/ui/sidebar';
 import { useFinePointer } from '@/hooks/useFinePointer';
+import { useGlobalShortcut } from '@/hooks/useGlobalShortcut';
 import { useSwipeBack } from '@/hooks/useSwipeBack';
 import { FAILED_SYNC_TAG, SYNC_ENTITY } from '@/lib/constants';
-import { TODOS_PATH } from '@/lib/pathConstants';
+import { SHORTCUT } from '@/lib/globalShortcuts';
+import { NOTES_PATH, TODOS_PATH } from '@/lib/pathConstants';
 import { parentTagPath } from '@/lib/tagTree';
 import { usePathname, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import { AppSidebarBody } from './AppSidebarBody';
 import { AppSidebarHeader } from './AppSidebarHeader';
 import { CreateTagFolderDialog } from './CreateTagFolderDialog';
@@ -70,7 +72,7 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
   const handleFolderDeleted = useCallback(() => {
     handleTagBack();
     if (noteId !== null && !notes.some((n) => n.id === noteId)) {
-      router.push('/notes');
+      router.push(NOTES_PATH);
     }
   }, [handleTagBack, noteId, notes, router]);
 
@@ -109,26 +111,13 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
     [handleCreate],
   );
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!(e.metaKey || e.ctrlKey)) {
-        return;
-      }
+  useGlobalShortcut(SHORTCUT.VIEW_NOTES, () => {
+    router.push(NOTES_PATH);
+  });
 
-      if (e.key === '1') {
-        e.preventDefault();
-        router.push('/notes');
-      } else if (e.key === '2') {
-        e.preventDefault();
-        router.push('/todos');
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [router]);
+  useGlobalShortcut(SHORTCUT.VIEW_TODOS, () => {
+    router.push(TODOS_PATH);
+  });
 
   return (
     <Sidebar variant="floating">
