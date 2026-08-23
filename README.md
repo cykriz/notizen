@@ -18,9 +18,22 @@ Built with Next.js, shadcn/ui, and Bun. Designed for deployment on Synology NAS 
 - Command palette (Cmd+P) — search notes by title or tag, jump to tasks; type `@` to search tags and jump to a folder in the sidebar
 - Installable as PWA — add to home screen on iOS/Android
 - Light/dark theme
+- Neural read-aloud — natural in-browser speech (Piper/VITS), with a Web Speech API fallback
 - Responsive design
 - Multi-user authentication (scrypt + HMAC session cookies)
 - Zero database — plain Markdown files with frontmatter
+
+### Offline and Network Use
+
+Notes, todos, and attachments work offline — the service worker serves the app shell
+and cached data, and everything is stored on your own filesystem. The app code contains
+no external hosts at all, and the Docker image sets `NEXT_TELEMETRY_DISABLED=1`.
+
+The one exception is **neural read-aloud**. On first use it downloads a Piper voice
+model from HuggingFace and the ONNX/phonemizer WebAssembly from public CDNs
+(cdnjs, jsDelivr). The voice is then cached in OPFS and works offline afterwards.
+Without network access on first use, read-aloud falls back to the browser's built-in
+Web Speech API. Nothing else in the app needs the network at runtime.
 
 ## Quick Start (Development)
 
@@ -47,12 +60,30 @@ bun run user passwd <username>           # change password
 bun run user migrate <username>          # move legacy root-level data into user dir
 ```
 
+Passwords must be at least 8 characters. Omit the password argument and it is prompted
+for without echo — that keeps it out of both your shell history and the terminal scrollback.
+
 ### Environment Variables
 
 | Variable     | Default       | Description                     |
 | ------------ | ------------- | ------------------------------- |
 | `NOTES_ROOT` | `./dev-notes` | Root directory for note storage |
 | `PORT`       | `3000`        | Server port                     |
+
+### Tests
+
+```bash
+bun test                         # unit tests (NOTES_ROOT points at a temp dir)
+
+bunx playwright install chromium # once, before the first E2E run
+bun run test:e2e                 # headless
+bun run test:e2e:ui              # Playwright UI mode
+```
+
+The E2E scripts call `npx playwright test` rather than `bunx`. That is the one deliberate
+exception to this project's "always bun" rule — Playwright's test runner needs Node's module
+loader for `test.describe()`. See `CLAUDE.md` § Key Rules for the reasoning; the browser
+install above still uses `bunx`.
 
 ## Deploy on Synology NAS
 
@@ -353,6 +384,35 @@ All errors return:
 - **Runtime**: [Bun](https://bun.sh)
 - **Framework**: [Next.js](https://nextjs.org) 16 (App Router, standalone output)
 - **UI**: [shadcn/ui](https://ui.shadcn.com) + [Tailwind CSS](https://tailwindcss.com) v4
-- **Editor**: [@uiw/react-md-editor](https://github.com/uiwc/react-md-editor)
+- **Editor**: [@uiw/react-codemirror](https://github.com/uiwjs/react-codemirror) (CodeMirror 6)
+- **Preview**: [@uiw/react-markdown-preview](https://github.com/uiwjs/react-markdown-preview)
+- **Read-aloud**: [@diffusionstudio/vits-web](https://github.com/diffusionstudio/vits-web) (Piper/VITS via onnxruntime-web)
+- **PWA**: [Serwist](https://serwist.pages.dev)
 - **Validation**: [Zod](https://zod.dev)
 - **Storage**: Filesystem (Markdown + frontmatter via [gray-matter](https://github.com/jonschlinkert/gray-matter))
+
+## Claude Code Integration
+
+Heads-up if you clone this repo and open it in [Claude Code](https://claude.com/claude-code):
+**`.claude/settings.json` registers a hook that runs code from this repo.** It is a
+`PreToolUse` hook on `ExitPlanMode` that executes `scripts/plan-review-gate.ts` — the
+mechanism behind the plan-review workflow described in `CLAUDE.md`.
+
+What the script does: it denies `ExitPlanMode` until a plan-review subagent has run, and
+returns `scripts/plan-review-protocol.md` as the reason. It reads the transcript path the
+harness passes in, `statSync`s the plan file, and writes nothing unless
+`PLAN_REVIEW_GATE_DEBUG` is set. It is fail-open and never returns `allow`, so the approval
+dialog always reaches you. Read it — it is under 200 lines.
+
+If you would rather not run repo code in your sessions, delete `.claude/settings.json`.
+Everything else under `.claude/` (skills, agents, review criteria) is documentation and
+executes nothing. The same applies to `scripts/pre-commit`, which only takes effect if you
+copy it into `.git/hooks/` yourself.
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for the reporting process and scope.
+
+## License
+
+[MIT](LICENSE) — Copyright (c) 2026 Simon Christoph

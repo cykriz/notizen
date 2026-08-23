@@ -5,44 +5,16 @@ import { redirect } from 'next/navigation';
 import { verifyPassword } from '@/lib/users';
 import { createSessionCookie } from '@/lib/auth';
 import { AUTH_COOKIE_NAME, AUTH_COOKIE_MAX_AGE } from '@/lib/constants';
+import { createLoginRateLimit } from '@/lib/loginRateLimit';
 
 export interface LoginState {
   error: string | null;
 }
 
-// --- Rate Limiting (per-user) ---
-// Check rate limit before verification; record failures after.
-// Only successful logins clear the counter.
-
-const attempts = new Map<string, { count: number; resetAt: number }>();
-const MAX_ATTEMPTS = 5;
-const WINDOW_MS = 60_000;
-
-function isRateLimited(username: string): string | null {
-  const now = Date.now();
-  const entry = attempts.get(username);
-
-  if (entry && now < entry.resetAt && entry.count >= MAX_ATTEMPTS) {
-    return 'Zu viele Versuche. Bitte warten.';
-  }
-
-  return null;
-}
-
-function recordFailedAttempt(username: string): void {
-  const now = Date.now();
-  const entry = attempts.get(username);
-
-  if (entry && now < entry.resetAt) {
-    entry.count++;
-  } else {
-    attempts.set(username, { count: 1, resetAt: now + WINDOW_MS });
-  }
-}
-
-function clearRateLimit(username: string): void {
-  attempts.delete(username);
-}
+// Checked before verification, recorded after; only a successful login clears
+// the counter. Policy and eviction live in lib/loginRateLimit.ts (unit-tested);
+// the user-facing wording stays here with the other messages.
+const rateLimit = createLoginRateLimit();
 
 // --- Actions ---
 
@@ -57,18 +29,17 @@ export async function loginAction(
     return { error: 'Benutzername oder Passwort falsch' };
   }
 
-  const rateLimitError = isRateLimited(username);
-  if (rateLimitError !== null) {
-    return { error: rateLimitError };
+  if (rateLimit.isLimited(username, Date.now())) {
+    return { error: 'Zu viele Versuche. Bitte warten.' };
   }
 
   const passwordHash = await verifyPassword(username, password);
   if (passwordHash === null) {
-    recordFailedAttempt(username);
+    rateLimit.recordFailure(username, Date.now());
     return { error: 'Benutzername oder Passwort falsch' };
   }
 
-  clearRateLimit(username);
+  rateLimit.clear(username);
 
   const token = await createSessionCookie(username, passwordHash);
   const cookieStore = await cookies();

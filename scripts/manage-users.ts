@@ -13,9 +13,9 @@
 
 import fs from 'fs/promises';
 import path from 'path';
-import { createUser, removeUser, changePassword, listUsers } from '../lib/users';
+import { createUser, removeUser, changePassword, listUsers, PASSWORD_MIN_LENGTH } from '../lib/users';
 import { getNotesRoot, userRootFor } from '../lib/fsHelpers';
-import { createInterface } from 'readline';
+import { PasswordPromptAborted, isInteractive, promptPassword } from './promptPassword';
 
 const [command, ...args] = process.argv.slice(2);
 
@@ -29,14 +29,38 @@ function usage(): never {
   process.exit(1);
 }
 
-async function promptPassword(prompt: string): Promise<string> {
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  return await new Promise((resolve) => {
-    rl.question(prompt, (answer) => {
-      rl.close();
-      resolve(answer);
-    });
-  });
+const CONFIRM_ATTEMPTS = 3;
+
+/** Without an echo a typo is invisible, so a terminal gets a confirmation prompt
+ *  — and more than one try, because mistyping input you cannot see is the normal
+ *  case, not an error worth aborting the whole command for. Piped input is
+ *  scripted: nothing to mistype, and a second read would only hit EOF. */
+async function promptNewPassword(prompt: string): Promise<string> {
+  if (!isInteractive()) {
+    return await promptPassword(prompt);
+  }
+
+  for (let attempt = 1; attempt <= CONFIRM_ATTEMPTS; attempt++) {
+    const password = await promptPassword(prompt);
+
+    // Checked here only so the length is not learned *after* typing an invisible
+    // password twice. `createUser`/`changePassword` stay the enforcing gate —
+    // every other caller still has to pass it.
+    if (password.length < PASSWORD_MIN_LENGTH) {
+      console.error(`Passwort zu kurz: mindestens ${String(PASSWORD_MIN_LENGTH)} Zeichen.`);
+      continue;
+    }
+
+    if (await promptPassword('Wiederholen: ') === password) {
+      return password;
+    }
+
+    if (attempt < CONFIRM_ATTEMPTS) {
+      console.error('Passwörter stimmen nicht überein. Nochmal.');
+    }
+  }
+
+  throw new Error('Passwort nicht gesetzt: zu kurz oder nicht bestätigt.');
 }
 
 async function main() {
@@ -51,11 +75,7 @@ async function main() {
       if (password !== undefined && password !== '') {
         console.warn('Warnung: Passwort ist in der Shell-History sichtbar.');
       } else {
-        password = await promptPassword('Passwort: ');
-        if (password.length === 0) {
-          console.error('Fehler: Passwort darf nicht leer sein.');
-          process.exit(1);
-        }
+        password = await promptNewPassword('Passwort: ');
       }
 
       await createUser(username, password);
@@ -93,12 +113,7 @@ async function main() {
         usage();
       }
 
-      const password = await promptPassword('Neues Passwort: ');
-      if (password.length === 0) {
-        console.error('Fehler: Passwort darf nicht leer sein.');
-        process.exit(1);
-      }
-
+      const password = await promptNewPassword('Neues Passwort: ');
       await changePassword(username, password);
       console.log(`Passwort fuer "${username}" geaendert.`);
       break;
@@ -157,6 +172,13 @@ async function main() {
 }
 
 main().catch((err: unknown) => {
+  // Ctrl-C or an empty stdin is not a failure of the command — report it as an
+  // abort (128 + SIGINT) rather than dressing it up as an error.
+  if (err instanceof PasswordPromptAborted) {
+    console.error(err.message);
+    process.exit(130);
+  }
+
   console.error('Fehler:', err instanceof Error ? err.message : err);
   process.exit(1);
 });

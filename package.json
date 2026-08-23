@@ -2,6 +2,7 @@
   "name": "notizen",
   "version": "0.0.1",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "dev": "bun --bun next dev",
     "build": "bun --bun next build",

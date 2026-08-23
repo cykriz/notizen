@@ -20,7 +20,6 @@
 /e2e/test-results/
 /e2e/playwright-report/
 /e2e/blob-report/
-/e2e/.auth/
 
 # next.js
 /.next/
@@ -65,3 +64,20 @@ next-env.d.ts
 # editor / tooling
 *.bak
 .continue/
+
+# keys & credentials (see SECURITY.md)
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+known_hosts
+authorized_keys
+.npmrc
+.netrc
+
+# auth data under NOTES_ROOT, in case NOTES_ROOT points inside the repo (replaces /e2e/.auth/)
+**/.auth/
+
+# design sources: carry editor metadata, kept out of the repo (see design/)
+*.odg

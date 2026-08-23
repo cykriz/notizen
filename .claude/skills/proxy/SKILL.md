@@ -34,6 +34,8 @@ Secret stored at `NOTES_ROOT/.auth/secret.key` (auto-generated on first use).
 
 Users stored in `NOTES_ROOT/.auth/users.json`. Passwords hashed with scrypt.
 
+Passwords must be at least `PASSWORD_MIN_LENGTH` (8) characters. Enforced inside `createUser`/`changePassword`, so every caller is covered; the CLI additionally pre-checks it in `promptNewPassword` so an invisible password is not rejected only after being typed twice — `verifyPassword` does **not** apply it, so a pre-existing shorter password still logs in and can be changed. `SCRYPT_N` cannot be raised on its own: the stored hash does not encode its parameters (see the comment in `lib/users.ts`).
+
 | Function | Purpose |
 |---|---|
 | `isAuthEnabled()` | True if any users exist (10s cache) |
@@ -42,9 +44,9 @@ Users stored in `NOTES_ROOT/.auth/users.json`. Passwords hashed with scrypt.
 | `removeUser(username)` | Remove user |
 | `changePassword(username, password)` | Update password hash |
 | `verifyPassword(username, password)` | Verify credentials (timing-safe) |
-| `getPasswordHashPrefix(hash)` | First 16 chars of hash (for session binding) |
+| `getPasswordHashPrefix(hash)` | `HASH_PREFIX_LEN` chars — reaches into the salt, never the hash (session binding) |
 
-CLI: `bun run scripts/manage-users.ts` (add/remove/passwd/list).
+CLI: `bun run scripts/manage-users.ts` (add/remove/passwd/list/migrate). Password entry lives in `scripts/promptPassword.ts` — no echo. Whether a human is present is decided in one place, `isInteractive()` in the same file. On a TTY: raw mode, key by key; the confirmation prompt around it lives one level up in `scripts/manage-users.ts` › `promptNewPassword` (`CONFIRM_ATTEMPTS` tries). On a pipe: a direct `Bun.stdin` read taking the first line, deliberately **not** readline, which drops a final line without a trailing newline; the prompt is suppressed there so it cannot pollute a script's stdout. Rejects `PasswordPromptAborted` on Ctrl-C/Ctrl-D/EOF, which the CLI reports as exit 130. Key handling is unit-tested in `scripts/promptPassword.test.ts`.
 
 ## Auth Constants (`lib/constants.ts`)
 
@@ -60,7 +62,7 @@ USERS_DATA_DIR = 'users'
 ## Pages
 
 - `app/login/page.tsx` — login form (client component), clears localStorage + SW caches on mount
-- `app/login/actions.ts` — `loginAction` (rate-limited: 5/60s per user), `logoutAction`
+- `app/login/actions.ts` — `loginAction`, `logoutAction`. Throttling is delegated to `lib/loginRateLimit.ts` (`MAX_ATTEMPTS` 5 per `WINDOW_MS` 60s per username, at most `MAX_TRACKED` 1000 names). That module holds the eviction policy — lowest counter first, locked-out entries never evicted — because the key is attacker-chosen; the reasoning and its tests are there, not in the action
 - `app/setup/page.tsx` — setup instructions (shown when no users exist)
 - `app/(app)/layout.tsx` — calls `getUserDataDir()`, catches errors to redirect
 
