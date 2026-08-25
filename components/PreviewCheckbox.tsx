@@ -2,6 +2,7 @@
 
 import { createContext, useContext, type JSX } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
 import { toggleBlockCheckboxes, toggleCheckboxAtOffset } from '@/lib/toggleCheckbox';
 
 // Matches the task-list checkbox marker inside a list item line.
@@ -35,11 +36,13 @@ function findSourceOffset(el: HTMLElement): number | null {
 
 /**
  * Component override for `<input>` in the markdown preview.
- * Checkbox inputs become interactive shadcn Checkboxes; all
- * other input types fall through to a plain `<input>`.
+ * Checkbox inputs become shadcn Checkboxes; all other input types
+ * fall through to a plain `<input>`.
  *
  * Reads `getSource`/`onChange` from PreviewCheckboxContext so the
- * component identity is stable (no factory re-creation).
+ * component identity is stable (no factory re-creation). Without a
+ * provider (read-only views like the share page) the checkbox renders
+ * non-interactive instead of disappearing.
  */
 export function PreviewCheckbox(props: JSX.IntrinsicElements['input']) {
   const ctx = useContext(PreviewCheckboxContext);
@@ -48,11 +51,14 @@ export function PreviewCheckbox(props: JSX.IntrinsicElements['input']) {
     return <input {...props} />;
   }
 
-  if (ctx === null) {
-    return null;
-  }
+  const isChecked = props.checked === true;
+  const interactive = ctx !== null;
 
   const toggle = (el: HTMLElement, blockToggle: boolean) => {
+    if (ctx === null) {
+      return;
+    }
+
     const source = ctx.getSource();
     const liOffset = findSourceOffset(el);
     if (liOffset === null) {
@@ -86,20 +92,26 @@ export function PreviewCheckbox(props: JSX.IntrinsicElements['input']) {
     }
   };
 
-  const checked = props.checked === true;
-
   return (
     <span
       role="checkbox"
-      aria-checked={checked}
-      aria-label="Aufgabe umschalten"
-      tabIndex={0}
+      aria-checked={isChecked}
+      aria-readonly={interactive ? undefined : true}
+      aria-label={interactive ? 'Aufgabe umschalten' : 'Aufgabe'}
+      tabIndex={interactive ? 0 : undefined}
       data-slot="checkbox"
-      className="preview-checkbox inline-flex items-center cursor-pointer"
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
+      className={cn('preview-checkbox', { 'cursor-pointer': interactive })}
+      onClick={interactive ? handleClick : undefined}
+      onKeyDown={interactive ? handleKeyDown : undefined}
     >
-      <Checkbox checked={checked} className="pointer-events-none" tabIndex={-1} aria-hidden />
+      <Checkbox checked={isChecked} className="pointer-events-none" tabIndex={-1} aria-hidden />
     </span>
   );
 }
+
+/**
+ * Stable component override map for read-only previews (no toggle context).
+ * Module-level constant — the object closes over nothing, so a hook would
+ * only add noise.
+ */
+export const READONLY_PREVIEW_COMPONENTS = { input: PreviewCheckbox };

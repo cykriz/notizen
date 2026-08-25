@@ -176,6 +176,37 @@ test.describe('Share note', () => {
     await anonContext.close();
   });
 
+  test('task list renders read-only checkboxes in the shared view', async ({ page, browser }) => {
+    // Write the list via the API: typing it into CodeMirror would hit the
+    // markdown list auto-continuation and mangle the second marker.
+    const noteUrl = await createNote(page, 'Aufgaben', 'Platzhalter');
+    const put = await page.request.put(`/api/notes/${noteIdFromUrl(noteUrl)}`, {
+      data: { content: '- [x] erledigt\n- [ ] offen' },
+    });
+    expect(put.ok()).toBe(true);
+    const { url } = await createShareViaUI(page);
+
+    const anonContext = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
+    const anonPage = await anonContext.newPage();
+    await anonPage.goto(url);
+    await expect(anonPage.getByText('Nur-Lese-Ansicht')).toBeVisible();
+
+    const boxes = anonPage.locator('.wmde-markdown .preview-checkbox');
+    await expect(boxes).toHaveCount(2);
+    await expect(boxes.nth(0)).toBeVisible();
+    await expect(boxes.nth(0)).toHaveAttribute('aria-checked', 'true');
+    await expect(boxes.nth(1)).toHaveAttribute('aria-checked', 'false');
+
+    // Read-only: no tab stop, and clicking must not toggle the state.
+    await expect(boxes.nth(1)).not.toHaveAttribute('tabindex', '0');
+    await boxes.nth(1).click();
+    await expect(boxes.nth(1)).toHaveAttribute('aria-checked', 'false');
+
+    await anonContext.close();
+  });
+
   test('unauthenticated proxy allows /share/, still blocks /notes', async ({ page, browser }) => {
     await createNote(page, 'Proxy Check', 'Inhalt');
     const { url } = await createShareViaUI(page);

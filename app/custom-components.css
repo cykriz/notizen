@@ -188,8 +188,25 @@
   display: none;
 }
 
+/* Hanging checkbox: it sits in the same 1.5em gutter a plain list uses for its
+   bullet, so task items indent exactly like <ul>/<ol> items instead of one
+   checkbox width further. Being out of the inline flow, the space markdown puts
+   behind the checkbox collapses at line start – so the first line and every
+   wrapped line start at the same edge, even in the justified paragraphs of a
+   loose list. */
+[data-color-mode] .wmde-markdown li.task-list-item {
+  position: relative;
+}
+
 [data-color-mode] .wmde-markdown .preview-checkbox {
-  margin-right: 0.375rem;
+  position: absolute;
+  left: 0;
+  /* middle of the first line box */
+  top: calc(1em * var(--md-editor-line-height) / 2);
+  /* out into the gutter, leaving the gap to the text, and centred on that line.
+     Shifting by its own size keeps this independent of the checkbox's height
+     and width – no second copy of the shadcn `size-4`. */
+  transform: translate(calc(-100% - 0.375rem), -50%);
 }
 
 /* Loose task lists: collapse first <p> margin, keep spacing for continuation paragraphs */

@@ -8,6 +8,7 @@ import { NoteOutline, extractHeadings } from '@/components/NoteOutline';
 import { useColorMode } from '@/hooks/useColorMode';
 import { remarkLooseListGaps } from '@/lib/remarkLooseListGaps';
 import { ReadAloudControls } from '@/components/ReadAloudControls';
+import { READONLY_PREVIEW_COMPONENTS } from '@/components/PreviewCheckbox';
 
 interface SharedNoteViewProps {
   title: string;
@@ -97,8 +98,11 @@ export function SharedNoteView({ title, content }: SharedNoteViewProps) {
                 Raw <script>/<iframe>/etc. are filtered by allowElement
                 (alphanumeric tag check) inside the preview component.
                 Covered by share-note.spec.ts "raw HTML … is escaped". */}
+            {/* Only the checkbox override: internal wiki links must not
+                navigate out of the public read-only view, so no `a` renderer. */}
             <MarkdownPreview
               source={content}
+              components={READONLY_PREVIEW_COMPONENTS}
               remarkPlugins={previewRemarkPlugins}
               urlTransform={safeUrlTransform}
             />
