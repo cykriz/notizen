@@ -2,8 +2,7 @@
 
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 import { Input } from '@/components/ui/input';
-import { pathHasReservedSegment } from '@/lib/constants';
-import { normalizeTagPath } from '@/lib/tagTree';
+import { isCreatableTagPath, normalizeTagPath } from '@/lib/tagTree';
 import { cn } from '@/lib/utils';
 import { Tag } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
@@ -38,7 +37,7 @@ export function TagInput({ tags, allTags, onChange, className, compact, onCollap
 
   const addTag = (tag: string) => {
     const trimmed = normalizeTagPath(tag);
-    if (trimmed === '' || pathHasReservedSegment(trimmed) || tags.some((t) => t.toLowerCase() === trimmed)) {
+    if (!isCreatableTagPath(trimmed) || tags.some((t) => t.toLowerCase() === trimmed)) {
       return;
     }
 
@@ -55,7 +54,7 @@ export function TagInput({ tags, allTags, onChange, className, compact, onCollap
   const replaceTag = (index: number, value: string) => {
     const trimmed = normalizeTagPath(value);
     const original = tags[index];
-    if (trimmed === '' || pathHasReservedSegment(trimmed) || (trimmed !== original.toLowerCase() && tags.some((t) => t.toLowerCase() === trimmed))) {
+    if (!isCreatableTagPath(trimmed) || (trimmed !== original.toLowerCase() && tags.some((t) => t.toLowerCase() === trimmed))) {
       return;
     }
 

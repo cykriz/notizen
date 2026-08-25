@@ -3,7 +3,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { ListChecks } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import {
   CommandDialog,
   CommandInput,
@@ -13,9 +12,11 @@ import {
   CommandItem,
 } from '@/components/ui/command';
 import { NoteCommandItem } from '@/components/NoteCommandItem';
-import { noteSearchText, rankByQuery, sortNotesForPalette } from '@/lib/commandSearch';
+import { noteSearchText, rankByQuery, sortNotesForPalette, tagCreateCandidate } from '@/lib/commandSearch';
 import { listAllTagPaths } from '@/lib/tagTree';
-import { TagFolderIcon } from './TagFolderIcon';
+import { NOTES_PATH } from '@/lib/pathConstants';
+import { CommandPaletteTags } from './CommandPaletteTags';
+import { useCreateNote } from './useCreateNote';
 import { useReportedTransition } from './navigationLoading';
 import { viewStore } from './viewStore';
 import { tagNavigationStore } from './tagNavigationStore';
@@ -48,6 +49,9 @@ function CommandPaletteContent({ notes, todos, onClose }: CommandPaletteContentP
   const [inputValue, setInputValue] = useState('');
   const router = useRouter();
   const startNavigation = useReportedTransition();
+  // Not hoisted out of this (unmounting) subtree: the create is a promise whose continuation
+  // survives the unmount, and `pending` is never rendered here.
+  const { createTagFolder } = useCreateNote();
 
   const isTagMode = inputValue.startsWith('@');
   const tagQuery = isTagMode ? inputValue.slice(1).toLowerCase() : '';
@@ -64,6 +68,10 @@ function CommandPaletteContent({ notes, todos, onClose }: CommandPaletteContentP
     () => (isTagMode ? rankByQuery(allTagPaths, tagQuery, tagPathText) : []),
     [isTagMode, tagQuery, allTagPaths],
   );
+  const createPath = useMemo(
+    () => (isTagMode ? tagCreateCandidate(tagQuery, allTagPaths) : null),
+    [isTagMode, tagQuery, allTagPaths],
+  );
 
   const navigate = useCallback(
     (path: string) => {
@@ -75,16 +83,25 @@ function CommandPaletteContent({ notes, todos, onClose }: CommandPaletteContentP
     [onClose, router, startNavigation],
   );
 
+  // Both tag actions land on /notes: the sidebar is where a tag is browsed, and the palette can
+  // be open over any page. For a create it is also the only visible outcome while offline, where
+  // createTagFolder cannot open the new note yet (no slug until the server answers — see
+  // createNoteOffline).
   const handleTagSelect = useCallback(
     (path: string) => {
-      onClose();
       tagNavigationStore.navigateTo(path);
       viewStore.set('tags');
-      startNavigation(() => {
-        router.push('/notes');
-      });
+      navigate(NOTES_PATH);
     },
-    [onClose, router, startNavigation],
+    [navigate],
+  );
+
+  const handleTagCreate = useCallback(
+    (path: string) => {
+      createTagFolder(path);
+      navigate(NOTES_PATH);
+    },
+    [createTagFolder, navigate],
   );
 
   return (
@@ -100,23 +117,12 @@ function CommandPaletteContent({ notes, todos, onClose }: CommandPaletteContentP
         <CommandEmpty>Keine Ergebnisse gefunden.</CommandEmpty>
 
         {isTagMode ? (
-          <CommandGroup heading="Tags">
-            {filteredTags.map((entry) => (
-              <CommandItem
-                key={entry.path}
-                value={entry.path}
-                onSelect={() => {
-                  handleTagSelect(entry.path);
-                }}
-              >
-                <TagFolderIcon />
-                <span className="truncate">{entry.path}</span>
-                <Badge variant="secondary" className="ml-auto text-xs px-1 py-0">
-                  {entry.noteCount}
-                </Badge>
-              </CommandItem>
-            ))}
-          </CommandGroup>
+          <CommandPaletteTags
+            entries={filteredTags}
+            createPath={createPath}
+            onSelect={handleTagSelect}
+            onCreate={handleTagCreate}
+          />
         ) : (
           <>
             {visibleNotes.length > 0 && (

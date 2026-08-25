@@ -1,5 +1,6 @@
 import { defaultFilter } from 'cmdk';
 import { COMMAND_RESULT_LIMIT } from './constants';
+import { isCreatableTagPath, normalizeTagPath, type TagPathEntry } from './tagTree';
 import type { NoteSummary } from './types';
 
 /**
@@ -34,6 +35,23 @@ export function rankByQuery<T>(items: T[], query: string, toText: (item: T) => s
   // notes is the sortNotesForPalette order below.
   scored.sort((a, b) => b.score - a.score);
   return scored.slice(0, COMMAND_RESULT_LIMIT).map((entry) => entry.item);
+}
+
+/**
+ * The tag path an `@…` query would create, or null when there is nothing to create: an
+ * unwritable input (empty or reserved), or a path that already exists.
+ *
+ * The exists check is an exact match and needs no prefix logic: `listAllTagPaths` walks the
+ * whole tree, so every intermediate folder ('arbeit' above 'arbeit/alpha') is in `existing`
+ * under its own path.
+ */
+export function tagCreateCandidate(rawQuery: string, existing: readonly TagPathEntry[]): string | null {
+  const path = normalizeTagPath(rawQuery);
+  if (!isCreatableTagPath(path) || existing.some((entry) => entry.path === path)) {
+    return null;
+  }
+
+  return path;
 }
 
 /** Searchable text of a note: title plus its tags as #hashtags, matching what the row shows. */

@@ -18,6 +18,12 @@ export function normalizeTagPath(raw: string): string {
     .join('/');
 }
 
+// True when an ALREADY normalized path may be written onto a note as a tag: it has to
+// carry at least one segment, and none of them may collide with a synthetic folder.
+// Callers run normalizeTagPath first — the two belong together at every write site
+// (TagInput, CreateTagFolderDialog, the palette's create row).
+export const isCreatableTagPath = (path: string): boolean => path !== '' && !pathHasReservedSegment(path);
+
 // Drops the last segment of a tag path — the parent folder.
 // 'a/b/c' -> 'a/b', 'a' -> '' (root), '' -> ''.
 export function parentTagPath(path: string): string {

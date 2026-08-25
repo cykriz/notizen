@@ -48,7 +48,7 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
 
   const { currentTagPath, setCurrentTagPath, noteId } = useTagStateSync({ notes, pathname });
   const view = useSyncExternalStore(viewStore.subscribe, viewStore.getSnapshot, viewStore.getServerSnapshot);
-  const { pending, createNoteWithTags } = useCreateNote();
+  const { pending, createNoteWithTags, createTagFolder } = useCreateNote();
   const [folderOpen, setFolderOpen] = useState(false);
   const selection = useNoteSelection();
 
@@ -82,12 +82,9 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
 
   const handleCreateFolder = useCallback(
     (folderName: string) => {
-      const newPath = folderParent !== '' ? `${folderParent}/${folderName}` : folderName;
-      viewStore.set('tags');
-      setCurrentTagPath(newPath);
-      createNoteWithTags([newPath]);
+      createTagFolder(folderParent !== '' ? `${folderParent}/${folderName}` : folderName);
     },
-    [createNoteWithTags, folderParent, setCurrentTagPath],
+    [createTagFolder, folderParent],
   );
 
   const handleSidebarDoubleClick = useCallback(

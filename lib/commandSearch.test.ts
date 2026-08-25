@@ -1,8 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 
-import { COMMAND_RESULT_LIMIT } from './constants';
+import { COMMAND_RESULT_LIMIT, FAILED_SYNC_TAG } from './constants';
 import type { NoteSummary } from './types';
-import { noteSearchText, rankByQuery, sortNotesForPalette } from './commandSearch';
+import { noteSearchText, rankByQuery, sortNotesForPalette, tagCreateCandidate } from './commandSearch';
+import { listAllTagPaths } from './tagTree';
 
 function note(over: Partial<NoteSummary> & { id: string; title: string }): NoteSummary {
   return {
@@ -107,5 +108,34 @@ describe('commandSearch', () => {
     const text = noteSearchText(note({ id: 'abc12345', title: 'Deployment', tags: ['dev', 'ops/ci'] }));
 
     expect(text).toBe('Deployment #dev #ops/ci');
+  });
+
+  describe('tagCreateCandidate', () => {
+    // Built the way the palette builds it, so the intermediate folder 'arbeit' is in the list
+    // under its own path — which is what makes the exact match sufficient.
+    const existing = listAllTagPaths([note({ id: '1', title: 'A', tags: ['arbeit/alpha'] })]);
+
+    test('a new path is offered, normalized', () => {
+      expect(tagCreateCandidate('Arbeit/Neu', existing)).toBe('arbeit/neu');
+      expect(tagCreateCandidate(' Privat / Umzug ', existing)).toBe('privat/umzug');
+    });
+
+    test('an existing path is not offered — leaf or intermediate folder', () => {
+      expect(tagCreateCandidate('arbeit/alpha', existing)).toBeNull();
+      expect(tagCreateCandidate('arbeit', existing)).toBeNull();
+      expect(tagCreateCandidate('ARBEIT', existing)).toBeNull();
+    });
+
+    test('an empty query is not offered', () => {
+      expect(tagCreateCandidate('', existing)).toBeNull();
+      expect(tagCreateCandidate('   ', existing)).toBeNull();
+      expect(tagCreateCandidate('/', existing)).toBeNull();
+    });
+
+    test('a reserved segment is not offered, at any depth', () => {
+      expect(tagCreateCandidate(FAILED_SYNC_TAG, existing)).toBeNull();
+      expect(tagCreateCandidate(`${FAILED_SYNC_TAG}/x`, existing)).toBeNull();
+      expect(tagCreateCandidate(`a/${FAILED_SYNC_TAG}`, existing)).toBeNull();
+    });
   });
 });

@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { NEW_FOLDER_LABEL, pathHasReservedSegment } from '@/lib/constants';
-import { normalizeTagPath } from '@/lib/tagTree';
+import { isCreatableTagPath, normalizeTagPath } from '@/lib/tagTree';
 
 interface CreateTagFolderDialogProps {
   parentPath: string;
@@ -26,9 +26,11 @@ export function CreateTagFolderDialog({ parentPath, open, onOpenChange, onCreate
   const [name, setName] = useState('');
 
   const normalized = useMemo(() => normalizeTagPath(name), [name]);
+  // Kept next to the shared predicate below, not folded into it: only this dialog has a place to
+  // say *why* the name is rejected, and "reserved" is the one reason worth naming.
   const hasReservedSegment = useMemo(() => pathHasReservedSegment(normalized), [normalized]);
   const fullPath = parentPath !== '' ? `${parentPath}/${normalized}` : normalized;
-  const canSubmit = normalized !== '' && !hasReservedSegment;
+  const canSubmit = isCreatableTagPath(normalized);
 
   const handleSubmit = () => {
     if (!canSubmit) {

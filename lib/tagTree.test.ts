@@ -8,6 +8,7 @@ import {
   getChildNodes,
   getNotesAtPath,
   getNotesUnderPath,
+  isCreatableTagPath,
   leafTagSegment,
   moveNoteToFolder,
   normalizeTagPath,
@@ -61,6 +62,14 @@ describe('tagTree', () => {
     expect(normalizeTagPath('/')).toBe('');
     expect(normalizeTagPath('Projekte/2026')).toBe('projekte/2026');
     expect(normalizeTagPath('')).toBe('');
+  });
+
+  test('isCreatableTagPath — rejects empty and reserved, at any depth', () => {
+    expect(isCreatableTagPath('projekte/2026')).toBe(true);
+    expect(isCreatableTagPath('')).toBe(false);
+    expect(isCreatableTagPath(FAILED_SYNC_TAG)).toBe(false);
+    expect(isCreatableTagPath(`${FAILED_SYNC_TAG}/x`)).toBe(false);
+    expect(isCreatableTagPath(`a/${FAILED_SYNC_TAG}`)).toBe(false);
   });
 
   test('parentTagPath — drops the last segment', () => {

@@ -1,4 +1,5 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
+import { tagCreateLabel } from '../../lib/tagConstants';
 import { PHONE_VIEWPORT, deleteAllNotes, watchForHydrationErrors } from './helpers';
 
 // Enough notes to overflow the 300px result box (~6 rows), so "is the top hit visible" is a
@@ -9,6 +10,12 @@ const FILLER_COUNT = 12;
 const COMMON_WORD = 'Projekt';
 const TARGET_TITLE = `${COMMON_WORD} Alpha`;
 const TARGET_TAG = 'arbeit/alpha';
+// A sub-folder of the seeded tag's parent: it does not exist, and no seeded tag fuzzy-matches
+// it, so only the create row can answer the query.
+const NEW_TAG = 'arbeit/neu';
+// Matches the seeded tags AND is creatable itself — the query where both kinds of row are on
+// screen at once, which is where the preselection has to be decided.
+const AMBIGUOUS_TAG_QUERY = 'arb';
 const PINNED_TITLE = `${COMMON_WORD} Angepinnt`;
 
 // The ids matter. `defaultFilter` used to score the CommandItem value — the note id — as part
@@ -226,6 +233,40 @@ test.describe('Befehlspalette', () => {
 
     await expect(rows(page).first()).toHaveText(new RegExp(TARGET_TAG.replace('/', '\\/')));
     expect(await scrollTopOf(page)).toBe(0);
+  });
+
+  // The create row must never steal the preselection from a real tag: Enter on a half-typed
+  // query has to keep navigating, or every jump becomes an accidental tag.
+  test('Tag-Modus über @ bietet Erstellen an, ohne den besten Treffer zu verdrängen', async ({ page }) => {
+    const input = await openPalette(page);
+    await input.fill(`@${AMBIGUOUS_TAG_QUERY}`);
+
+    const createRow = rows(page).filter({ hasText: tagCreateLabel(AMBIGUOUS_TAG_QUERY) });
+    await expect(createRow).toHaveCount(1);
+    await expect(rows(page).first()).toHaveText(/arbeit/);
+    await expect(createRow).not.toHaveAttribute('data-selected', 'true');
+  });
+
+  test('Tag-Modus über @ legt einen neuen Tag an und öffnet eine Notiz darin', async ({ page }) => {
+    const input = await openPalette(page);
+    await input.fill(`@${NEW_TAG}`);
+
+    const createRow = rows(page).filter({ hasText: tagCreateLabel(NEW_TAG) });
+    await expect(createRow).toHaveCount(1);
+    await createRow.click();
+
+    // A tag exists only as a note's frontmatter, so all three have to hold at once: the note
+    // exists, it is open in edit mode (empty content puts the editor there and focuses it), and
+    // the sidebar stands in the new folder — the breadcrumb carries the full path as its title.
+    await expect(page).toHaveURL(/\/notes\/[^/]+$/);
+    await expect(page.locator('.cm-content')).toBeFocused();
+    await expect(page.getByTitle(NEW_TAG, { exact: true })).toBeVisible();
+
+    // Second visit: now it is an ordinary hit and there is nothing left to create.
+    const reopened = await openPalette(page);
+    await reopened.fill(`@${NEW_TAG}`);
+    await expect(rows(page).first()).toHaveText(new RegExp(NEW_TAG.replace('/', '\\/')));
+    await expect(rows(page).filter({ hasText: tagCreateLabel(NEW_TAG) })).toHaveCount(0);
   });
 
   test('Mod+P schließt die offene Palette und verwirft die Suche', async ({ page }) => {
