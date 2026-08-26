@@ -12,7 +12,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { NEW_FOLDER_LABEL, pathHasReservedSegment } from '@/lib/constants';
+import { CANCEL_LABEL, CREATE_LABEL, NEW_FOLDER_LABEL, pathHasReservedSegment } from '@/lib/constants';
+import {
+  FOLDER_NAME_PLACEHOLDER,
+  FOLDER_PATH_HINT_PREFIX,
+  FOLDER_RESERVED_HINT,
+  FOLDER_ROOT_DESCRIPTION,
+  folderParentDescription,
+} from '@/lib/tagConstants';
 import { isCreatableTagPath, normalizeTagPath } from '@/lib/tagTree';
 
 interface CreateTagFolderDialogProps {
@@ -57,11 +64,7 @@ export function CreateTagFolderDialog({ parentPath, open, onOpenChange, onCreate
         <DialogHeader>
           <DialogTitle>{NEW_FOLDER_LABEL}</DialogTitle>
           <DialogDescription>
-            {parentPath !== '' ? (
-              <>Neuer Ordner unter &raquo;{parentPath}&laquo;. Eine erste Notiz wird darin angelegt.</>
-            ) : (
-              <>Neuer Ordner auf oberster Ebene. Eine erste Notiz wird darin angelegt.</>
-            )}
+            {parentPath !== '' ? folderParentDescription(parentPath) : FOLDER_ROOT_DESCRIPTION}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-2">
@@ -76,16 +79,16 @@ export function CreateTagFolderDialog({ parentPath, open, onOpenChange, onCreate
                 handleSubmit();
               }
             }}
-            placeholder="Ordnername…"
+            placeholder={FOLDER_NAME_PLACEHOLDER}
             autoFocus
           />
           {normalized !== '' && (
             <p className="text-xs text-muted-foreground">
               {hasReservedSegment ? (
-                <span className="text-destructive">Dieser Name ist reserviert.</span>
+                <span className="text-destructive">{FOLDER_RESERVED_HINT}</span>
               ) : (
                 <>
-                  Pfad: <span className="font-mono">{fullPath}</span>
+                  {FOLDER_PATH_HINT_PREFIX} <span className="font-mono">{fullPath}</span>
                 </>
               )}
             </p>
@@ -94,11 +97,11 @@ export function CreateTagFolderDialog({ parentPath, open, onOpenChange, onCreate
         <DialogFooter className="flex-row justify-end gap-2">
           <DialogClose asChild>
             <Button variant="outline" size="sm">
-              Abbrechen
+              {CANCEL_LABEL}
             </Button>
           </DialogClose>
           <Button size="sm" onClick={handleSubmit} disabled={!canSubmit}>
-            Erstellen
+            {CREATE_LABEL}
           </Button>
         </DialogFooter>
       </DialogContent>

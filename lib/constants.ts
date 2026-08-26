@@ -117,6 +117,7 @@ export const SELECT_NOTES_LABEL = 'Auswählen';
 export const ASSIGN_TAGS_LABEL = 'Tags vergeben';
 export const APPLY_LABEL = 'Übernehmen';
 export const CANCEL_LABEL = 'Abbrechen';
+export const CREATE_LABEL = 'Erstellen'; // TodoDialog + CreateTagFolderDialog footers
 export const SELECTED_COUNT_SUFFIX = 'ausgewählt'; // rendered as `${n} ausgewählt`
 
 export const NEW_FOLDER_LABEL = 'Neuer Ordner';

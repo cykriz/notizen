@@ -12,6 +12,7 @@ import {
   deleteAllNotes,
   watchForHydrationErrors,
 } from './helpers';
+import { currentLabel } from './tagLocators';
 
 // The leaf is the case this layout exists for: a two-word folder name that the old
 // two-segment row cut down to "mentale ge…". The ancestors are deliberately long —
@@ -27,11 +28,6 @@ const PATH_MENU_NAMES = [TAG_ROOT_LABEL, ...ANCESTOR_SEGMENTS];
 const FLAT_TAG = 'werkzeug';
 // Minimum comfortable touch target; `.menu-row` carries the height for it.
 const TOUCH_TARGET_PX = 44;
-
-/** The breadcrumb's current-folder label, found by the full path it carries as its title. */
-function currentLabel(page: Page, path: string): Locator {
-  return page.getByTitle(path, { exact: true });
-}
 
 /** A row of a `.menu-row` popover menu, by its visible text — or any button, by its
  *  accessible name, which is how the icon-only breadcrumb buttons are located here. */

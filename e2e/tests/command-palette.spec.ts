@@ -1,6 +1,7 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { tagCreateLabel } from '../../lib/tagConstants';
 import { PHONE_VIEWPORT, deleteAllNotes, watchForHydrationErrors } from './helpers';
+import { currentLabel } from './tagLocators';
 
 // Enough notes to overflow the 300px result box (~6 rows), so "is the top hit visible" is a
 // real question and not trivially true.
@@ -260,7 +261,7 @@ test.describe('Befehlspalette', () => {
     // the sidebar stands in the new folder — the breadcrumb carries the full path as its title.
     await expect(page).toHaveURL(/\/notes\/[^/]+$/);
     await expect(page.locator('.cm-content')).toBeFocused();
-    await expect(page.getByTitle(NEW_TAG, { exact: true })).toBeVisible();
+    await expect(currentLabel(page, NEW_TAG)).toBeVisible();
 
     // Second visit: now it is an ordinary hit and there is nothing left to create.
     const reopened = await openPalette(page);

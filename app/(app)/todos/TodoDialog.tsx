@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ClearableDateInput } from './ClearableDateInput';
 import { LinkedNotesField } from './LinkedNotesField';
 import { useData } from '../dataContext';
-import { QUADRANT, QUADRANT_META } from '@/lib/constants';
+import { CANCEL_LABEL, CREATE_LABEL, QUADRANT, QUADRANT_META } from '@/lib/constants';
 import type { Todo, TodoQuadrant } from '@/lib/fsTodos';
 import type { NoteSummary } from '@/lib/types';
 
@@ -179,11 +179,11 @@ export function TodoDialog({
                 onOpenChange(false);
               }}
             >
-              Abbrechen
+              {CANCEL_LABEL}
             </Button>
             <Button type="submit" size="sm" disabled={saving || title.trim() === ''}>
               {saving && <Loader2 className="animate-spin" />}
-              {isEdit ? 'Speichern' : 'Erstellen'}
+              {isEdit ? 'Speichern' : CREATE_LABEL}
             </Button>
           </DialogFooter>
         </form>
