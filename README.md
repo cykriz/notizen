@@ -8,7 +8,7 @@ Built with Next.js, shadcn/ui, and Bun. Designed for deployment on Synology NAS 
 
 - Markdown editing with live preview
 - Note linking — `[[` trigger or Cmd+L to insert links between notes
-- List continuation — Enter continues `- ` / `1.` lists, Tab indents, Shift+Tab dedents
+- List continuation — Enter continues `- ` / `1.` lists, Tab indents by 4 spaces, Shift+Tab dedents
 - File attachments (drag & drop or paste images)
 - Hierarchical tags (slash-separated, e.g. `dev/python/fastapi`) with folder-style tag browser
 - Note pinning for quick access

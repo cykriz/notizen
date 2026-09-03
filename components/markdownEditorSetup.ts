@@ -20,6 +20,11 @@ export const editorBasicSetup: BasicSetupOptions = {
   searchKeymap: true,
   historyKeymap: true,
   defaultKeymap: true,
+  // Einrücktiefe für jeden Einrück-Pfad auf einmal: Tab/Shift+Tab (indentWithTab),
+  // Mod+]/Mod+[ aus defaultKeymap, der Toolbar-Button „Einrücken" und das Einrasten von
+  // Backspace im führenden Whitespace lesen alle dasselbe indentUnit-Facet.
+  // Trotz des Namens setzt basicSetup daraus indentUnit.of('    ') — nicht EditorState.tabSize.
+  tabSize: 4,
 };
 
 // Non-reactive extensions shared across all editor instances.
