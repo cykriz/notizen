@@ -1,11 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { AUTH_COOKIE_NAME, OFFLINE_PATH, SHARE_CACHE_CONTROL, SHARE_PATH_PREFIX } from '@/lib/constants';
+import { LOGIN_PATH, SETUP_PATH } from '@/lib/pathConstants';
 import { isAuthEnabled, getUser, getPasswordHashPrefix } from '@/lib/users';
 import { verifySessionCookie } from '@/lib/auth';
 
 const PUBLIC_PREFIXES = [
-  '/login',
-  '/setup',
+  LOGIN_PATH,
+  SETUP_PATH,
   '/_next/',
   '/serwist/',
   '/manifest.webmanifest',
@@ -47,7 +48,7 @@ export async function proxy(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    return NextResponse.redirect(new URL('/setup', request.url));
+    return NextResponse.redirect(new URL(SETUP_PATH, request.url));
   }
 
   const cookie = request.cookies.get(AUTH_COOKIE_NAME)?.value;
@@ -73,7 +74,7 @@ function deny(request: NextRequest): NextResponse {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  return NextResponse.redirect(new URL('/login', request.url));
+  return NextResponse.redirect(new URL(LOGIN_PATH, request.url));
 }
 
 export const config = {

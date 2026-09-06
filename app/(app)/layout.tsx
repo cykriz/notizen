@@ -2,6 +2,7 @@ import { listNotes } from '@/lib/fsNotes';
 import { listTodos } from '@/lib/fsTodos';
 import { getUserDataDir, isAuthEnabled, NoUsersConfiguredError, UnauthorizedError } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+import { LOGIN_PATH, SETUP_PATH } from '@/lib/pathConstants';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,11 +25,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     [notes, todos] = await Promise.all([listNotes(root), listTodos(root)]);
   } catch (err) {
     if (err instanceof UnauthorizedError) {
-      redirect('/login');
+      redirect(LOGIN_PATH);
     }
 
     if (err instanceof NoUsersConfiguredError) {
-      redirect('/setup');
+      redirect(SETUP_PATH);
     }
 
     // Offline — DataProvider will load from localStorage cache

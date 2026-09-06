@@ -1,17 +1,17 @@
 'use client';
 
-export type TodosView = 'overview' | 'trash';
+import { readStoredOneOf, writeLocal } from '@/lib/localStorageState';
+
+// Array first, type derived from it — see app/(app)/viewStore.ts for the rationale.
+const VIEWS = ['overview', 'trash'] as const;
+export type TodosView = (typeof VIEWS)[number];
 const STORAGE_KEY = 'todos-sidebar-view';
 
 export const todosViewStore = (() => {
   const listeners = new Set<() => void>();
-  let snapshot: TodosView = (() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(STORAGE_KEY) === 'trash' ? 'trash' : 'overview';
-    }
-
-    return 'overview';
-  })();
+  // Guarded read: this runs at module evaluation, so an unguarded
+  // localStorage access would throw on import with storage disabled.
+  let snapshot: TodosView = readStoredOneOf(STORAGE_KEY, VIEWS, 'overview');
 
   const subscribe = (cb: () => void) => {
     listeners.add(cb);
@@ -27,7 +27,7 @@ export const todosViewStore = (() => {
 
   const set = (v: TodosView) => {
     snapshot = v;
-    localStorage.setItem(STORAGE_KEY, v);
+    writeLocal(STORAGE_KEY, v);
     for (const cb of listeners) {
       cb();
     }

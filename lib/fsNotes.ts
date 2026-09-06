@@ -14,6 +14,8 @@ import {
   rebuildSlug,
   ensureDir,
   readNoteFrontmatter,
+  parseTags,
+  parsePinned,
   countAttachments,
   findSlugByNoteId,
   withNoteLock,
@@ -27,14 +29,6 @@ export {
   deleteAttachment,
   getAttachmentFilePath,
 } from './fsAttachments';
-
-function parseTags(raw: unknown): string[] {
-  return Array.isArray(raw) ? raw.filter((t): t is string => typeof t === 'string') : [];
-}
-
-function parsePinned(raw: unknown): boolean {
-  return raw === true;
-}
 
 export async function listNotes(root: string): Promise<NoteSummary[]> {
   await ensureDir(notesDir(root));

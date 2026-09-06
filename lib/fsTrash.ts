@@ -13,16 +13,14 @@ import {
   ensureDir,
   readNoteFrontmatter,
   readFrontmatterFile,
+  parseTags,
+  parsePinned,
   findSlugByNoteId,
   withNoteLock,
   trashNotesDir,
   trashedNoteDir,
   trashedNoteMdPath,
 } from './fsHelpers';
-
-function parseTags(raw: unknown): string[] {
-  return Array.isArray(raw) ? raw.filter((t): t is string => typeof t === 'string') : [];
-}
 
 async function pathExists(p: string): Promise<boolean> {
   try {
@@ -71,7 +69,7 @@ function toTrashedNote(slug: string, data: Record<string, unknown>, attachmentCo
     updatedAt: String(data.updatedAt),
     attachmentCount,
     tags: parseTags(data.tags),
-    pinned: data.pinned === true,
+    pinned: parsePinned(data.pinned),
     trashedAt: String(data.trashedAt),
   } satisfies NoteSummary & { trashedAt: string };
 }

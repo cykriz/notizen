@@ -12,8 +12,13 @@ app/api/notes/[id]/attachments/[attId]/ → DELETE
 app/api/notes/[id]/attachments/[attId]/download/ → GET
 app/api/todos/route.ts              → GET, POST
 app/api/todos/[id]/route.ts         → GET, PUT, DELETE
-app/api/health/route.ts              → GET
-app/api/serwist/[...path]/route.ts   → service worker
+app/api/trash/route.ts              → GET (notes + todos in one payload)
+app/api/trash/[type]/route.ts       → DELETE (empty one kind)
+app/api/trash/[type]/[id]/route.ts  → DELETE (purge one item)
+app/api/trash/[type]/[id]/restore/route.ts → POST
+app/api/user/settings/route.ts      → GET, PUT
+app/api/health/route.ts              → POST (not GET — the SW only caches GET, so POST is what keeps the probe off the cache)
+app/serwist/[...path]/route.ts       → service worker (NOT under app/api/ — it is a public prefix in `proxy.ts`)
 ```
 
 Public share routes (bypass proxy auth, registered in `proxy.ts` `PUBLIC_PREFIXES`; the proxy also sets `Cache-Control: private, max-age=0, must-revalidate` so revocation/expiry take effect immediately):

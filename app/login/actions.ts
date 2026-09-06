@@ -6,6 +6,7 @@ import { verifyPassword } from '@/lib/users';
 import { createSessionCookie } from '@/lib/auth';
 import { AUTH_COOKIE_NAME, AUTH_COOKIE_MAX_AGE } from '@/lib/constants';
 import { createLoginRateLimit } from '@/lib/loginRateLimit';
+import { LOGIN_PATH } from '@/lib/pathConstants';
 
 export interface LoginState {
   error: string | null;
@@ -57,5 +58,5 @@ export async function loginAction(
 export async function logoutAction(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(AUTH_COOKIE_NAME);
-  redirect('/login');
+  redirect(LOGIN_PATH);
 }

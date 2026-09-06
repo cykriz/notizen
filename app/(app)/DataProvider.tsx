@@ -25,6 +25,7 @@ import {
 } from '@/lib/localCache';
 import { cleanExpiredEntries, mergeById } from '@/lib/localCacheMerge';
 import { ensurePrecache } from '@/lib/ensurePrecache';
+import { DAY_MS } from '@/lib/constants';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useDataSync } from '@/hooks/useDataSync';
 import { DataContext } from './dataContext';
@@ -87,7 +88,7 @@ export function DataProvider({ initialNotes, initialTodos, children }: DataProvi
 
     const ttlTimer = setTimeout(() => {
       cleanExpiredEntries();
-    }, 24 * 60 * 60 * 1000);
+    }, DAY_MS);
     return () => {
       clearTimeout(ttlTimer);
     };

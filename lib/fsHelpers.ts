@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import matter from 'gray-matter';
 import { USERS_DATA_DIR, TRASH_DIR, TRASH_NOTES_DIR } from './constants';
 import type { AUDIO_EXTENSIONS, VIDEO_EXTENSIONS } from './mediaTypes';
+import { createKeyedLock } from './keyedLock';
 
 export class NotFoundError extends Error {
   constructor(message: string) {
@@ -129,6 +130,16 @@ export async function readFrontmatterFile(
   }
 }
 
+/** Frontmatter `tags`, defensively: anything that is not a string array is empty. */
+export function parseTags(raw: unknown): string[] {
+  return Array.isArray(raw) ? raw.filter((t): t is string => typeof t === 'string') : [];
+}
+
+/** Frontmatter `pinned`: only a literal `true` counts, so a missing key is false. */
+export function parsePinned(raw: unknown): boolean {
+  return raw === true;
+}
+
 export async function readNoteFrontmatter(
   slug: string,
   root: string,
@@ -145,37 +156,12 @@ export async function countAttachments(slug: string, root: string): Promise<numb
   }
 }
 
-const noteLocks = new Map<string, Promise<unknown>>();
-
-export async function withNoteLock<T>(noteId: string, fn: () => Promise<T>): Promise<T> {
-  const prev = noteLocks.get(noteId) ?? Promise.resolve();
-  const current = prev.then(fn, fn);
-  noteLocks.set(noteId, current);
-  try {
-    return await current;
-  } finally {
-    if (noteLocks.get(noteId) === current) {
-      noteLocks.delete(noteId);
-    }
-  }
-}
+// Per-note lock keyed by note id.
+export const withNoteLock = createKeyedLock();
 
 // Per-user todos lock keyed by root path. Ensures writes to the same todos.json
 // run one at a time, without blocking other users.
-const todosLocks = new Map<string, Promise<unknown>>();
-
-export async function withTodosLock<T>(root: string, fn: () => Promise<T>): Promise<T> {
-  const prev = todosLocks.get(root) ?? Promise.resolve();
-  const current = prev.then(fn, fn);
-  todosLocks.set(root, current);
-  try {
-    return await current;
-  } finally {
-    if (todosLocks.get(root) === current) {
-      todosLocks.delete(root);
-    }
-  }
-}
+export const withTodosLock = createKeyedLock();
 
 export async function findSlugByNoteId(noteId: string, root: string): Promise<string | null> {
   await ensureDir(notesDir(root));

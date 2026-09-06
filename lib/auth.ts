@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getNotesRoot, userRootFor } from './fsHelpers';
 import { AUTH_COOKIE_NAME, AUTH_COOKIE_MAX_AGE, AUTH_DIR, AUTH_SECRET_FILE } from './constants';
+import { LOGIN_PATH, SETUP_PATH } from './pathConstants';
 import { isAuthEnabled, getUser, getPasswordHashPrefix } from './users';
 
 function secretFilePath(): string {
@@ -186,11 +187,11 @@ export async function requireAuthSession(): Promise<{ root: string; username: st
     return await getUserSession();
   } catch (err) {
     if (err instanceof NoUsersConfiguredError) {
-      redirect('/setup');
+      redirect(SETUP_PATH);
     }
 
     if (err instanceof UnauthorizedError) {
-      redirect('/login');
+      redirect(LOGIN_PATH);
     }
 
     throw err;

@@ -55,10 +55,13 @@ export const SHARES_FILE = 'shares.json';
 export const SHARE_PATH_PREFIX = '/share/';
 export const SHARE_CACHE_CONTROL = 'private, max-age=0, must-revalidate';
 
+// Every retention / TTL span is a multiple of this. AUTH_COOKIE_MAX_AGE is not — it is seconds.
+export const DAY_MS = 24 * 60 * 60 * 1000;
+
 export const SHARE_EXPIRY_PRESETS = {
-  '1d': 24 * 60 * 60 * 1000,
-  '1w': 7 * 24 * 60 * 60 * 1000,
-  '1m': 30 * 24 * 60 * 60 * 1000,
+  '1d': DAY_MS,
+  '1w': 7 * DAY_MS,
+  '1m': 30 * DAY_MS,
   never: null,
 } as const;
 
@@ -91,7 +94,7 @@ export const SYNC_ACTION = {
   DELETE: 'delete',
 } as const satisfies Record<string, SyncAction>;
 
-export const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
+export const CACHE_TTL_MS = 7 * DAY_MS; // 1 week
 export const SYNC_MAX_RETRIES = 5;
 // Cap on the server response body stored in SyncFailureInfo.message. Diagnostic
 // text only, so a runaway error page can never bloat the failed queue.
@@ -121,6 +124,8 @@ export const CREATE_LABEL = 'Erstellen'; // TodoDialog + CreateTagFolderDialog f
 export const SELECTED_COUNT_SUFFIX = 'ausgewählt'; // rendered as `${n} ausgewählt`
 
 export const NEW_FOLDER_LABEL = 'Neuer Ordner';
+// Abort budget for the /api/health probe in lib/fetchHealth.ts.
+export const HEALTH_TIMEOUT_MS = 5_000;
 export const SYNC_HEALTH_POLL_MS = 10_000;
 export const SYNC_RETRY_INTERVAL_MS = 10_000;
 export const SYNC_RETRY_MAX_INTERVAL_MS = 5 * 60_000; // 5 min cap

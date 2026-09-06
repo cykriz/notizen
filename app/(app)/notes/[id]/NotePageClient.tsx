@@ -6,6 +6,7 @@ import { OFFLINE_SHELL_ID } from '@/lib/constants';
 import { NOTES_PATH_PREFIX } from '@/lib/pathConstants';
 import { setCachedNote } from '@/lib/localCache';
 import { warmPageCache } from '@/lib/warmPageCache';
+import { listAllTags } from '@/lib/tagTree';
 import type { Note } from '@/lib/types';
 import { NoteEditor } from './NoteEditor';
 
@@ -112,7 +113,7 @@ export function NotePageClient({
   // server listNotes(), then kept in sync by client mutations). Using static
   // server props here would freeze the tag suggestions / note links, so a
   // deleted tag would linger in the dropdown.
-  const effectiveTags = [...new Set(notes.flatMap((n) => n.tags))].sort();
+  const effectiveTags = listAllTags(notes);
   const effectiveOtherNotes = notes.filter((n) => n.id !== resolvedId);
 
   return (

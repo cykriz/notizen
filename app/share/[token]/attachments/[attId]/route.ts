@@ -7,6 +7,7 @@ import { NotFoundError, getAttachmentFilePath } from '@/lib/fsNotes';
 import { getShare } from '@/lib/fsShares';
 import { userRootFor } from '@/lib/fsHelpers';
 import { INLINE_SAFE_MIMES, SHARE_CACHE_CONTROL } from '@/lib/constants';
+import { contentDisposition } from '@/lib/contentDisposition';
 
 const AttIdSchema = z.string().regex(/^[a-f0-9]{8}$/);
 
@@ -41,12 +42,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
     const safeInline = INLINE_SAFE_MIMES.includes(mimeType);
     const contentType = safeInline ? mimeType : 'application/octet-stream';
-    // Per RFC 6266: legacy `filename=` carries display chars in a quoted
-    // string (sanitize \ and " for safety); modern `filename*` (RFC 5987)
-    // is percent-encoded UTF-8 and wins on browsers that support it.
-    const safeFilename = fileName.replace(/[\\"]/g, '_');
-    const encoded = encodeURIComponent(fileName);
-    const disposition = `${safeInline ? 'inline' : 'attachment'}; filename="${safeFilename}"; filename*=UTF-8''${encoded}`;
+    const disposition = contentDisposition(fileName, { inline: safeInline });
 
     // Cache-Control is also set by the proxy for /share/; duplicated here as
     // defense-in-depth so revocation/expiry stays effective even if a future

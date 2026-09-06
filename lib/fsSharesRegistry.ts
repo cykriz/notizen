@@ -3,6 +3,7 @@ import path from 'path';
 import { z } from 'zod';
 import { SHARES_DIR, SHARES_FILE, USERNAME_RE } from './constants';
 import { getNotesRoot, ensureDir } from './fsHelpers';
+import { createKeyedLock } from './keyedLock';
 import { SharePresetSchema } from './shareTypes';
 
 const ShareEntrySchema = z.object({
@@ -94,22 +95,13 @@ export function pruneExpired(registry: ShareRegistry, now: number): ShareRegistr
   return next;
 }
 
+// There is one shares.json per deployment, so every write shares a single key.
 // In-process serialization only. Safe for single-Next-server deployments;
 // does not protect against multi-process races on the same shares.json.
-const sharesLock: { current: Promise<unknown> } = { current: Promise.resolve() };
+const sharesLock = createKeyedLock();
 
 export async function withSharesLock<T>(fn: () => Promise<T>): Promise<T> {
-  const prev = sharesLock.current;
-  // Reuse `fn` as both onFulfilled/onRejected so the chain survives a prior failure.
-  const current = prev.then(fn, fn);
-  sharesLock.current = current;
-  try {
-    return await current;
-  } finally {
-    if (sharesLock.current === current) {
-      sharesLock.current = Promise.resolve();
-    }
-  }
+  return await sharesLock('', fn);
 }
 
 // Lives here (not in fsShares.ts) so user-management code paths can cascade

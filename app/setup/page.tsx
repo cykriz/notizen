@@ -2,13 +2,14 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { isAuthEnabled } from '@/lib/users';
+import { LOGIN_PATH } from '@/lib/pathConstants';
 
 export const metadata: Metadata = { title: 'Einrichtung' };
 
 export default async function SetupPage() {
   const hasUsers = await isAuthEnabled();
   if (hasUsers) {
-    redirect('/login');
+    redirect(LOGIN_PATH);
   }
 
   return (

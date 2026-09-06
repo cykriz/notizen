@@ -10,6 +10,7 @@ import {
   getNotesUnderPath,
   isCreatableTagPath,
   leafTagSegment,
+  listAllTags,
   moveNoteToFolder,
   normalizeTagPath,
   parentTagPath,
@@ -131,5 +132,21 @@ describe('replaceFolderTag', () => {
 
   test('mixed reserved + clean targets — drops only the reserved one', () => {
     expect(replaceFolderTag(['a'], 'a', ['b', FAILED_SYNC_TAG])).toEqual(['b']);
+  });
+});
+
+describe('listAllTags', () => {
+  const note = (id: string, tags: string[]): NoteSummary => ({
+    id, slug: `s${id}`, title: id, createdAt: '', updatedAt: '', attachmentCount: 0, tags, pinned: false,
+  });
+
+  test('deduplicates across notes and sorts lexicographically', () => {
+    expect(listAllTags([note('1', ['zeta', 'dev/ts']), note('2', ['dev/ts', 'alpha'])]))
+      .toEqual(['alpha', 'dev/ts', 'zeta']);
+  });
+
+  test('notes without tags contribute nothing', () => {
+    expect(listAllTags([note('1', []), note('2', [])])).toEqual([]);
+    expect(listAllTags([])).toEqual([]);
   });
 });

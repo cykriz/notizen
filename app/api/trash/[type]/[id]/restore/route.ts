@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { getUserSession } from '@/lib/auth';
-import { errorResponse } from '@/lib/apiHelpers';
+import { errorResponse, invalidTrashTypeResponse, isTrashItemType } from '@/lib/apiHelpers';
 import { SYNC_ENTITY } from '@/lib/constants';
 import { restoreNoteFromTrash } from '@/lib/fsTrash';
 import { restoreTodo } from '@/lib/fsTodos';
@@ -15,8 +15,8 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
   try {
     const { root } = await getUserSession();
     const { type, id } = await params;
-    if (type !== SYNC_ENTITY.NOTE && type !== SYNC_ENTITY.TODO) {
-      return NextResponse.json({ error: 'Invalid trash item type' }, { status: 400 });
+    if (!isTrashItemType(type)) {
+      return invalidTrashTypeResponse();
     }
 
     if (type === SYNC_ENTITY.NOTE) {

@@ -20,7 +20,6 @@ Von hier mitbenutzt, aber nach Pfadklasse anderswo inventarisiert:
 | InternalLink | `components/InternalLink.tsx` — internal note link renderer |
 | SyncStatusIndicator | `components/SyncStatusIndicator.tsx` — offline sync status |
 | AttachmentList | `components/AttachmentList.tsx` — display note attachments |
-| FileUpload | `components/FileUpload.tsx` — file upload UI |
 | NoteOutline | `components/NoteOutline.tsx` — heading-based outline, shared by editor and share view |
 | ThemeToggle | `components/ThemeToggle.tsx` — dark/light theme switch |
 | AppSidebar | `app/(app)/AppSidebar.tsx` — sidebar shell, double-click-to-create, swipe-back |

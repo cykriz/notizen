@@ -7,6 +7,7 @@ import { mergeById } from '@/lib/localCacheMerge';
 import { getPendingCount } from '@/lib/syncQueue';
 import { FAILED_SYNC_KEY } from '@/lib/failedSyncQueue';
 import { SYNC_RETRY_INTERVAL_MS, SYNC_RETRY_MAX_INTERVAL_MS } from '@/lib/constants';
+import { fetchHealth } from '@/lib/fetchHealth';
 import { useFailedSyncActions } from '@/hooks/useFailedSyncActions';
 import { useSyncDrain } from '@/hooks/useSyncDrain';
 
@@ -38,11 +39,11 @@ export function useDataSync({ isOnline, isOnlineRef, setNotes, setTodos }: UseDa
     }
 
     try {
-      const health = await fetch('/api/health', { method: 'POST' }).then(
-        (r) => r.ok ? r.json() as Promise<{ app?: string }> : null,
-      ).catch(() => null);
-
-      if (health?.app !== 'notizen') {
+      // Not redundant with isOnlineRef: that carries useOnlineStatus's last
+      // result, which only refreshes on mount / online / visibilitychange. A
+      // foreign server on the same port answering `[]` would pass the strict
+      // parsers below and wipe the offline cache — this is the gate.
+      if (!(await fetchHealth())) {
         return;
       }
 

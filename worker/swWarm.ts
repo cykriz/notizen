@@ -32,7 +32,7 @@ export async function cacheNavigationHtml(
         // Force the HTML response shape. Next.js inspects Accept to decide
         // between full HTML and RSC payload; a bare `fetch(url)` defaults to
         // Accept: */* and could land us on the RSC branch — which would store
-        // RSC bytes under pages-v2 and break offline cold-load rendering.
+        // RSC bytes under CACHE.pages and break offline cold-load rendering.
         Accept: 'text/html',
       },
     });

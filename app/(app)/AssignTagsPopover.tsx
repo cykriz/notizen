@@ -9,6 +9,7 @@ import { useData } from './dataContext';
 import { TagInput } from './notes/[id]/TagInput';
 import { useBatchTags } from './useBatchTags';
 import type { NoteSelection } from './useNoteSelection';
+import { listAllTags } from '@/lib/tagTree';
 import type { SidebarView } from './viewStore';
 
 interface AssignTagsPopoverProps {
@@ -23,7 +24,7 @@ export function AssignTagsPopover({ selection, view, currentTagPath }: AssignTag
   const [pendingTags, setPendingTags] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
 
-  const allTags = useMemo(() => [...new Set(notes.flatMap((n) => n.tags))].sort(), [notes]);
+  const allTags = useMemo(() => listAllTags(notes), [notes]);
 
   // Base = the tags actually assigned to (shared by) the selected notes, per their
   // frontmatter — NOT the sidebar position. These are pre-filled so they can be kept

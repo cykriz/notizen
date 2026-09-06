@@ -9,6 +9,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { MediaAttachment } from '@/components/MediaAttachment';
 import { cn } from '@/lib/utils';
 import { mediaKindForFilename } from '@/lib/mediaTypes';
+import { attachmentDownloadPath } from '@/lib/attachmentUpload';
 import type { Attachment } from '@/lib/fsNotes';
 
 interface AttachmentListProps {
@@ -68,7 +69,7 @@ export function AttachmentList({ noteId, attachments, onDeleted, className }: At
         {error !== null && <p className="text-sm text-destructive py-1">{error}</p>}
         {attachments.map((att, i) => {
           const mediaKind = mediaKindForFilename(att.originalName);
-          const downloadUrl = `/api/notes/${noteId}/attachments/${att.id}/download`;
+          const downloadUrl = attachmentDownloadPath(noteId, att.id);
           return (
             <div key={att.id} className={cn('flex items-center gap-3 py-2', { 'border-t border-border': i > 0 })}>
               <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />

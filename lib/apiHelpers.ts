@@ -1,7 +1,23 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import type { z } from 'zod';
+import type { SyncEntityType } from './types';
+import { SYNC_ENTITY } from './constants';
 import { NotFoundError } from './fsHelpers';
 import { UnauthorizedError } from './auth';
+
+/**
+ * Narrows the `[type]` path param of the trash routes. A type guard rather than
+ * a response-returning helper: all three routes branch on `type` afterwards and
+ * need it narrowed, so a third entity type could not be forgotten silently.
+ */
+export function isTrashItemType(value: string): value is SyncEntityType {
+  return value === SYNC_ENTITY.NOTE || value === SYNC_ENTITY.TODO;
+}
+
+/** The one 400 for an unknown `[type]`, shared by all three trash routes. */
+export function invalidTrashTypeResponse(): NextResponse {
+  return NextResponse.json({ error: 'Invalid trash item type' }, { status: 400 });
+}
 
 /** Extract a human-readable message from an unknown caught value. */
 export function errorMessage(err: unknown): string {

@@ -1,18 +1,18 @@
 'use client';
 
-export type SidebarView = 'tags' | 'all' | 'trash';
+import { readStoredOneOf, writeLocal } from '@/lib/localStorageState';
+
+// The array is the source of the exported type, so both can never drift apart —
+// and readStoredOneOf takes it as the allowlist for the persisted value.
+const VIEWS = ['tags', 'all', 'trash'] as const;
+export type SidebarView = (typeof VIEWS)[number];
 const STORAGE_KEY = 'notes-sidebar-view';
 
 export const viewStore = (() => {
   const listeners = new Set<() => void>();
-  let snapshot: SidebarView = (() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      return stored === 'all' || stored === 'trash' ? stored : 'tags';
-    }
-
-    return 'tags';
-  })();
+  // Guarded read: this runs at module evaluation, so an unguarded
+  // localStorage access would throw on import with storage disabled.
+  let snapshot: SidebarView = readStoredOneOf(STORAGE_KEY, VIEWS, 'tags');
 
   // Remembers the last non-trash view so toggling the trash off returns there.
   let lastListView: SidebarView = snapshot === 'trash' ? 'tags' : snapshot;
@@ -35,7 +35,7 @@ export const viewStore = (() => {
     }
 
     snapshot = v;
-    localStorage.setItem(STORAGE_KEY, v);
+    writeLocal(STORAGE_KEY, v);
     for (const cb of listeners) {
       cb();
     }

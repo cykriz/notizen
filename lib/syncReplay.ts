@@ -1,6 +1,7 @@
 import type { SyncQueueEntry } from '@/lib/localCache';
 import type { SyncAction } from '@/lib/types';
 import { SYNC_ACTION, SYNC_ENTITY, SYNC_ERROR_BODY_MAX } from '@/lib/constants';
+import { LOGIN_PATH } from '@/lib/pathConstants';
 
 export type ReplayOutcome = 'ok' | 'discard' | 'retry' | 'offline';
 
@@ -103,7 +104,7 @@ export async function replayMutation(entry: SyncQueueEntry): Promise<ReplayResul
     // cannot express.
     if (res.status === 401) {
       if (typeof window !== 'undefined') {
-        window.location.href = '/login';
+        window.location.href = LOGIN_PATH;
       }
 
       throw new Error('Session expired');

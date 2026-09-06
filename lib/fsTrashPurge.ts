@@ -8,8 +8,7 @@ import {
   trashedNoteMdPath,
 } from './fsHelpers';
 import { purgeExpiredTodos } from './fsTodos';
-
-const DAY_MS = 24 * 60 * 60 * 1000;
+import { DAY_MS } from './constants';
 
 /** Delete trashed notes whose trashedAt is older than retentionDays. Returns the purged note ids. */
 export async function purgeExpiredNotes(root: string, retentionDays: number): Promise<string[]> {

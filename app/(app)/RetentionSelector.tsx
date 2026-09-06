@@ -20,12 +20,11 @@ import {
 } from '@/components/ui/dialog';
 import {
   CANCEL_LABEL,
+  DAY_MS,
   TRASH_DELETE_PERMANENT_LABEL,
   TRASH_RETENTION_LABEL,
   TRASH_RETENTION_OPTIONS,
 } from '@/lib/constants';
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Module-scoped (reads the clock) so the component render stays pure.
 function countOlderThan(trashedAtList: string[], days: number): number {

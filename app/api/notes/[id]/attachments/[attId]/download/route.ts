@@ -5,6 +5,7 @@ import { Readable } from 'stream';
 import { getAttachmentFilePath } from '@/lib/fsNotes';
 import { getUserDataDir } from '@/lib/auth';
 import { errorResponse } from '@/lib/apiHelpers';
+import { contentDisposition } from '@/lib/contentDisposition';
 
 interface RouteParams { params: Promise<{ id: string; attId: string }> }
 
@@ -70,14 +71,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const stat = await fs.stat(filePath);
     const size = stat.size;
 
-    // Per RFC 6266: legacy `filename=` carries display chars in a quoted
-    // string (sanitize \ and " for safety); modern `filename*` (RFC 5987)
-    // is percent-encoded UTF-8 and wins on browsers that support it.
-    const safeFilename = fileName.replace(/[\\"]/g, '_');
-    const encoded = encodeURIComponent(fileName);
     const baseHeaders: Record<string, string> = {
       'Content-Type': mimeType,
-      'Content-Disposition': `attachment; filename="${safeFilename}"; filename*=UTF-8''${encoded}`,
+      'Content-Disposition': contentDisposition(fileName, { inline: false }),
       'X-Content-Type-Options': 'nosniff',
       'Accept-Ranges': 'bytes',
     };
