@@ -130,7 +130,7 @@ describe('fsTodos', () => {
     expect((await listTodos(legacyRoot))[0].quadrant).toBe('inbox');
 
     // Same rule as the client parser: anything unrecognised lands in Eingang, so
-    // the server-rendered first paint and the cache agree and EisenhowerMatrix
+    // the server-rendered first paint and the cache agree and TodoBoard
     // can index its per-quadrant record directly.
     await fs.writeFile(
       path.join(legacyRoot, 'todos.json'),
@@ -164,5 +164,60 @@ describe('fsTodos', () => {
     await updateTodo('alt-1', { completed: true }, legacyRoot);
     const onDisk: unknown = JSON.parse(await fs.readFile(path.join(legacyRoot, 'todos.json'), 'utf-8'));
     expect((onDisk as { quadrant: string }[])[0].quadrant).toBe('inbox');
+  });
+
+  test("readTodos — merges the retired 'schedule' and 'planned' columns into Eingang", async () => {
+    const mergeRoot = path.join(testRoot, 'merge');
+    await fs.mkdir(mergeRoot, { recursive: true });
+    await fs.writeFile(
+      path.join(mergeRoot, 'todos.json'),
+      JSON.stringify(
+        ['schedule', 'planned'].map((quadrant, i) => ({
+          id: `alt-${String(i)}`,
+          title: `Aus ${quadrant}`,
+          quadrant,
+          completed: false,
+          createdAt: '2026-08-01T08:00:00.000Z',
+          updatedAt: '2026-08-01T08:00:00.000Z',
+        })),
+      ),
+      'utf-8',
+    );
+
+    // Terminable work belongs in the calendar, so neither column survives — but the
+    // entries do, in the bucket the weekly ritual re-decides.
+    expect((await listTodos(mergeRoot)).map((t) => t.quadrant)).toEqual(['inbox', 'inbox']);
+  });
+
+  test('readTodos — caps Erledigen at 3, newest kept, and persists the demotion', async () => {
+    const overflowRoot = path.join(testRoot, 'overflow');
+    await fs.mkdir(overflowRoot, { recursive: true });
+    // Five open entries in 'do' is what the old four-quadrant board could leave behind.
+    await fs.writeFile(
+      path.join(overflowRoot, 'todos.json'),
+      JSON.stringify(
+        [1, 2, 3, 4, 5].map((n) => ({
+          id: `d${String(n)}`,
+          title: `Aufgabe ${String(n)}`,
+          quadrant: 'do',
+          completed: false,
+          createdAt: '2026-08-01T08:00:00.000Z',
+          updatedAt: `2026-08-0${String(n)}T08:00:00.000Z`,
+        })),
+      ),
+      'utf-8',
+    );
+
+    const listed = await listTodos(overflowRoot);
+    expect(listed.filter((t) => t.quadrant === 'do').map((t) => t.id).sort()).toEqual(['d3', 'd4', 'd5']);
+    expect(listed.filter((t) => t.quadrant === 'inbox').map((t) => t.id).sort()).toEqual(['d1', 'd2']);
+
+    // Same self-healing contract as the alias rescue: the next write makes it stick.
+    await updateTodo('d5', { completed: true }, overflowRoot);
+    const raw: unknown = JSON.parse(await fs.readFile(path.join(overflowRoot, 'todos.json'), 'utf-8'));
+    const byId = new Map((raw as { id: string; quadrant: string }[]).map((t) => [t.id, t.quadrant]));
+    expect(byId.get('d1')).toBe('inbox');
+    expect(byId.get('d2')).toBe('inbox');
+    expect(byId.get('d3')).toBe('do');
   });
 });

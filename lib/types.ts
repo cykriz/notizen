@@ -33,11 +33,15 @@ export type PreviewMode = 'edit' | 'preview';
 
 // TodoQuadrant is derived from a const value via `typeof`, so the type lives next
 // to that value. Re-exported here (unlike the read-aloud types, which moved to
-// lib/ttsTypes.ts) for two reasons: this file uses it itself below — QuadrantMeta
-// and Todo — so the import exists either way, and lib/constants.ts is already in
-// the service worker's type program and DOM-free, so the edge costs nothing.
+// lib/ttsTypes.ts) for two reasons: this file uses it itself below — in Todo —
+// so the import exists either way, and lib/constants.ts is already in the
+// service worker's type program and DOM-free, so the edge costs nothing.
 import type { TodoQuadrant } from './constants';
 export type { TodoQuadrant };
+
+// Same reasoning for TodoColumnKey, derived from TODO_COLUMN in lib/todoColumns.ts.
+import type { TodoColumnKey } from './todoColumns';
+export type { TodoColumnKey };
 
 export type SyncEntityType = 'note' | 'todo';
 export type SyncAction = 'create' | 'update' | 'delete';
@@ -68,10 +72,16 @@ export interface SyncFailureInfo {
   attempts: number;
 }
 
-export interface QuadrantMeta {
-  key: TodoQuadrant;
+// One column of the todo board. `key` is a TodoColumnKey, not a TodoQuadrant:
+// "Erledigt" is derived from `completed` and has no persisted counterpart.
+// `icon` stays out of `label` so `label` remains plain text for the dialog's
+// Select (and for the exact-text assertions in the e2e suite).
+export interface TodoColumnMeta {
+  key: TodoColumnKey;
+  icon: string;
   label: string;
   description: string;
+  limit?: number;
 }
 
 export interface Todo {

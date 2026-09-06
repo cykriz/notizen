@@ -1,9 +1,9 @@
 'use client';
 
 import { useData } from '@/app/(app)/dataContext';
-import { EisenhowerMatrix } from './EisenhowerMatrix';
+import { TodoBoard } from './TodoBoard';
 
 export default function TodosPage() {
   const { todos, notes } = useData();
-  return <EisenhowerMatrix todos={todos} notes={notes} />;
+  return <TodoBoard todos={todos} notes={notes} />;
 }

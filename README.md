@@ -12,9 +12,9 @@ Built with Next.js, shadcn/ui, and Bun. Designed for deployment on Synology NAS 
 - File attachments (drag & drop or paste images)
 - Hierarchical tags (slash-separated, e.g. `dev/python/fastapi`) with folder-style tag browser
 - Note pinning for quick access
-- Eisenhower matrix for task management with an "Eingang" inbox for quick capture & sorting
-- Drag & drop todos between quadrants
-- Quick-add input in each quadrant
+- Three-column personal kanban: "Eingang" (capture), "Erledigen" (hard limit of 3), "Erledigt"
+- Drag & drop todos between columns
+- Quick-add input in each column
 - Command palette (Cmd+P) — search notes by title or tag, jump to tasks; type `@` to search tags and jump to a folder in the sidebar
 - Installable as PWA — add to home screen on iOS/Android
 - Light/dark theme
@@ -159,7 +159,7 @@ Notes are plain files in `/volume1/docker/<app>/data/`. Back up with Hyper Backu
 │   └── secret.key                      # HMAC signing key (auto-generated)
 └── users/
     └── <username>/
-        ├── todos.json                  # Eisenhower Matrix tasks
+        ├── todos.json                  # kanban tasks
         └── notes/
             └── 2026-02-20-my-note-a1b2c3/  # {date}-{slug}-{uuid}
                 ├── note.md                  # Frontmatter + Markdown content
@@ -328,7 +328,9 @@ Response: `Todo[]`
 ]
 ```
 
-Quadrant values: `do`, `schedule`, `inbox` (shown as "Eingang"), `planned`
+Quadrant values: `do` (shown as "Erledigen"), `inbox` (shown as "Eingang"). "Erledigt" is a
+third *column* derived from `completed`, never a stored quadrant. Retired values (`delegate`,
+`schedule`, `planned`) are rescued to `inbox` on read and on write.
 
 #### Create Todo
 
@@ -336,7 +338,7 @@ Quadrant values: `do`, `schedule`, `inbox` (shown as "Eingang"), `planned`
 POST /api/todos
 Content-Type: application/json
 
-{ "title": "New task", "quadrant": "do", "description": "optional", "dueDate": "2026-03-01" }
+{ "title": "New task", "quadrant": "do", "description": "optional" }
 ```
 
 `description` and `dueDate` are optional. Response: `Todo` (201)
@@ -347,7 +349,7 @@ Content-Type: application/json
 PUT /api/todos/:id
 Content-Type: application/json
 
-{ "title": "Updated", "completed": true, "quadrant": "schedule" }
+{ "title": "Updated", "completed": true, "quadrant": "inbox" }
 ```
 
 All fields optional. Response: `Todo`

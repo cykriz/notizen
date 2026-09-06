@@ -2,13 +2,14 @@
 
 import { memo, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, CloudAlert, FileText, AlignLeft, Trash2 } from 'lucide-react';
+import { CloudAlert, FileText, AlignLeft, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn, formatDate, isOverdue } from '@/lib/utils';
-import { useClientMounted } from '@/hooks/useClientMounted';
+import { cn } from '@/lib/utils';
+import { QUADRANT } from '@/lib/constants';
+import { canEnterDo, columnOf } from '@/lib/todoColumns';
 import { FAILED_SYNC_CARD_LABEL, FAILED_SYNC_CARD_TOOLTIP } from '@/lib/failedSyncConstants';
 import { useData } from '../dataContext';
 import { useReportedTransition } from '../navigationLoading';
@@ -24,17 +25,26 @@ interface TodoCardProps {
 }
 
 export const TodoCard = memo(function TodoCard({ todo, onEdit, notes, syncFailed = false }: TodoCardProps) {
-  const { updateTodo, deleteTodo } = useData();
+  const { todos, updateTodo, deleteTodo } = useData();
   const router = useRouter();
   const startNavigation = useReportedTransition();
   const [isDragging, setIsDragging] = useState(false);
-  // Clock read, and the server HTML comes from the build-versioned page cache —
-  // possibly days old. Gated per hooks/useClientMounted.ts.
-  const mounted = useClientMounted();
-  const overdue = mounted && !todo.completed && todo.dueDate !== undefined && isOverdue(todo.dueDate);
 
+  /**
+   * Un-ticking is the fifth way into "Erledigen": the todo keeps its stored
+   * quadrant while it sits in Erledigt, so clearing `completed` alone would put it
+   * straight back into a column that may already be full. Writing the quadrant too
+   * keeps the limit intact without blocking the click — a free slot returns the
+   * todo to where it was, a full one parks it in Eingang.
+   */
   const handleToggle = (checked: boolean) => {
-    void updateTodo(todo.id, { completed: checked }).catch(console.error);
+    const patch = checked
+      ? { completed: true }
+      : {
+        completed: false,
+        quadrant: canEnterDo(todos, todo.id) ? todo.quadrant : QUADRANT.INBOX,
+      };
+    void updateTodo(todo.id, patch).catch(console.error);
   };
 
   const hasDescription = (todo.description?.trim().length ?? 0) > 0;
@@ -57,8 +67,10 @@ export const TodoCard = memo(function TodoCard({ todo, onEdit, notes, syncFailed
       onDragStart={(e) => {
         setIsDragging(true);
         e.dataTransfer.setData('application/x-todo-id', todo.id);
-        e.dataTransfer.setData('application/x-todo-quadrant', todo.quadrant);
-        e.dataTransfer.setData('application/x-todo-has-due', todo.dueDate !== undefined ? '1' : '');
+        // The COLUMN, not the stored quadrant: a completed todo still carries
+        // quadrant 'inbox'/'do', so sending that would make the drop handler treat
+        // a drag out of Erledigt as a drop onto its own column and ignore it.
+        e.dataTransfer.setData('application/x-todo-column', columnOf(todo));
         e.dataTransfer.effectAllowed = 'move';
       }}
       onDragEnd={() => {
@@ -127,15 +139,6 @@ export const TodoCard = memo(function TodoCard({ todo, onEdit, notes, syncFailed
             </TooltipContent>
           </Tooltip>
         )}
-        {todo.dueDate !== undefined && (
-          <Badge
-            variant={overdue ? 'destructive' : 'secondary'}
-            className="mr-2 text-xs px-1.5 py-0"
-          >
-            <Calendar className="h-2.5 w-2.5 mr-0.5" />
-            {formatDate(todo.dueDate)}
-          </Badge>
-        )}
         {linkedNotes.length > 0 && (
           <span className="inline-flex flex-wrap gap-1">
             {linkedNotes.map((n) => (
@@ -160,6 +163,7 @@ export const TodoCard = memo(function TodoCard({ todo, onEdit, notes, syncFailed
       <Button
         variant="ghost"
         size="icon"
+        aria-label={`${todo.title} löschen`}
         className="h-6 w-6 shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity self-center"
         onClick={(e) => {
           e.stopPropagation();

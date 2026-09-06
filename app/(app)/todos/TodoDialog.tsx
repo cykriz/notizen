@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,10 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ClearableDateInput } from './ClearableDateInput';
 import { LinkedNotesField } from './LinkedNotesField';
 import { useData } from '../dataContext';
-import { CANCEL_LABEL, CREATE_LABEL, QUADRANT, QUADRANT_META } from '@/lib/constants';
+import { CANCEL_LABEL, CREATE_LABEL, QUADRANT } from '@/lib/constants';
+import { TODO_COLUMN, TODO_COLUMN_META, canEnterDo } from '@/lib/todoColumns';
 import type { Todo, TodoQuadrant } from '@/lib/fsTodos';
 import type { NoteSummary } from '@/lib/types';
 
@@ -21,7 +21,6 @@ interface TodoDialogProps {
   todo?: Todo;
   defaultQuadrant?: TodoQuadrant;
   defaultTitle?: string;
-  autoFocusDueDate?: boolean;
   notes: NoteSummary[];
 }
 
@@ -31,17 +30,18 @@ export function TodoDialog({
   todo,
   defaultQuadrant,
   defaultTitle,
-  autoFocusDueDate,
   notes,
 }: TodoDialogProps) {
-  const { createTodo, updateTodo, deleteTodo } = useData();
+  const { todos, createTodo, updateTodo, deleteTodo } = useData();
   const isEdit = todo !== undefined;
+  // Erledigt is reached by the checkbox or a drop, never by this Select — it writes
+  // `quadrant`, and Erledigt has no persisted counterpart.
+  const selectableColumns = TODO_COLUMN_META.filter((c) => c.key !== TODO_COLUMN.DONE);
+  const doBlocked = !canEnterDo(todos, todo?.id);
   const [title, setTitle] = useState(todo?.title ?? defaultTitle ?? '');
   const [description, setDescription] = useState(todo?.description ?? '');
-  const [dueDate, setDueDate] = useState(todo?.dueDate ?? '');
   const [quadrant, setQuadrant] = useState<TodoQuadrant>(todo?.quadrant ?? defaultQuadrant ?? QUADRANT.INBOX);
   const [linkedNoteIds, setLinkedNoteIds] = useState<string[]>(todo?.linkedNoteIds ?? []);
-  const dueDateRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -52,12 +52,11 @@ export function TodoDialog({
 
     setSaving(true);
     const desc = description.trim() !== '' ? description.trim() : undefined;
-    const due = dueDate !== '' ? dueDate : undefined;
     const linked = linkedNoteIds.length > 0 ? linkedNoteIds : undefined;
     const base = { title: title.trim(), quadrant };
     const action = isEdit
-      ? updateTodo(todo.id, { ...base, description: desc ?? null, dueDate: due ?? null, linkedNoteIds: linked ?? null })
-      : createTodo({ ...base, description: desc, dueDate: due, linkedNoteIds: linked });
+      ? updateTodo(todo.id, { ...base, description: desc ?? null, linkedNoteIds: linked ?? null })
+      : createTodo({ ...base, description: desc, linkedNoteIds: linked });
     void action
       .then(() => {
         onOpenChange(false);
@@ -84,15 +83,7 @@ export function TodoDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        onOpenAutoFocus={(e) => {
-          if (autoFocusDueDate === true && dueDateRef.current !== null) {
-            e.preventDefault();
-            dueDateRef.current.focus();
-            dueDateRef.current.showPicker();
-          }
-        }}
-      >
+      <DialogContent>
         <form
           className="flex flex-col gap-4"
           onSubmit={(e) => {
@@ -120,35 +111,27 @@ export function TodoDialog({
               }}
               rows={3}
             />
-            <div className="flex flex-col gap-4 sm:flex-row">
-              <div className="flex-1">
-                <Label className="mb-1.5" htmlFor="todo-due">
-                  Fälligkeitsdatum
-                </Label>
-                <ClearableDateInput ref={dueDateRef} id="todo-due" value={dueDate} onChange={setDueDate} />
-              </div>
-              <div className="flex-1">
-                <Label className="mb-1.5" htmlFor="todo-quadrant">
-                  Kategorie
-                </Label>
-                <Select
-                  value={quadrant}
-                  onValueChange={(v) => {
-                    setQuadrant(v as TodoQuadrant);
-                  }}
-                >
-                  <SelectTrigger id="todo-quadrant" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {QUADRANT_META.map((q) => (
-                      <SelectItem key={q.key} value={q.key}>
-                        {q.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div>
+              <Label className="mb-1.5" htmlFor="todo-quadrant">
+                Spalte
+              </Label>
+              <Select
+                value={quadrant}
+                onValueChange={(v) => {
+                  setQuadrant(v as TodoQuadrant);
+                }}
+              >
+                <SelectTrigger id="todo-quadrant" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {selectableColumns.map((c) => (
+                    <SelectItem key={c.key} value={c.key} disabled={c.key === TODO_COLUMN.DO && doBlocked}>
+                      {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <LinkedNotesField

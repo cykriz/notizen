@@ -9,7 +9,7 @@ All defined as CSS variables in `app/globals.css` (`:root` for light, `.dark` fo
 
 **Core:** background, foreground, card, card-foreground, popover, popover-foreground, primary, primary-foreground, secondary, secondary-foreground, muted, muted-foreground, accent, accent-foreground, destructive, border, input, ring
 
-**Quadrant:** quadrant-do, quadrant-do-foreground, quadrant-schedule, quadrant-schedule-foreground, quadrant-inbox, quadrant-inbox-foreground, quadrant-planned, quadrant-planned-foreground
+**Todo columns:** quadrant-inbox, quadrant-inbox-foreground, quadrant-do, quadrant-do-foreground, quadrant-done, quadrant-done-foreground
 
 **Chart:** chart-1, chart-2, chart-3, chart-4, chart-5
 

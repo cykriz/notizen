@@ -6,7 +6,8 @@
 // types lie: `payload` is Record<string, unknown> by declaration, and `failure`
 // is whatever some other build wrote. An object landing in JSX would crash the
 // dialog on the very entry that needs rescuing.
-import { QUADRANT_META } from './constants';
+import { toUsableQuadrant } from './quadrantAlias';
+import { TODO_COLUMN_META } from './todoColumns';
 import {
   FAILED_SYNC_NO,
   FAILED_SYNC_TODO_COMPLETED,
@@ -70,8 +71,13 @@ export function todoFields(
 ): { label: string; value: string }[] {
   const rows: { label: string; value: string }[] = [];
 
+  // Rescue first: a stranded payload can still say 'schedule'/'planned', and an
+  // unmapped value would drop the row entirely — hiding the very change that failed.
   const quadrant = readString(payload, 'quadrant') ?? todo?.quadrant;
-  const meta = QUADRANT_META.find((q) => q.key === quadrant);
+  const meta =
+    quadrant === undefined
+      ? undefined
+      : TODO_COLUMN_META.find((c) => c.key === toUsableQuadrant(quadrant));
   if (meta !== undefined) {
     rows.push({ label: FAILED_SYNC_TODO_QUADRANT, value: meta.label });
   }

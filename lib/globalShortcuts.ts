@@ -73,7 +73,7 @@ function handleKeyDown(e: KeyboardEvent) {
  *
  * A combo may have more than one owner and then every handler runs, in registration order. That is
  * deliberate but only safe while the owners are mutually exclusive — `SHORTCUT.CREATE` is bound by
- * `NotesSidebarFooter` and by `EisenhowerMatrix`, and the notes footer unmounts on /todos, which is
+ * `NotesSidebarFooter` and by `TodoBoard`, and the notes footer unmounts on /todos, which is
  * the only page the matrix lives on. Two owners that *can* coexist would both fire, silently; give
  * them separate combos instead.
  */

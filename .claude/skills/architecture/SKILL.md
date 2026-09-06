@@ -31,14 +31,14 @@ Eintrag ist deshalb nur dann ein Finding, wenn das neue Modul eine solche Zustä
 See `lib/types.ts` for full definitions (read-aloud types: `lib/ttsTypes.ts`, shares: `lib/shareTypes.ts`). Key types:
 
 - `NoteSummary` / `Note` — notes with tags, pinned, attachments
-- `Todo` — Eisenhower matrix quadrants (`do`, `schedule`, `inbox` → shown as "Eingang", `planned`)
+- `Todo` — persisted quadrants `do` (→ "Erledigen") and `inbox` (→ "Eingang"); the third column "Erledigt" is derived from `completed`
 - `Attachment` — file metadata with `relativePath`
-- Constants and quadrant metadata live in `lib/constants.ts`
+- Constants live in `lib/constants.ts`; the column model (metadata, WIP limit, `columnOf`) in `lib/todoColumns.ts`
 
 ## Filesystem Layout
 
 - Per-user root: `NOTES_ROOT/users/<username>/` (`userRootFor` in `lib/fsHelpers.ts`) — every path below is relative to it
 - Notes: `notes/YYYY-MM-DD-slug-uuid/note.md` + `attachments/`
 - Frontmatter in `note.md`: id, title, tags, pinned, createdAt, updatedAt
-- Todos: `todos.json` (single JSON array, trash included via `trashedAt`). Rows written before `cd9392c` carry the retired quadrant `delegate`; `readTodos` normalises every quadrant via `toUsableQuadrant` and the next write persists the fix, so the file self-heals — there is deliberately no migration script
+- Todos: `todos.json` (single JSON array, trash included via `trashedAt`). Rows can carry retired quadrants (`delegate` from before `cd9392c`, `schedule`/`planned` from the four-quadrant board); `readTodos` normalises every quadrant via `toUsableQuadrant` and caps "Erledigen" via `enforceDoLimit`, and the next write persists both fixes, so the file self-heals — there is deliberately no migration script (`scripts/todo-migration-report.ts` only *reports*, it writes nothing)
 - Shares: `NOTES_ROOT/.shares/shares.json` (single JSON registry, token → { username, noteId, preset, createdAt, expiresAt })

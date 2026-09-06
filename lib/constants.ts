@@ -1,4 +1,4 @@
-import type { PreviewMode, QuadrantMeta, SyncAction, SyncEntityType } from './types';
+import type { PreviewMode, SyncAction, SyncEntityType } from './types';
 
 export const AUTH_COOKIE_NAME = 'notizen-session';
 export const AUTH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
@@ -131,28 +131,22 @@ export const DRAFT_DEBOUNCE_MS = 300;
 // once a vault grows — and the 300px result box shows ~6 rows anyway.
 export const COMMAND_RESULT_LIMIT = 50;
 
+// The two PERSISTED todo values. The board shows three columns, but "Erledigt" is
+// derived from `completed` and never stored — see lib/todoColumns.ts for the column
+// list and the WIP limit, and lib/quadrantAlias.ts for what a retired value
+// ('delegate', 'schedule', 'planned') is mapped onto.
 export const QUADRANT = {
   DO: 'do',
-  SCHEDULE: 'schedule',
   // Displayed as "Eingang" (inbox). This is the persisted quadrant value.
   INBOX: 'inbox',
-  PLANNED: 'planned',
 } as const;
 
 export type TodoQuadrant = (typeof QUADRANT)[keyof typeof QUADRANT];
 
 export const QUADRANT_KEYS = Object.values(QUADRANT);
 
-export const QUADRANT_META: readonly QuadrantMeta[] = [
-  // Steht bewusst an erster Stelle (Dump-First-Workflow, mobil dadurch große Kachel).
-  { key: QUADRANT.INBOX, label: 'Eingang', description: 'Sammeln & sortieren' },
-  { key: QUADRANT.DO, label: 'Erledigen', description: 'Wichtig & Dringend' },
-  { key: QUADRANT.SCHEDULE, label: 'Einplanen', description: 'Wichtig & Nicht dringend' },
-  { key: QUADRANT.PLANNED, label: 'Eingeplant', description: 'Nicht wichtig & Nicht dringend' },
-];
-
-// From this many open entries on, the inbox tile shows a (purely derived, never persisted)
-// hint to sort them.
+// From this many open entries on, the inbox tile shows a (purely derived, never
+// persisted) nudge to sort — i.e. that the weekly ritual is overdue.
 export const INBOX_SORT_THRESHOLD = 10;
 export const INBOX_SORT_HINT = 'Zeit zu sortieren';
 

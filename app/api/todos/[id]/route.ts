@@ -3,17 +3,15 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { getTodo, updateTodo, deleteTodo } from '@/lib/fsTodos';
 import { getUserDataDir } from '@/lib/auth';
-import { QUADRANT_KEYS } from '@/lib/constants';
+import { TodoQuadrantInputSchema } from '@/lib/quadrantAlias';
 import { checkConflict, errorResponse, formatZodError, idempotentDelete } from '@/lib/apiHelpers';
-
-const QuadrantEnum = z.enum(QUADRANT_KEYS);
 
 const UpdateTodoSchema = z.object({
   title: z.string().min(1).optional(),
   description: z.string().nullable().optional(),
   dueDate: z.string().nullable().optional(),
   linkedNoteIds: z.array(z.string()).nullable().optional(),
-  quadrant: QuadrantEnum.optional(),
+  quadrant: TodoQuadrantInputSchema.optional(),
   completed: z.boolean().optional(),
 });
 

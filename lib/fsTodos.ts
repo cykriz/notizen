@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { Todo, TodoQuadrant, TrashedTodo } from './types';
 import { NotFoundError, withTodosLock } from './fsHelpers';
 import { readTodos, writeTodos } from './fsTodosStore';
+import { byUpdatedAtDesc } from './utils';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -9,7 +10,7 @@ export type { Todo, TodoQuadrant } from './types';
 
 export async function listTodos(root: string): Promise<Todo[]> {
   const todos = (await readTodos(root)).filter((t) => t.trashedAt === undefined);
-  todos.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  todos.sort(byUpdatedAtDesc);
   return todos;
 }
 

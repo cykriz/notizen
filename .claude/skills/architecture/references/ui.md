@@ -77,12 +77,12 @@ Von hier mitbenutzt, aber nach Pfadklasse anderswo inventarisiert:
 | SharedNotesDialog | `app/(app)/SharedNotesDialog.tsx` — list dialog for all of a user's active share links (open / copy / revoke) |
 | SharedNotesList | `app/(app)/SharedNotesList.tsx` — presentational list rendered inside the dialog |
 | sharedNotesStore | `app/(app)/sharedNotesStore.ts` — `useSyncExternalStore` for current user's active shares (`refresh`, `upsert`, `removeByNoteId`) |
-| EisenhowerMatrix | `app/(app)/todos/EisenhowerMatrix.tsx` — 2x2 grid |
+| TodoBoard | `app/(app)/todos/TodoBoard.tsx` — 3-column grid |
 | TodoDialog | `app/(app)/todos/TodoDialog.tsx` — create/edit with note linking |
-| QuadrantCard | `app/(app)/todos/QuadrantCard.tsx` — quadrant card |
-| quadrantStyles | `app/(app)/todos/quadrantStyles.ts` — `quadrants` metadata + per-quadrant token classes, split out of QuadrantCard |
+| TodoColumn | `app/(app)/todos/TodoColumn.tsx` — one board column |
+| TodoRules | `app/(app)/todos/TodoRules.tsx` — collapsed house rules; self-contained so it can be deleted in two steps |
+| todoColumnStyles | `app/(app)/todos/todoColumnStyles.ts` — `todoColumns` metadata + per-column token classes, split out of TodoColumn |
 | TodoCard | `app/(app)/todos/TodoCard.tsx` — individual todo card; carries the failed-sync badge, since todos have no sidebar folder to mark |
-| ClearableDateInput | `app/(app)/todos/ClearableDateInput.tsx` — date input |
 | LinkedNotesField | `app/(app)/todos/LinkedNotesField.tsx` — link notes to todos |
 
 ## Installed shadcn/ui Components

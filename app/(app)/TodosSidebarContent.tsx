@@ -9,7 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuBadge,
 } from '@/components/ui/sidebar';
-import { QUADRANT_META } from '@/lib/constants';
+import { TODO_COLUMN_META, columnOf } from '@/lib/todoColumns';
 import type { Todo } from '@/lib/fsTodos';
 
 interface TodosSidebarContentProps {
@@ -36,8 +36,8 @@ export function TodosSidebarContent({ todos }: TodosSidebarContentProps) {
         </div>
 
         <SidebarMenu>
-          {QUADRANT_META.map((q) => {
-            const count = todos.filter((t) => t.quadrant === q.key && !t.completed).length;
+          {TODO_COLUMN_META.map((q) => {
+            const count = todos.filter((t) => columnOf(t) === q.key).length;
             return (
               <SidebarMenuItem key={q.key}>
                 <SidebarMenuButton className="cursor-default">

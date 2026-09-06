@@ -30,24 +30,9 @@ export function formatDateTime(iso: string): string {
 }
 
 /**
- * Today as `YYYY-MM-DD` in DISPLAY_TIME_ZONE, for comparing against date-only
- * `<input type="date">` values. Same zone as formatDate on purpose: deciding the
- * calendar day in the device zone while rendering it in Berlin let a due-today
- * badge read as not-yet-due for anyone travelling.
- *
- * `en-CA` is the locale whose short date format already is `YYYY-MM-DD`.
- * `now` is injectable so the zone can be asserted against fixed instants.
+ * Newest first, for any record carrying an ISO `updatedAt`. Shared so the todo and
+ * note listings and the WIP surplus rule cannot drift apart on what "newest" means.
  */
-export function todayIso(now = new Date()): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: DISPLAY_TIME_ZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(now);
-}
-
-/** Both arguments are date-only `YYYY-MM-DD`, which compares correctly as a string. */
-export function isOverdue(dueDate: string, today = todayIso()): boolean {
-  return dueDate < today;
+export function byUpdatedAtDesc(a: { updatedAt: string }, b: { updatedAt: string }): number {
+  return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
 }

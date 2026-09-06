@@ -3,14 +3,12 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { listTodos, createTodo } from '@/lib/fsTodos';
 import { getUserDataDir } from '@/lib/auth';
-import { QUADRANT_KEYS } from '@/lib/constants';
+import { TodoQuadrantInputSchema } from '@/lib/quadrantAlias';
 import { errorResponse, formatZodError } from '@/lib/apiHelpers';
-
-const QuadrantEnum = z.enum(QUADRANT_KEYS);
 
 const CreateTodoSchema = z.object({
   title: z.string().min(1),
-  quadrant: QuadrantEnum,
+  quadrant: TodoQuadrantInputSchema,
   description: z.string().optional(),
   dueDate: z.string().optional(),
   linkedNoteIds: z.array(z.string()).optional(),

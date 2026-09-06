@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
-import { OFFLINE_PATH, QUADRANT_META, SW_MSG_ENSURE_PRECACHE } from '../../lib/constants';
+import { OFFLINE_PATH, SW_MSG_ENSURE_PRECACHE } from '../../lib/constants';
+import { TODO_COLUMN_META } from '../../lib/todoColumns';
 import { NOTES_PATH, NOTES_PATH_PREFIX, SW_PRECACHE_PATHS, TODOS_PATH } from '../../lib/pathConstants';
 import { goOffline, watchForHydrationErrors } from './helpers';
 
@@ -157,7 +158,7 @@ test.describe('Service-Worker-Precache', () => {
     // into the cache, because cacheNavigationHtml drops every non-/notes/ URL.
     const todos = await page.goto(TODOS_PATH);
     expect(todos?.status()).toBe(200);
-    await expect(page.getByText(QUADRANT_META[0].label, { exact: true }).first()).toBeVisible({
+    await expect(page.getByText(TODO_COLUMN_META[0].label, { exact: true }).first()).toBeVisible({
       timeout: 15_000,
     });
 

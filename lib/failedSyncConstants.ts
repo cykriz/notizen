@@ -149,7 +149,7 @@ export const FAILED_SYNC_CARD_TOOLTIP =
   'Diese Aufgabe liegt nur auf diesem Gerät. Details über das Wolken-Symbol in der Seitenleiste.';
 
 // --- Todo detail rows ---
-export const FAILED_SYNC_TODO_QUADRANT = 'Quadrant';
+export const FAILED_SYNC_TODO_QUADRANT = 'Spalte';
 export const FAILED_SYNC_TODO_DUE = 'Fällig am';
 export const FAILED_SYNC_TODO_COMPLETED = 'Erledigt';
 export const FAILED_SYNC_YES = 'Ja';

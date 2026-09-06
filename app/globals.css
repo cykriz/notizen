@@ -41,12 +41,10 @@
   --color-card: var(--card);
   --color-quadrant-do: var(--quadrant-do);
   --color-quadrant-do-foreground: var(--quadrant-do-foreground);
-  --color-quadrant-schedule: var(--quadrant-schedule);
-  --color-quadrant-schedule-foreground: var(--quadrant-schedule-foreground);
   --color-quadrant-inbox: var(--quadrant-inbox);
   --color-quadrant-inbox-foreground: var(--quadrant-inbox-foreground);
-  --color-quadrant-planned: var(--quadrant-planned);
-  --color-quadrant-planned-foreground: var(--quadrant-planned-foreground);
+  --color-quadrant-done: var(--quadrant-done);
+  --color-quadrant-done-foreground: var(--quadrant-done-foreground);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -94,12 +92,10 @@
   --input-dark-bg: transparent;
   --quadrant-do: oklch(0.95 0.04 25);
   --quadrant-do-foreground: oklch(0.45 0.18 25);
-  --quadrant-schedule: oklch(0.95 0.03 250);
-  --quadrant-schedule-foreground: oklch(0.45 0.15 250);
   --quadrant-inbox: oklch(0.95 0.04 85);
   --quadrant-inbox-foreground: oklch(0.45 0.14 85);
-  --quadrant-planned: oklch(0.96 0 0);
-  --quadrant-planned-foreground: oklch(0.5 0 0);
+  --quadrant-done: oklch(0.96 0 0);
+  --quadrant-done-foreground: oklch(0.5 0 0);
 }
 
 .dark {
@@ -138,12 +134,10 @@
   --input-dark-bg: oklch(1 0 0 / 4.5%);
   --quadrant-do: oklch(0.23 0.04 20);
   --quadrant-do-foreground: oklch(0.78 0.12 20);
-  --quadrant-schedule: oklch(0.23 0.035 255);
-  --quadrant-schedule-foreground: oklch(0.78 0.1 255);
   --quadrant-inbox: oklch(0.24 0.04 80);
   --quadrant-inbox-foreground: oklch(0.8 0.1 80);
-  --quadrant-planned: oklch(0.21 0 0);
-  --quadrant-planned-foreground: oklch(0.6 0 0);
+  --quadrant-done: oklch(0.21 0 0);
+  --quadrant-done-foreground: oklch(0.6 0 0);
 }
 
 @utility shadow-panel {

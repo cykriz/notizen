@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { formatDate, formatDateTime, isOverdue, todayIso } from './utils';
+import { byUpdatedAtDesc, formatDate, formatDateTime } from './utils';
 
 // The point of pinning timeZone is that these assertions hold no matter what TZ the
 // process runs in — the container renders in UTC, the browser in local time, and the
@@ -32,50 +32,23 @@ describe('formatDateTime', () => {
   });
 });
 
-describe('isOverdue', () => {
-  const today = '2026-08-01';
+describe('byUpdatedAtDesc', () => {
+  const at = (updatedAt: string) => ({ updatedAt });
 
-  it('treats yesterday as overdue', () => {
-    expect(isOverdue('2026-07-31', today)).toBe(true);
+  it('orders the newest first', () => {
+    const rows = [at('2026-01-01T00:00:00Z'), at('2026-03-01T00:00:00Z'), at('2026-02-01T00:00:00Z')];
+    expect(rows.sort(byUpdatedAtDesc).map((r) => r.updatedAt.slice(0, 7))).toEqual([
+      '2026-03',
+      '2026-02',
+      '2026-01',
+    ]);
   });
 
-  it('does not treat today as overdue', () => {
-    expect(isOverdue(today, today)).toBe(false);
+  it('returns 0 for equal timestamps, so callers can chain a tiebreaker', () => {
+    expect(byUpdatedAtDesc(at('2026-01-01T00:00:00Z'), at('2026-01-01T00:00:00Z'))).toBe(0);
   });
 
-  it('does not treat tomorrow as overdue', () => {
-    expect(isOverdue('2026-08-02', today)).toBe(false);
-  });
-
-  it('compares across year boundaries', () => {
-    expect(isOverdue('2025-12-31', '2026-01-01')).toBe(true);
-    expect(isOverdue('2026-01-01', '2025-12-31')).toBe(false);
-  });
-
-  it('defaults to the display-zone calendar day', () => {
-    expect(isOverdue(todayIso())).toBe(false);
-  });
-});
-
-describe('todayIso', () => {
-  it('returns a zero-padded YYYY-MM-DD', () => {
-    expect(todayIso()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-  });
-
-  // The point of these two: the day is decided in the SAME zone formatDate renders
-  // in. Reverting to the device zone (or to UTC) breaks them in any process TZ.
-  it('rolls over to the next day once it is past midnight in Berlin', () => {
-    // 20:00 in New York is already 02:00 the following day in Berlin.
-    expect(todayIso(new Date('2026-08-01T20:00:00-04:00'))).toBe('2026-08-02');
-  });
-
-  it('stays on the UTC day when Berlin has not rolled over yet', () => {
-    expect(todayIso(new Date('2026-08-01T09:00:00Z'))).toBe('2026-08-01');
-  });
-
-  it('agrees with formatDate on the same instant', () => {
-    const instant = new Date('2026-01-15T23:30:00Z');
-    const [year, month, day] = todayIso(instant).split('-');
-    expect(formatDate(instant.toISOString())).toBe(`${day}.${month}.${year}`);
+  it('compares the instant, not the string — differing offsets for the same moment tie', () => {
+    expect(byUpdatedAtDesc(at('2026-01-01T12:00:00Z'), at('2026-01-01T14:00:00+02:00'))).toBe(0);
   });
 });

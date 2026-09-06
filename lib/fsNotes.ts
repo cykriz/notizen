@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import matter from 'gray-matter';
 import type { Note, NoteSummary } from './types';
 import { listAttachments } from './fsAttachments';
+import { byUpdatedAtDesc } from './utils';
 import {
   NotFoundError,
   notesDir,
@@ -61,7 +62,7 @@ export async function listNotes(root: string): Promise<NoteSummary[]> {
     });
   }
 
-  summaries.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  summaries.sort(byUpdatedAtDesc);
   return summaries;
 }
 
