@@ -30,6 +30,12 @@ Keine Edits, keine neue Datei, keine Shell-Umleitung (`>`, `>>`, `tee`), kein `g
 `bun.lock`; `bun run typecheck`, `bun run lint:check` und `bun test` fährt der Hauptagent nach dir
 ohnehin. Was davon du meldest, regelt allein § 6.
 
+Genau **eine** Ausnahme: das `bun -e`-Kommando der Override-Probe (`checks.md` § "Style &
+Conventions"). Es importiert `cn` und schreibt nach `stdout` — kein Schreibzugriff, und anders als
+`typecheck`/`lint` fährt der Hauptagent es **nicht** nach dir nach. Ohne die Ausnahme wäre die einzige
+Probe, die auf Ausführung besteht, für ihren Hauptkonsumenten unausführbar. Nur in dieser Form, nur
+mit Klassenlisten als Argument.
+
 Dass diese Regel nur Prosa ist, ist Absicht — `tools:` kann Bash-Sub-Kommandos nicht einschränken.
 **Kein Finding.**
 

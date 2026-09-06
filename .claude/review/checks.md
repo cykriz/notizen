@@ -46,6 +46,9 @@ by side, never one after the other:
 - instruction files that play the same role in two places (the two reviewer agents, a command and
   the agent it delegates to). Grep is no help on these at all: the copies are paraphrases, often in
   different languages, so only reading them side by side finds them.
+- a call site and the `components/ui/` wrapper it configures — passed-through `className`, slots,
+  variants, default props; the contract is only legible with both files open. § "Style & Conventions"
+  says how to resolve it.
 
 If the diff touched one sibling, diff it against the others even when they are unchanged. And a diff
 that *adds* a second renderer, store or entry point for something that already has one **creates**
@@ -214,6 +217,27 @@ by looking from the doc back at the tree.
 - PascalCase components, camelCase utils, kebab-case routes
 - Page-specific components co-located inside the route folder
 - No unused imports, dead code, commented-out blocks, or exports whose last caller the diff removed
+- **Override probe — run it, don't skim it.** Wherever the diff hands a `className` to a
+  `components/ui/` component — **also when that class list is unchanged**, since the other half sits
+  in a file the diff never touches — open the wrapper's base classes and resolve the effective
+  string: `bun -e "import { cn } from './lib/utils.ts'; console.log(cn('<base>', '<caller>'))"`.
+  `tailwind-merge` dedupes only *within* one class group, so an override from a neighbouring group
+  loses silently and both survive: `flex-row`/`flex-col` against a base `grid`,
+  `grid-cols-*`/`grid-rows-*` against a base `flex`, `hidden`/`block` against `flex`,
+  `absolute`/`relative` against a position already set. `items-*`/`justify-*` are the clean-looking
+  trap — they merge, and still mean something else under grid than under flex. A class list you did
+  not print is not one you checked. Only this interplay is new; tokens, `cn()` object syntax and
+  `dark:` arrive via `CLAUDE.md` § Style Rules.
+- **Inert leftovers are a finding too**, even when nothing breaks: a class the resolved string keeps
+  that does nothing in the chosen mode (`grid-rows-[auto_auto]` on a flex container, `flex-row` on a
+  grid) either betrays a wrong intent or hands the next reader one. It closes when the caller drops
+  it, when a neutralising class replaces it, or — for a leftover from the wrapper's own base that no
+  call site can remove — when a comment at the call site records it. Silence does not close it.
+- **Geometry, not visibility.** Where a change touches layout classes (`display`, `grid-*`,
+  `flex-*`, `items-*`, `justify-*`, positioning, column/row templates),
+  `toBeVisible()`/`toHaveCount()` secure nothing — both are just as true of a wrongly laid-out
+  element. Require an assertion on real geometry (`boundingBox()`, `getComputedStyle`, two siblings'
+  relative position), or a stated reason why geometry is irrelevant here.
 
 ## Severity Floors
 
@@ -232,6 +256,9 @@ These are minimums, not ceilings. Raise them when the impact warrants it.
 - Nesting past depth 3, or a function whose decision points exceed ~10 → **Minor**, raised to
   **Medium** if the function is on a hot or hard-to-test path
 - A parameter, option, abstraction or state field with exactly one real value or caller → **Minor**
+- An override that fails to displace its base class and thereby changes the rendered layout → **High**
+- An override that fails to displace but stays without consequence, or an inert leftover class → **Minor**
+- A layout change secured only by `toBeVisible`/`toHaveCount` → **Medium**
 - An export left without callers by this diff → **Minor**
 
 ## Fix Order

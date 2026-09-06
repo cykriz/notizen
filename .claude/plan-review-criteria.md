@@ -26,6 +26,9 @@ Two consumers:
    touches. Don't duplicate content — check it and point at it.
 4. **Evidence, not assertions**: back every claim about the existing code with `Read`/`Grep` and cite it
    as `file:line`. Mark what you did not verify.
+5. **No Bash here.** `checks.md` § "Style & Conventions" resolves a wrapper's class merge with `bun -e`;
+   you cannot run it. Degrade, don't skip: read the wrapper's base classes, name the class group on both
+   sides, and report only a mismatch legible without resolving — and say that you did not resolve it.
 
 ## Generic Quality
 
@@ -33,7 +36,7 @@ Two consumers:
 - ✅/⚠️/❌ Assumptions stated explicitly
 - ✅/⚠️/❌ Step order / dependencies clear
 - ✅/⚠️/❌ Error and edge cases considered
-- ✅/⚠️/❌ Verification/tests — does the plan name the commands its changes need, and do its unit tests meet the contract in `CLAUDE.md` § Commands?
+- ✅/⚠️/❌ Verification/tests — does the plan name the commands its changes need, and do its unit tests meet the contract in `CLAUDE.md` § Commands? Layout changes additionally face the geometry bar in `checks.md` § "Style & Conventions".
 - ✅/⚠️/❌ Rollback / reversibility
 - ✅/⚠️/❌ Affected files named concretely
 
@@ -56,7 +59,7 @@ second copy. Where a line names files, those are the ones to look at; the rule i
 - **Packages** — approved list, direct dependency, no hand-written type shims (`CLAUDE.md` § Key Rules, § Approved Packages)
 - **Tags** — hierarchical, slash-separated (`CLAUDE.md`)
 - **Next.js config** — no experimental features beyond the documented exception (`CLAUDE.md`); `output: 'standalone'` stays (`next.config.ts`)
-- **Conventions** — naming and co-location (`checks.md` § "Style & Conventions")
+- **Conventions** — naming, co-location and the class-override probe for `components/ui/` wrappers (`checks.md` § "Style & Conventions")
 
 Mark invariants that don't apply as `n/a` instead of omitting them.
 
