@@ -2,6 +2,7 @@ import { test, expect, type Locator, type Page } from '@playwright/test';
 import { tagCreateLabel } from '../../lib/tagConstants';
 import { PHONE_VIEWPORT, deleteAllNotes, watchForHydrationErrors } from './helpers';
 import { currentLabel } from './tagLocators';
+import { boxOf } from './geometry';
 
 // Enough notes to overflow the 300px result box (~6 rows), so "is the top hit visible" is a
 // real question and not trivially true.
@@ -42,15 +43,9 @@ function rows(page: Page): Locator {
   return page.locator('[cmdk-item]');
 }
 
-/** The palette's positioned box, or a hard failure — an absent box must not read as a
- *  passing position, which is what any `?? fallback` on `boundingBox()` would do. */
+/** The palette's positioned box, or a hard failure. */
 async function dialogBox(page: Page): Promise<{ y: number; height: number }> {
-  const box = await page.locator('[data-slot=dialog-content]').boundingBox();
-  if (box === null) {
-    throw new Error('the palette dialog has no bounding box — it is not rendered');
-  }
-
-  return box;
+  return await boxOf(page.locator('[data-slot=dialog-content]'));
 }
 
 /** The viewport, or a hard failure — same reason as `dialogBox` above. */

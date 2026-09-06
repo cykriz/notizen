@@ -107,9 +107,13 @@ export function TagInput({ tags, allTags, onChange, className, compact, onCollap
           />
         ))}
       </span>
+      {/* `block`, nicht `inline`: als Flex-Item des Wrappers oben blockifiziert der Browser
+          `inline` ohnehin zu `block` — so steht am Aufrufort, was gerendert wird, unabhängig
+          vom Display-Modus des Elternknotens. Commands Basis-`flex-col` überlebt den Merge
+          und bleibt hier inert; entfernen kann es der Aufrufer nicht. */}
       <Command
         loop
-        className="relative inline w-16 focus-within:w-48 focus-within:flex-1 transition-all duration-150 overflow-visible bg-transparent h-auto rounded-none text-inherit"
+        className="relative block w-16 focus-within:w-48 focus-within:flex-1 transition-all duration-150 overflow-visible bg-transparent h-auto rounded-none text-inherit"
       >
         <Input
           ref={inputRef}

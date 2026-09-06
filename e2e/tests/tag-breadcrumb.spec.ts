@@ -13,6 +13,7 @@ import {
   watchForHydrationErrors,
 } from './helpers';
 import { currentLabel } from './tagLocators';
+import { boxOf } from './geometry';
 
 // The leaf is the case this layout exists for: a two-word folder name that the old
 // two-segment row cut down to "mentale ge…". The ancestors are deliberately long —
@@ -65,11 +66,7 @@ async function labelIndent(row: Locator): Promise<number> {
 
 /** Horizontal extent of a rendered element, failing the test if it is not laid out. */
 async function bounds(locator: Locator): Promise<{ left: number; right: number }> {
-  const box = await locator.boundingBox();
-  if (box === null) {
-    throw new Error('element is not laid out');
-  }
-
+  const box = await boxOf(locator);
   return { left: box.x, right: box.x + box.width };
 }
 

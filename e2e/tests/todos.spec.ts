@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { deleteAllTodos } from './helpers';
+import { boxOf } from './geometry';
 import {
   ADD_DETAILED_LABEL,
   CLEAR_DONE_LABEL,
@@ -57,6 +58,24 @@ test.describe('ToDo-Board', () => {
     // Die beiden Planungsspalten des alten Modells sind ersatzlos weg.
     await expect(page.getByText('Einplanen', { exact: true })).toHaveCount(0);
     await expect(page.getByText('Eingeplant', { exact: true })).toHaveCount(0);
+  });
+
+  /** Geometrie, nicht Sichtbarkeit: `toBeVisible`/`toHaveCount` waren auch dann wahr, als
+   *  CardHeaders Basis-`grid` den Kopf in zwei Zeilen brach und der Zähler unter dem Titel
+   *  landete. Nur die Lage der beiden zueinander erkennt das. */
+  test('Spaltenkopf hält Zähler und Titel in einer Zeile', async ({ page }) => {
+    await addToInbox(page, 'Erste');
+    await addToInbox(page, 'Zweite');
+
+    const header = column(page, INBOX_META.label).locator('[data-slot="card-header"]');
+    const title = await boxOf(header.locator('[data-slot="card-title"]'));
+    const counter = await boxOf(header.getByText('2', { exact: true }));
+
+    // Vertikal überlappend heißt: eine Zeile. Die Waagerechte taugt hier nicht — `ml-auto`
+    // schiebt den Zähler auch in einer eigenen, volle Breite einnehmenden Zeile nach rechts,
+    // die kaputte Variante sah auf dieser Achse also genauso aus wie die richtige.
+    expect(counter.y).toBeLessThan(title.y + title.height);
+    expect(title.y).toBeLessThan(counter.y + counter.height);
   });
 
   test('Erledigen sperrt, sobald 3 Slots belegt sind', async ({ page }) => {
