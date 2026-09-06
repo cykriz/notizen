@@ -7,10 +7,11 @@ written twice is the defect `/review` rates highest.
 
 Two consumers:
 
-- **`/plan-review`** (manual, fresh session) — turns every line below into a `✅/⚠️/❌/n/a` line in its
-  copyable block.
+- **`/plan-review`** (manual, fresh session) — turns every line below **except the simplicity verdict**
+  into a `✅/⚠️/❌/n/a` line in its copyable block.
 - **Subagent `plan-reviewer`** (automatic in plan mode before `ExitPlanMode`) — reports **deviations
-  only**, in the compact findings format from `.claude/agents/plan-reviewer.md`.
+  only**, in the compact findings format from `.claude/agents/plan-reviewer.md`. The simplicity verdict
+  below is the one exception, and it is unconditional.
 
 ## How to run this review
 
@@ -69,10 +70,12 @@ probe. They are **actively run** — grep, read both sides. A probe you did not 
 What changes when the subject is a plan instead of a diff:
 
 - **Extraction (probe 1)**: the tell is wording — "split out of", "moved to", or a new module whose
-  exports mirror an existing file — with no sentence saying the original goes away.
+  exports mirror an existing file — with no sentence saying the original goes away. In the reverse
+  direction the tell is a plan that names the new shared helper and exactly one place that will call it —
+  grep for the other copies yourself.
 - **Prior art (probe 3)** — the probe that most often decides whether a plan is worth anything, because
-  there is no diff to read later. `checks.md` keys it on a new *exported function*; on a plan that trigger is
-  too narrow and has already let a duplicate through. Widen it on all four counts:
+  there is no diff to read later. `checks.md` keys it on new exported **names** (function, type, schema);
+  on a plan that trigger is too narrow and has already let a duplicate through. Widen it on all four counts:
   - **Trigger on any logic the plan spells out, not just on new names.** A plan that inlines its logic
     proposes no symbol to grep for — an effect body, a `useMemo`, a snippet inside a diff block, three
     statements in prose. A name-keyed probe skips all of it, and an anonymous block re-implementing a
@@ -87,6 +90,9 @@ What changes when the subject is a plan instead of a diff:
     original carries is more damaging than the duplication, not less.
 - **Cross-reference comments (probe 5)**: here it is the *plan's own* wording ("same as X", "mirrors Y"),
   not comments in finished code — for those see "Not Checkable at the Plan Level".
+- **Counts (probe 5)**: a plan's prose numbers about the *existing* code are the claimed counts probe 5
+  sends you back to the grep for — on a diff you do the counting, here the plan did it for you. Say what
+  you re-counted; a plan that rests on a count nobody re-ran is asserting its own completeness.
 - **Mode parameters** (`checks.md` § "2b", "Boolean and mode parameters" — the one 2b check that *is*
   decidable on a plan): a new boolean/mode parameter that forks a function body. The plan must say how
   much of the body actually differs, or propose two functions.
@@ -95,6 +101,15 @@ What changes when the subject is a plan instead of a diff:
 - **Skill inventory**: the plan adds modules/routes without accounting for the entry in the matching
   `.claude/skills/architecture/references/*.md` (routing table in that skill's `SKILL.md`), or the
   matching skill.
+
+**Always answer "is this the simplest way?"** — the aggregate over the probes and § "2a", not a seventh
+check and not a checklist line, so never copy it into a `✅/⚠️/❌` list. Both consumers close this
+section with exactly **one** line of their own, on a `revise` with fifteen findings and on a clean
+`approve` alike; when the answer is no it names the concrete simpler alternative (fewer layers, an
+existing function, no new field) and is **also** a finding, so the verdict is then not `approve` —
+without that it would be a deviation reported outside the findings list. Format per consumer:
+`.claude/agents/plan-reviewer.md` § 4 and the template in `.claude/commands/plan-review.md`. Today the
+question stays unanswered precisely when nobody objects, and silence is not a yes.
 
 ## Severity
 
@@ -109,6 +124,7 @@ Plan-level additions:
   gives it a name, and whether or not the plan's version is shorter. Once implemented this is a duplicate
   nobody asked for, and the plan stage is the last cheap moment to catch it.
 - A gap that would surface in the code review at the latest (missing verification, open edge case) → **medium**
+- The simplicity line answers *no* → **medium**, unless a stricter floor above already applies
 
 ## Not Checkable at the Plan Level
 

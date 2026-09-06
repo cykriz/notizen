@@ -15,12 +15,26 @@ Noticing duplication while reading the diff does not count. Run these six probes
 a known failure mode that reading top-to-bottom does not catch, because the two copies are never
 adjacent.
 
-**1. The extraction probe.** For every added file, and every file whose diff removes a block: find
-where that code came from and confirm the original is gone. A refactor that adds the new home but
-leaves the old copy in place is the most common duplication in a diff, and it always looks clean in
-the diff itself — you only see the addition. Tells: a comment saying "split out of", "extracted from",
-"moved to", or a new module whose exports mirror something already in the file it was carved out of.
-Open both and compare the bodies line by line.
+**1. The extraction probe — both directions.** Three triggers: a file added, a block removed, or a
+change that introduces a shared helper or derives a new concept from existing fields.
+
+For every added file, and every file whose diff removes a block: find where that code came from and
+confirm the original is gone. A refactor that adds the new home but leaves the old copy in place is the
+most common duplication in a diff, and it always looks clean in the diff itself — you only see the
+addition. Tells: a comment saying "split out of", "extracted from", "moved to", or a new module whose
+exports mirror something already in the file it was carved out of. Open both and compare the bodies line
+by line.
+
+Now run it the other way: when the change introduces a shared helper, grep for **every** existing copy
+and confirm each one calls it. Converting one call site and leaving a byte-identical sibling standing
+parks the new helper next to the duplicate it was meant to retire. "…and the remaining call sites
+follow" names none of them and is not a conversion.
+
+The same question applies when the change **derives a new concept from existing fields** (a column from
+`completed` + `quadrant`, a state from two flags): grep every read *and* write of the source fields and
+say per site whether it moves to the derived concept or stays. The forgotten ones are never the obvious
+reads — DataTransfer and queue payloads, cache keys, sort comparators, test fixtures. Each un-migrated
+reader is a second answer to the question the derived concept was introduced to answer.
 
 **2. The sibling probe.** Code that comes in sets rarely gets changed evenly. Read the siblings side
 by side, never one after the other:
@@ -32,19 +46,34 @@ by side, never one after the other:
 
 If the diff touched one sibling, diff it against the others even when they are unchanged.
 
-**3. The prior-art probe.** For every new exported function, grep the repo for what it does before
-accepting it — by verb *and* by the thing it operates on (`persist`/`save`/`write` + the storage key;
-`parse`/`validate` + the schema). A new local helper that re-implements an existing shared one is
-duplication that no diff view will ever show you.
+**3. The prior-art probe.** For every new exported function, type or schema, grep the repo for what it
+does before accepting it — by verb *and* by the thing it operates on (`persist`/`save`/`write` + the
+storage key; `parse`/`validate` + the schema). A new local helper that re-implements an existing shared
+one is duplication that no diff view will ever show you. Grep the *answer* as well as the verb: a new
+`…Count` duplicates any neighbour that already counts the same set internally, however differently that
+neighbour is named. For a type or schema, grep the **fields**: a local interface restating what
+`lib/types.ts` already declares, or a second zod schema over the same shape, is the same duplicate one
+level up.
 
 **4. The rule probe.** The same *decision* written twice is worse than the same code written twice:
 the copies diverge silently and nobody notices until behaviour splits. Take every threshold, status
 code, retry policy, magic constant and validation rule the diff introduces or touches, and grep the
 repo for it. Two places deciding "is this retryable" must be one place.
 
+Grep alone will not find the second copy, because it is rarely textually similar. So **enumerate the
+layers that enforce, normalise or repair the rule** — UI, hook, offline write layer, schema/validation,
+API route, filesystem read path, service worker. The default is **one**; a change that adds or extends a
+second is a finding unless it says what each layer catches that the others cannot (a split that predates
+the change and stays untouched is not this change's finding, and server-side validation at the trust
+boundary is not a second layer — the route cannot trust that the request came from your UI). Usual
+shape: the UI hides the action *and* the write layer rejects the value — and because the UI already
+prevented it, that rejection is a silent discard nobody will ever see.
+
 **5. The comment probe.** Comments of the form "same as X", "the same judgement Y makes", "mirrors Z",
 "see the note in W" are a confession that two places encode one rule. Treat every such comment in the
-diff as a finding until you have read both sides and can say why they must stay apart.
+diff as a finding until you have read both sides and can say why they must stay apart. A comment that
+claims a count is the same confession — "the only caller", "called from four places": re-run the grep
+before you trust it.
 
 **6. The literal probe.** Grep the diff's own added string/number literals and repeated expressions
 against the rest of the repo.
@@ -70,6 +99,9 @@ For each of these, the answer is a **count or a concrete input**. "Looks fine" i
 - **New generic/config-driven code:** is it generic for a second caller that exists today, or for one
   that might? Premature generalization is a finding.
 - **Widened types or new optional fields:** what breaks if they stay narrow/required?
+- **The change as a whole:** name what it *removes*. A change that only adds carries the burden of
+  proof — name the existing mechanism that could have carried the addition and say why it cannot.
+  Nothing deleted, nothing replaced, nothing simplified is the shape of an addition nobody needed.
 
 ## 2b — Cognitive: how much must a reader hold in their head?
 
@@ -144,9 +176,14 @@ skill's inventory but are missing from it are a finding.
 
 These are minimums, not ceilings. Raise them when the impact warrants it.
 
-- A decision rule (threshold, retry policy, status handling) implemented in two places → **High**
+- A decision rule (threshold, retry policy, status handling) implemented in two places — including two
+  *layers* enforcing it in different words (UI *and* write layer, schema *and* route) → **High**
 - A block of ~8+ lines that is identical modulo names/types in two places → **Medium**
 - A new helper that re-implements an existing shared one → **Medium**
+- An extraction that converts one copy and leaves another standing → the floor of the duplicate it
+  failed to remove
+- A count asserted about existing code ("four call sites", "the only caller") with no re-run grep behind
+  it → **Medium**; a count that turns out wrong → **High**
 - Correctness that depends on statement order nothing enforces → **Medium**
 - Nesting past depth 3, or a function whose decision points exceed ~10 → **Minor**, raised to
   **Medium** if the function is on a hot or hard-to-test path
@@ -173,6 +210,12 @@ reviewer another way. Do not "restore" them — that would be the duplication th
 The skill *rules themselves* are the third case — they live in the `SKILL.md` the reviewer loads on a
 match, so they are not restated here. The **instruction** to check a changed file against them does
 stay, under § "Skill Compliance": without it the loaded skill would be read and never applied.
+
+One more thing is deliberately absent: **which module owns which layer**. Probe 4 names the layers
+generically (UI, hook, write layer, schema, route, filesystem, service worker); the actual inventory —
+what `lib/offlineTodos.ts` enforces versus `app/api/todos/route.ts` — lives in the `architecture`
+skill's references and reaches you through the skill routing your caller follows. Do not list it here;
+it would go stale on the first refactor.
 
 The original § "Output Format" and the layout of § "Copyable Fix Plan" are gone on purpose: they were
 report formatting for a human reader, and the reviewer now writes to an agent under the output

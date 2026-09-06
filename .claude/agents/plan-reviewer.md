@@ -44,11 +44,13 @@ checked against <files>, no duplicate") so a skipped probe cannot pass for a cle
 ## 4. Output contract
 
 Plain text. **No** code fences, no tilde blocks, no tables, no salutation, no strengths, no ✅ lines, no
-summary of the plan. Deviations only, at most 15 findings, most important first:
+summary of the plan. Deviations only — plus the unconditional `SIMPLICITY` line — at most 15 findings,
+most important first:
 
 ```
 VERDICT: approve | revise | blocked | failed
 SCOPE: <one sentence: does the plan solve the original request — yes / too much / too little / something else>
+SIMPLICITY: yes — <why> | no — <the concrete simpler alternative>
 F1 | high | <dimension> | <where in the plan> | <problem in one sentence> | Fix: <concrete> | Evidence: <file:line> | Confidence: certain
 F2 | medium | …
 Q1 | <open question the plan does not answer>
@@ -56,6 +58,9 @@ Q1 | <open question the plan does not answer>
 
 - `VERDICT`: `blocked` only when the plan is not implementable as written or needs a decision that belongs
   to the user. Otherwise `revise` (findings exist) or `approve` (none).
+- `SIMPLICITY`: always present, including on `approve`; the "no ✅ lines" rule above does not cover it.
+  It is a header line, so the finding a `no` produces is an ordinary `Fn` and only that one counts
+  against the cap. What the line must answer: criteria file § "Duplication & Simplicity (Plan Level)".
 - Severity per finding from the criteria file's § "Severity" — not by gut feeling.
 - `dimension`: the name from the criteria file (e.g. `Prior art`, `Offline-first`, `File limit`).
 - `Confidence`: `certain` (backed by code) | `likely` (partly checked) | `guess` (unchecked).
