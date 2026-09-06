@@ -43,17 +43,42 @@ by side, never one after the other:
 - verb sets (`create` / `update` / `delete`, `get` / `set`, `read` / `write`)
 - transport pairs (a direct write path ↔ its retry/replay path)
 - the branches of a component that render "the same thing in a different state"
+- instruction files that play the same role in two places (the two reviewer agents, a command and
+  the agent it delegates to). Grep is no help on these at all: the copies are paraphrases, often in
+  different languages, so only reading them side by side finds them.
 
-If the diff touched one sibling, diff it against the others even when they are unchanged.
+If the diff touched one sibling, diff it against the others even when they are unchanged. And a diff
+that *adds* a second renderer, store or entry point for something that already has one **creates**
+the pair — fire on the addition, before there is a recognised set to be the other half of. That one
+reads as a clean new file: the sibling it silently forked from is nowhere in the diff, and what it
+failed to copy is invisible until a user hits it.
 
-**3. The prior-art probe.** For every new exported function, type or schema, grep the repo for what it
-does before accepting it — by verb *and* by the thing it operates on (`persist`/`save`/`write` + the
-storage key; `parse`/`validate` + the schema). A new local helper that re-implements an existing shared
-one is duplication that no diff view will ever show you. Grep the *answer* as well as the verb: a new
-`…Count` duplicates any neighbour that already counts the same set internally, however differently that
-neighbour is named. For a type or schema, grep the **fields**: a local interface restating what
-`lib/types.ts` already declares, or a second zod schema over the same shape, is the same duplicate one
-level up.
+**3. The prior-art probe.** Two triggers. The first is every new exported function, type or schema:
+grep the repo for what it does before accepting it — by verb *and* by the thing it operates on
+(`persist`/`save`/`write` + the storage key; `parse`/`validate` + the schema). A new local helper that
+re-implements an existing shared one is duplication that no diff view will ever show you. Grep the
+*answer* as well as the verb: a new `…Count` duplicates any neighbour that already counts the same set
+internally, however differently that neighbour is named. For a type or schema, grep the **fields**: a
+local interface restating what `lib/types.ts` already declares, or a second zod schema over the same
+shape, is the same duplicate one level up.
+
+The second trigger is the one that misses: **every block the diff writes without a name** — an effect
+or `useCallback` body, a store IIFE, a `useMemo`, three statements in a handler. Anonymous code
+proposes no symbol to grep for, so a name-keyed probe walks straight past a block re-implementing a
+well-named export one import away.
+
+Key that grep on **behaviour**, and only where the behaviour touches something *shared*: a URL, a
+storage key, a module-level store, a file on disk. Grep the shared thing — the endpoint, the key, the
+setter — and read whoever already owns it. Local `useState` and props do **not** trigger this; a probe
+that fires on every hook diff costs context and returns nothing. Two corollaries: the prior art
+**need not be exported** — a module-private helper counts — and you must **look one level out**, because
+the original usually sits in a sibling that already shares the state (the other hook behind the same
+provider), not in the file the diff edits.
+
+Then read the **delta, not the overlap**. A copy that *drops* a guard the original carries — a timeout,
+a `try`/`catch`, a 401 branch — and a copy that *adds* a condition its borrowed predicate cannot
+survive — `e.key === 'o'` cloned into a branch that also demands `shiftKey`, where the key is `'O'` —
+are both findings. The near-copy is where the damage sits; the identical one merely rots.
 
 **4. The rule probe.** The same *decision* written twice is worse than the same code written twice:
 the copies diverge silently and nobody notices until behaviour splits. Take every threshold, status
@@ -62,12 +87,15 @@ repo for it. Two places deciding "is this retryable" must be one place.
 
 Grep alone will not find the second copy, because it is rarely textually similar. So **enumerate the
 layers that enforce, normalise or repair the rule** — UI, hook, offline write layer, schema/validation,
-API route, filesystem read path, service worker. The default is **one**; a change that adds or extends a
-second is a finding unless it says what each layer catches that the others cannot (a split that predates
-the change and stays untouched is not this change's finding, and server-side validation at the trust
-boundary is not a second layer — the route cannot trust that the request came from your UI). Usual
-shape: the UI hides the action *and* the write layer rejects the value — and because the UI already
-prevented it, that rejection is a silent discard nobody will ever see.
+API route, filesystem read path, service worker, **and the stylesheet**. That last one is the entry this
+list kept forgetting: a global CSS rule or a utility class enforces as hard as any branch, and nothing
+in TypeScript points at it — `display: none` on a native input is half a rule whose other half is a
+React `components` override, and `1024` in `matchMedia` is the same boundary as every `lg:` in the tree.
+The default is **one**; a change that adds or extends a second is a finding unless it says what each
+layer catches that the others cannot (server-side validation at the trust boundary is not a second
+layer — the route cannot trust that the request came from your UI). Usual shape: the UI hides the
+action *and* the write layer rejects the value — and because the UI already prevented it, that
+rejection is a silent discard nobody will ever see.
 
 **5. The comment probe.** Comments of the form "same as X", "the same judgement Y makes", "mirrors Z",
 "see the note in W" are a confession that two places encode one rule. Treat every such comment in the
@@ -76,10 +104,20 @@ claims a count is the same confession — "the only caller", "called from four p
 before you trust it.
 
 **6. The literal probe.** Grep the diff's own added string/number literals and repeated expressions
-against the rest of the repo.
+against the rest of the repo. Grep the **stable fragment**, not the whole literal: the other copy
+usually interpolates the very constant you are hunting (`{DO_LIMIT}-Slot-Regel` against a test's
+`/3-Slot-Regel/`) or differs by one word (`…diese Seite…` against `…diese Notiz…`). An exact-match
+grep then returns nothing, and nothing reads exactly like a clean result.
 
 Do not report a duplication you have not verified by reading both sides in full. Do not claim a probe
 found nothing if you did not run it.
+
+One scope limit governs all six: **none of them audits duplication that predates the diff.** A split
+that was already there and stays untouched is not this change's finding. Every pass over this repo
+turns up more of them — three copies of one lock helper, a private `parseTags` in two modules, an
+exported helper with no caller while two components inline its body — and every one is real. But a
+trigger that hunts them makes each review unbounded and returns the same list next time. They belong
+in a standalone cleanup pass, not in a probe.
 
 ## 2a — Structural: is there less of it than there could be?
 
@@ -158,6 +196,11 @@ For each changed file, verify it follows the rules in the `SKILL.md` you loaded 
 such finding with the skill name (e.g. `[styling]`, `[architecture]`). New modules that belong in a
 skill's inventory but are missing from it are a finding.
 
+Run it the other way too, for the inventory rows covering the paths the diff touches: a row naming a
+module, path or route that no longer exists is the same finding. This is the direction nothing else
+checks — a stale row is never in the diff of the change that invalidated it, so it can only be caught
+by looking from the doc back at the tree.
+
 ## Performance
 
 - Missing `Suspense` boundaries around async server components
@@ -179,7 +222,8 @@ These are minimums, not ceilings. Raise them when the impact warrants it.
 - A decision rule (threshold, retry policy, status handling) implemented in two places — including two
   *layers* enforcing it in different words (UI *and* write layer, schema *and* route) → **High**
 - A block of ~8+ lines that is identical modulo names/types in two places → **Medium**
-- A new helper that re-implements an existing shared one → **Medium**
+- A new helper **or nameless block** that re-implements an existing shared one → **Medium**; **High**
+  when the copy drops a guard the original carries or adds a condition its predicate cannot survive
 - An extraction that converts one copy and leaves another standing → the floor of the duplicate it
   failed to remove
 - A count asserted about existing code ("four call sites", "the only caller") with no re-run grep behind

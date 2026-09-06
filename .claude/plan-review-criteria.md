@@ -33,7 +33,7 @@ Two consumers:
 - ✅/⚠️/❌ Assumptions stated explicitly
 - ✅/⚠️/❌ Step order / dependencies clear
 - ✅/⚠️/❌ Error and edge cases considered
-- ✅/⚠️/❌ Verification/tests — does the plan name the commands its changes need (`CLAUDE.md` § Commands)? Unit tests point `NOTES_ROOT` at a temp dir and cover pure FS/logic helpers; **no vitest/Jest**
+- ✅/⚠️/❌ Verification/tests — does the plan name the commands its changes need, and do its unit tests meet the contract in `CLAUDE.md` § Commands?
 - ✅/⚠️/❌ Rollback / reversibility
 - ✅/⚠️/❌ Affected files named concretely
 
@@ -55,7 +55,7 @@ second copy. Where a line names files, those are the ones to look at; the rule i
 - **Styling tokens** — Tailwind, semantic colors, no `dark:`, `cn()` object syntax, shadcn over raw HTML (`CLAUDE.md` § Style Rules, `styling` skill)
 - **Packages** — approved list, direct dependency, no hand-written type shims (`CLAUDE.md` § Key Rules, § Approved Packages)
 - **Tags** — hierarchical, slash-separated (`CLAUDE.md`)
-- **Next.js config** — no experimental features beyond the documented exception; `output: 'standalone'` stays (`CLAUDE.md`, `next.config.ts`)
+- **Next.js config** — no experimental features beyond the documented exception (`CLAUDE.md`); `output: 'standalone'` stays (`next.config.ts`)
 - **Conventions** — naming and co-location (`checks.md` § "Style & Conventions")
 
 Mark invariants that don't apply as `n/a` instead of omitting them.
@@ -74,20 +74,11 @@ What changes when the subject is a plan instead of a diff:
   direction the tell is a plan that names the new shared helper and exactly one place that will call it —
   grep for the other copies yourself.
 - **Prior art (probe 3)** — the probe that most often decides whether a plan is worth anything, because
-  there is no diff to read later. `checks.md` keys it on new exported **names** (function, type, schema);
-  on a plan that trigger is too narrow and has already let a duplicate through. Widen it on all four counts:
-  - **Trigger on any logic the plan spells out, not just on new names.** A plan that inlines its logic
-    proposes no symbol to grep for — an effect body, a `useMemo`, a snippet inside a diff block, three
-    statements in prose. A name-keyed probe skips all of it, and an anonymous block re-implementing a
-    named function is exactly the case this review has missed before.
-  - **Key the grep on behaviour, not on a name.** For every block the plan writes out, grep (a) each
-    piece of state it writes — the setter, the store key, the file — and (b) each external read it makes
-    (`getX()`, `localStorage`, `fetch`). Whoever already owns that state is nearly always an existing
-    function; read it, then say whether the plan should call it instead of restating it.
-  - **Look one level out.** The duplicate usually is not in the file the plan edits but in a sibling that
-    already shares the state — the other hooks behind the same provider, the helper the caller uses.
-  - **Report it even when the plan's version is shorter.** A short copy that silently drops a guard the
-    original carries is more damaging than the duplication, not less.
+  there is no diff to read later. Its second trigger in `checks.md` is code the change writes without a
+  name; run that trigger and the behaviour-keyed grep it prescribes, in full. What differs here is only
+  where the nameless block lives: on a plan it has no file yet. It is a snippet inside a diff block, a
+  `useMemo` in an example, or three statements of prose — and prose is the easiest of the three to read
+  past, because it proposes nothing that looks like code.
 - **Cross-reference comments (probe 5)**: here it is the *plan's own* wording ("same as X", "mirrors Y"),
   not comments in finished code — for those see "Not Checkable at the Plan Level".
 - **Counts (probe 5)**: a plan's prose numbers about the *existing* code are the claimed counts probe 5
@@ -120,9 +111,9 @@ apply (see below). Minimums, not ceilings — raise them when the damage warrant
 Plan-level additions:
 
 - The plan breaks a project invariant, or is not implementable as written → **high**
-- The plan writes out logic that an existing function already performs → **high**, whether or not the plan
-  gives it a name, and whether or not the plan's version is shorter. Once implemented this is a duplicate
-  nobody asked for, and the plan stage is the last cheap moment to catch it.
+- The plan writes out logic that an existing function already performs → **high**. Which forms of
+  "writes out" count, and that a shorter copy still counts, is probe 3's business in `checks.md`; this
+  line only raises the floor, because the plan stage is the last cheap moment to catch it.
 - A gap that would surface in the code review at the latest (missing verification, open edge case) → **medium**
 - The simplicity line answers *no* → **medium**, unless a stricter floor above already applies
 
