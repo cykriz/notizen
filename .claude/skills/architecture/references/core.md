@@ -64,4 +64,8 @@ die liegen in `references/ui.md`.
 
 - `lib/markdownToPlainText.ts` — markdown→plain text + sentence chunking for TTS
 - `lib/selectGermanVoice.ts` — rank/select natural German system voices
-- `lib/localStorageState.ts` — safe localStorage read/write helper
+- `lib/localStorageState.ts` — **the** localStorage gate for the whole app: `readLocal` /
+  `writeLocal` / `removeLocal` / `localStorageKeys` / `readStoredOneOf`. Every access sits inside a
+  try (with site data blocked, even the bare property read throws), so no other file may touch
+  `localStorage` directly — neither the preference stores/hooks nor the cache layer
+  (`lib/localCache.ts`, `lib/localCacheMerge.ts`, `lib/failedSyncQueue.ts`, `app/login/page.tsx`)

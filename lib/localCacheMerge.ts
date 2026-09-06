@@ -12,6 +12,7 @@ import {
   getSyncQueue,
 } from './localCache';
 import { getFailedSyncQueue } from './failedSyncQueue';
+import { readLocal, localStorageKeys, removeLocal } from './localStorageState';
 import { CACHE_TTL_MS } from './constants';
 
 const TOMBSTONES_KEY = `${PREFIX}tombstones`;
@@ -129,10 +130,6 @@ function pendingEntityIds(): Set<string> {
 }
 
 export function cleanExpiredEntries(): void {
-  if (typeof localStorage === 'undefined') {
-    return;
-  }
-
   cleanTombstones();
   // Failed entries deliberately never expire — see discardEntry. Expiring
   // them here would strip their own pendingEntityIds() protection in this very
@@ -141,17 +138,16 @@ export function cleanExpiredEntries(): void {
   const pending = pendingEntityIds();
   const keysToRemove: string[] = [];
 
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
+  for (const key of localStorageKeys()) {
     // Never delete the sync queue itself
-    if (key === null || !key.startsWith(PREFIX) || key === SYNC_QUEUE_KEY) {
+    if (!key.startsWith(PREFIX) || key === SYNC_QUEUE_KEY) {
       continue;
     }
 
     // Keep drafts only while their note still exists or has pending sync
     if (key.startsWith(DRAFT_PREFIX)) {
       const entityId = key.slice(DRAFT_PREFIX.length);
-      if (pending.has(entityId) || localStorage.getItem(`${NOTE_PREFIX}${entityId}`) !== null) {
+      if (pending.has(entityId) || readLocal(`${NOTE_PREFIX}${entityId}`) !== null) {
         continue;
       }
 
@@ -178,7 +174,7 @@ export function cleanExpiredEntries(): void {
       }
     }
 
-    const cachedAt = localStorage.getItem(cachedAtKey(key));
+    const cachedAt = readLocal(cachedAtKey(key));
     if (cachedAt !== null) {
       const age = now - new Date(cachedAt).getTime();
       if (age > CACHE_TTL_MS) {
@@ -189,6 +185,6 @@ export function cleanExpiredEntries(): void {
   }
 
   for (const key of keysToRemove) {
-    localStorage.removeItem(key);
+    removeLocal(key);
   }
 }

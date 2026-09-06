@@ -1,4 +1,5 @@
-import { type SyncQueueEntry, PREFIX, getSyncQueue, safeGetJson } from './localCache';
+import { type SyncQueueEntry, PREFIX, getSyncQueue, safeGetJson, setJsonRaw } from './localCache';
+import { removeLocal } from './localStorageState';
 import { SYNC_MAX_RETRIES } from './constants';
 import { type AckedWrite, subtractAckedKeys } from './syncQueuePayload';
 import type { SyncFailureInfo, SyncFailureReason } from './types';
@@ -115,29 +116,11 @@ export function ackFailedSync(acked: AckedWrite): void {
  * a stale entry the next drain will retire.
  */
 function persist(kept: SyncQueueEntry[]): boolean {
-  if (typeof localStorage === 'undefined') {
-    return false;
-  }
-
-  try {
-    if (kept.length === 0) {
-      localStorage.removeItem(FAILED_SYNC_KEY);
-    } else {
-      localStorage.setItem(FAILED_SYNC_KEY, JSON.stringify(kept));
-    }
-
-    return true;
-  } catch {
-    return false;
-  }
+  return kept.length === 0 ? removeLocal(FAILED_SYNC_KEY) : setJsonRaw(FAILED_SYNC_KEY, kept);
 }
 
 export function clearFailedSyncQueue(): void {
-  if (typeof localStorage === 'undefined') {
-    return;
-  }
-
-  localStorage.removeItem(FAILED_SYNC_KEY);
+  removeLocal(FAILED_SYNC_KEY);
 }
 
 /**

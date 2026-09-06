@@ -1,5 +1,6 @@
 import type { Note, NoteSummary, SyncAction, SyncEntityType, SyncFailureInfo, Todo } from '@/lib/types';
 import { NoteResponseSchema, parseNoteSummaryRows, parseTodoRows } from '@/lib/schemas';
+import { readLocal, removeLocal, writeLocal } from '@/lib/localStorageState';
 
 export const PREFIX = 'notizen:';
 export const NOTES_LIST_KEY = `${PREFIX}notes-list`;
@@ -22,34 +23,44 @@ export function cachedAtKey(key: string): string {
 }
 
 export function safeGetJson(key: string): unknown {
-  if (typeof localStorage === 'undefined') {
+  const raw = readLocal(key);
+  if (raw === null) {
     return null;
   }
 
   try {
-    const raw = localStorage.getItem(key);
-    if (raw === null) {
-      return null;
-    }
-
     return JSON.parse(raw) as unknown;
   } catch {
-    localStorage.removeItem(key);
+    // Corrupt entry — drop it so the next write starts clean. removeLocal, never
+    // localStorage.removeItem: a throwing storage getter would throw again from
+    // inside this catch and the error would escape the try after all.
+    removeLocal(key);
     return null;
   }
 }
 
-export function safeSetJson(key: string, value: unknown): void {
-  if (typeof localStorage === 'undefined') {
-    return;
-  }
-
+/**
+ * Serialise and store without the cached-at stamp, reporting whether it landed.
+ *
+ * writeLocal itself cannot throw; the try covers only JSON.stringify and keeps the
+ * contract every write path here had before: a best-effort cache write never
+ * raises at its caller, whatever it is handed.
+ */
+export function setJsonRaw(key: string, value: unknown): boolean {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
-    localStorage.setItem(cachedAtKey(key), new Date().toISOString());
+    return writeLocal(key, JSON.stringify(value));
   } catch {
-    // localStorage full or unavailable — acceptable for personal NAS app.
-    // Data survives in React state; cache is best-effort.
+    return false;
+  }
+}
+
+export function safeSetJson(key: string, value: unknown): void {
+  // The stamp is written only once the value itself is in: a fresh cached-at over
+  // a value that failed to store (localStorage full or unavailable) would keep the
+  // stale entry alive past its TTL. Acceptable for a personal NAS app either way —
+  // data survives in React state; the cache is best-effort.
+  if (setJsonRaw(key, value)) {
+    writeLocal(cachedAtKey(key), new Date().toISOString());
   }
 }
 
@@ -93,33 +104,19 @@ export function getDraft(id: string): { title: string; content: string } | null 
 }
 
 export function setDraft(id: string, title: string, content: string): void {
-  if (typeof localStorage === 'undefined') {
-    return;
-  }
-
-  try {
-    localStorage.setItem(draftKey(id), JSON.stringify({ title, content }));
-  } catch {
-    // localStorage full — best-effort
-  }
+  // Unstamped on purpose: cleanExpiredEntries ties a draft's lifetime to its note,
+  // not to the cache TTL, so a cached-at key would only invite expiry.
+  setJsonRaw(draftKey(id), { title, content });
 }
 
 export function clearDraft(id: string): void {
-  if (typeof localStorage === 'undefined') {
-    return;
-  }
-
-  localStorage.removeItem(draftKey(id));
+  removeLocal(draftKey(id));
 }
 
 export function removeCachedNote(id: string): void {
-  if (typeof localStorage === 'undefined') {
-    return;
-  }
-
   const key = noteKey(id);
-  localStorage.removeItem(key);
-  localStorage.removeItem(cachedAtKey(key));
+  removeLocal(key);
+  removeLocal(cachedAtKey(key));
 }
 
 // --- Todos ---
@@ -176,14 +173,7 @@ export function getSyncQueue(): SyncQueueEntry[] {
 }
 
 export function setSyncQueue(queue: SyncQueueEntry[]): void {
-  if (typeof localStorage === 'undefined') {
-    return;
-  }
-
-  try {
-    localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queue));
-  } catch {
-    // localStorage full — queue stays in memory via getSyncQueue() calls.
-    // Next successful write persists it.
-  }
+  // localStorage full — queue stays in memory via getSyncQueue() calls.
+  // Next successful write persists it.
+  setJsonRaw(SYNC_QUEUE_KEY, queue);
 }

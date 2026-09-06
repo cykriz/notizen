@@ -6,26 +6,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { PREFIX } from '@/lib/localCache';
+import { localStorageKeys, removeLocal } from '@/lib/localStorageState';
 import { clearSwCachesWhenReady } from '@/lib/clearSwCaches';
 import { loginAction, type LoginState } from './actions';
 
 const initialState: LoginState = { error: null };
 
 function clearLocalCaches() {
-  if (typeof localStorage === 'undefined') {
-    return;
-  }
-
-  const keysToRemove: string[] = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key?.startsWith(PREFIX) === true) {
-      keysToRemove.push(key);
+  // localStorageKeys() is a snapshot, so removing inside the loop is safe.
+  for (const key of localStorageKeys()) {
+    if (key.startsWith(PREFIX)) {
+      removeLocal(key);
     }
-  }
-
-  for (const key of keysToRemove) {
-    localStorage.removeItem(key);
   }
 }
 
