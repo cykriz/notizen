@@ -2,8 +2,8 @@ import type { Page } from '@playwright/test';
 import { NOTES_LIST_KEY, SYNC_QUEUE_KEY, TODOS_KEY, type SyncQueueEntry } from '../../lib/localCache';
 import { FAILED_SYNC_KEY } from '../../lib/failedSyncQueue';
 
-// Direct localStorage access for the sync queues and caches, split out of
-// helpers.ts to keep it under the 200-line cap. Seeding beats driving the UI
+// Direct localStorage access for the sync queues and caches, its own module
+// because four callers share it. Seeding beats driving the UI
 // through multi-cycle offline navigation, which stresses service-worker chunk
 // caching rather than the feature under test.
 

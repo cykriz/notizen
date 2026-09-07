@@ -54,8 +54,10 @@ without trace.
 
 - **Always Bun**: use `bun` / `bunx` for ALL package management, scripts, one-off evals (`bun -e`), and registry queries (`bun info`) — never `npm`, `npx`, `node`, `yarn`, or `pnpm`. Only documented exceptions (need Node's module loader): `npx shadcn@latest add <name>` and the Playwright test *runner* (`npx playwright test`). Playwright browser install still uses `bunx playwright install`.
 - **Always Radix for UI primitives**: build interactive UI on Radix (via the unified `radix-ui` package, imported as `import { X as XPrimitive } from 'radix-ui'`) through shadcn wrappers in `components/ui/`. Never hand-roll tooltips, popovers, dropdowns/menus, dialogs, progress bars, switches/toggles, tabs, etc. — add the shadcn component (`npx shadcn@latest add <name>`) or compose the Radix primitive instead.
-- All user-facing text in **German**
-- Max 200 lines per file — split if exceeded (excludes test files: `*.spec.ts`, `*.test.ts`)
+- All user-facing text in **German** — everything the developer reads is **English**: code
+  comments, commit messages, identifiers, docs. The German/English line runs between the UI
+  and the codebase, not between file types.
+- Max 200 lines per file — split if exceeded (excludes test code: `*.spec.ts`, `*.test.ts` and everything under `e2e/`)
 - `NOTES_ROOT` env var points to data directory
 - `revalidatePath()` after mutations (skip on `dynamic = 'force-dynamic'` pages — they rebuild every request)
 - No database, no experimental Next.js features, no new packages without updating this file

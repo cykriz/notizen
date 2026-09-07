@@ -1,10 +1,5 @@
 import { type Locator, type Page, expect } from '@playwright/test';
-import fs from 'fs/promises';
-import path from 'path';
-import { TEST_NOTES_ROOT } from '../playwright.config';
-import { SHARES_DIR, SHARES_FILE } from '../../lib/constants';
 import { FAILED_SYNC_DIALOG_TITLE, FAILED_SYNC_OPEN_LABEL } from '../../lib/failedSyncConstants';
-import type { ShareEntry } from '../../lib/fsSharesRegistry';
 import { clearLocalState, readPendingQueue } from './storageHelpers';
 
 /** One phone for every mobile spec, so touch-target and mobile-only-UI assertions
@@ -120,61 +115,6 @@ export function noteIdFromUrl(url: string): string {
   }
 
   return match[1];
-}
-
-const SHARES_FILE_PATH = path.join(TEST_NOTES_ROOT, SHARES_DIR, SHARES_FILE);
-
-/** Wipe the central share registry. Use in beforeEach to prevent cross-test leakage. */
-export async function deleteAllShares(): Promise<void> {
-  await fs.rm(SHARES_FILE_PATH, { force: true });
-}
-
-/** Read the raw share registry. Returns empty object if missing. */
-// Partial: an arbitrary token must type as a miss, so the lookup guards below
-// stay meaningful rather than reading as dead code — same reason as
-// FAILED_SYNC_CAUSE_BY_STATUS in lib/failedSyncConstants.ts.
-export async function readShareRegistry(): Promise<Partial<Record<string, ShareEntry>>> {
-  try {
-    const raw = await fs.readFile(SHARES_FILE_PATH, 'utf-8');
-    return JSON.parse(raw) as Partial<Record<string, ShareEntry>>;
-  } catch {
-    return {};
-  }
-}
-
-/** Entry for a token or a hard failure naming it — non-optional, so callers need
- *  no `!`. Takes the registry instead of re-reading it, so setShareExpiry writes
- *  back the object it validated rather than a second, possibly newer read. */
-function entryOrThrow(registry: Partial<Record<string, ShareEntry>>, token: string): ShareEntry {
-  const entry = registry[token];
-  if (entry === undefined) {
-    throw new Error(`Share token not found in registry: ${token}`);
-  }
-
-  return entry;
-}
-
-export async function getShareEntry(token: string): Promise<ShareEntry> {
-  return entryOrThrow(await readShareRegistry(), token);
-}
-
-/** `expiresAt` of a share, asserted present — every preset sets one, so a null
- *  here is a real failure and not a case the caller should have to narrow. */
-export async function getShareExpiresAt(token: string): Promise<string> {
-  const { expiresAt } = await getShareEntry(token);
-  if (expiresAt === null) {
-    throw new Error(`Share has no expiresAt: ${token}`);
-  }
-
-  return expiresAt;
-}
-
-/** Overwrite a single share's expiresAt. Used to force expiry without time-travel. */
-export async function setShareExpiry(token: string, expiresAt: string): Promise<void> {
-  const registry = await readShareRegistry();
-  registry[token] = { ...entryOrThrow(registry, token), expiresAt };
-  await fs.mkdir(path.dirname(SHARES_FILE_PATH), { recursive: true });
-  await fs.writeFile(SHARES_FILE_PATH, JSON.stringify(registry, null, 2), 'utf-8');
 }
 
 /** Wait for a queued mutation to appear (auto-save is debounced). */
