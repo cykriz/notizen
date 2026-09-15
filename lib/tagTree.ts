@@ -80,10 +80,10 @@ export function buildTagTree(notes: NoteSummary[]): TagNode[] {
   return sortTree(root);
 }
 
-// Rein alphabetisch, ohne Vorsortierung nach "hat Unter-Tags": jede Zeile der
-// Tag-Navigation ist ein Ordner, ob sie Unter-Tags hat oder nicht. Eine Umordnung
-// nach einem Merkmal, das die Liste nicht zeigt, wäre nur eine unerklärte Abweichung
-// vom Alphabet — und vorhersagbare Positionen sind hier mehr wert.
+// Purely alphabetical, with no pre-sorting by "has sub-tags": every row of the
+// tag navigation is a folder, whether it has sub-tags or not. Reordering by a
+// property the list does not show would only be an unexplained deviation from the
+// alphabet — and predictable positions are worth more here.
 function sortTree(nodes: TagNode[]): TagNode[] {
   nodes.sort((a, b) => a.segment.localeCompare(b.segment));
   for (const n of nodes) {

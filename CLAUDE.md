@@ -4,14 +4,14 @@ Next.js 16 + React 19 + Bun + TypeScript (strict) + Tailwind v4 + shadcn/ui. Fil
 
 ## Commands
 
-- `bun install` (not npm), `bun run lint`, `bun run typecheck`
+- `bun install` (not npm), `bun run lint`, `bun run typecheck`, `bun run lint:lang`
 - Run lint + typecheck after every code change. Fix all errors before moving on.
 - `bun run typecheck` checks **all three** TS projects — app, `worker/`, `e2e/`. Never use bare `bunx tsc --noEmit`: the root tsconfig excludes `worker` and `e2e`, so it silently covers only the app.
 - Dev server: `bun --bun next dev`
 - Add shadcn component: `npx shadcn@latest add <name>`
 - Unit tests: `bun test` — `NOTES_ROOT` points at a temp dir, covers pure FS/logic helpers. **No vitest/Jest.**
 - E2E tests: `bun run test:e2e` (headless), `bun run test:e2e:ui` (UI mode). Browser install: `bunx playwright install chromium`. `npx` only for the test *runner* — see § Key Rules.
-- Install git hooks: `cp scripts/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit`
+- Install git hooks: `cp scripts/pre-commit scripts/commit-msg .git/hooks/ && chmod +x .git/hooks/pre-commit .git/hooks/commit-msg`
 
 ## Plan Review (automatic)
 
@@ -34,13 +34,13 @@ review that did *not* come out of it — otherwise every fix is another trigger 
 terminates.
 
 **Triage:** verify each finding instead of adopting it. The reviewer marks confidence as
-`[belegt|Vermutung]` (not `certain/likely/guess`) and anchors findings as `<Datei › Symbol>` rather
-than `file:line` — verify a `Vermutung` by opening the symbol.
+`[proven|conjecture]` (not `certain/likely/guess`) and anchors findings as `<File › Symbol>` rather
+than `file:line` — verify a `conjecture` by opening the symbol.
 
 **Report to the user — maximum brevity:** one status line, then only **open** findings and real
 decisions for the user. **Fixed findings stay silent** (visible in the diff). Dropped ones are named
 on **one** line without reasons — by their anchor, since this reviewer issues no IDs
-(`verworfen: <Datei › Symbol>, …`). ⚠️ There is **no artifact and no gate** here, so
+(`dropped: <File › Symbol>, …`). ⚠️ There is **no artifact and no gate** here, so
 the diff is the only evidence: *dropped* is fine, *unmentioned* is not — an unnamed finding disappears
 without trace.
 
@@ -55,8 +55,12 @@ without trace.
 - **Always Bun**: use `bun` / `bunx` for ALL package management, scripts, one-off evals (`bun -e`), and registry queries (`bun info`) — never `npm`, `npx`, `node`, `yarn`, or `pnpm`. Only documented exceptions (need Node's module loader): `npx shadcn@latest add <name>` and the Playwright test *runner* (`npx playwright test`). Playwright browser install still uses `bunx playwright install`.
 - **Always Radix for UI primitives**: build interactive UI on Radix (via the unified `radix-ui` package, imported as `import { X as XPrimitive } from 'radix-ui'`) through shadcn wrappers in `components/ui/`. Never hand-roll tooltips, popovers, dropdowns/menus, dialogs, progress bars, switches/toggles, tabs, etc. — add the shadcn component (`npx shadcn@latest add <name>`) or compose the Radix primitive instead.
 - All user-facing text in **German** — everything the developer reads is **English**: code
-  comments, commit messages, identifiers, docs. The German/English line runs between the UI
-  and the codebase, not between file types.
+  comments, test titles, commit messages, identifiers, docs. The German/English line runs between
+  the UI and the codebase, not between file types. German survives inside developer text only as a
+  **quoted** citation of UI copy (`// the toolbar button "Einrücken"`). Enforced by
+  `bun run lint:lang` (`scripts/check-language.ts`, wired into `pre-commit` and `commit-msg`); its
+  predicate is umlaut-or-stopword outside quotes, so a bare German compound label slips past — that
+  residue is the review agent's, per `.claude/review/checks.md` § "Style & Conventions".
 - Max 200 lines per file — split if exceeded (excludes test code: `*.spec.ts`, `*.test.ts` and everything under `e2e/`)
 - `NOTES_ROOT` env var points to data directory
 - `revalidatePath()` after mutations (skip on `dynamic = 'force-dynamic'` pages — they rebuild every request)

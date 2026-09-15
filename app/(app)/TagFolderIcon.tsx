@@ -1,18 +1,18 @@
 import { Folder } from 'lucide-react';
 
-// Das Icon jeder Zeile der Tag-Navigation. Bewusst OHNE Unterscheidung zwischen
-// "hat Unter-Tags" und "hat keine": ein Ordner ist hier kein eigener Typ, sondern ein
-// Tag, das gerade Unter-Tags trägt — das Icon würde sonst umkippen, sobald irgendwo ein
-// Unter-Tag dazukommt, ohne dass sich an der Zeile etwas geändert hat. Ein leerer Ordner
-// ist im Finder auch ein Ordner.
+// The icon on every row of the tag navigation. Deliberately WITHOUT a distinction between
+// "has sub-tags" and "has none": a folder is not a type of its own here, but a tag that
+// currently carries sub-tags — the icon would otherwise flip as soon as a sub-tag appears
+// somewhere, without anything about the row having changed. An empty folder is a folder in
+// Finder too.
 //
-// Die Grenze, die zählt, ist Container gegen Notiz. Gefüllt und getönt wie ein
-// macOS-Ordner setzt die Zeilen in der Sidebar gegen die Notiz-Einträge darunter ab, die
-// gar kein Icon tragen; in der Command-Palette stehen Tag- und Notiz-Modus ohnehin nie
-// zugleich, dort gibt das Icon nur den Typ der Trefferliste.
-// Das sr-only-Label gibt Screenreadern denselben Hinweis, den sie sonst nur sehen könnten.
+// The boundary that counts is container against note. Filled and tinted like a macOS
+// folder, it sets the sidebar rows apart from the note entries below them, which carry no
+// icon at all; in the command palette tag and note mode are never on screen at the same
+// time anyway, so there the icon only gives the type of the result list.
+// The sr-only label gives screen readers the same hint they could otherwise only see.
 //
-// Eine Quelle für Sidebar und Command-Palette, damit die beiden nicht auseinanderlaufen.
+// One source for sidebar and command palette, so the two do not drift apart.
 export function TagFolderIcon() {
   return (
     <>

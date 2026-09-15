@@ -119,11 +119,11 @@ export const TodoColumn = memo(function TodoColumn({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {/* `flex` statt `flex-row`: CardHeader bringt `grid` mit, und twMerge räumt das
-          nur über dieselbe Klassen-Gruppe (display) ab — `flex-row` allein bliebe auf
-          einem Grid inert und der Zähler landete in einer zweiten Zeile. Die Grid-Reste der
-          Basis (`auto-rows-min`, `grid-rows-*`, `has-data-[slot=card-action]:grid-cols-*`) überleben den
-          Merge und bleiben hier folgenlos inert — kein Aufrufer kann sie entfernen. */}
+      {/* `flex` instead of `flex-row`: CardHeader brings `grid` along, and twMerge clears
+          that only through the same class group (display) — `flex-row` alone would stay
+          inert on a grid and the counter would land on a second row. The base's grid
+          remnants (`auto-rows-min`, `grid-rows-*`, `has-data-[slot=card-action]:grid-cols-*`) survive the
+          merge and stay inert here without consequence — no caller can remove them. */}
       <CardHeader className={cn('flex items-center gap-2 py-2.5 px-3', meta.colorClass)}>
         <div className="flex md:flex-col items-baseline gap-2 md:gap-0 min-w-0">
           <CardTitle className={cn('flex items-baseline gap-1.5 text-sm font-semibold min-w-0', meta.headerClass)}>

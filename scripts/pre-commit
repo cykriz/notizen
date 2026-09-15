@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Language line first: it is the cheapest check and the one whose violation is easiest to fix.
+# --staged reads the index, not the worktree, so a partially staged German comment cannot slip past.
+echo "=== Pre-commit: language (English outside UI strings) ==="
+bun run lint:lang -- --staged
+
 echo "=== Pre-commit: lint ==="
 bun run lint:check
 

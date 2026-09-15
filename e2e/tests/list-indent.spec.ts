@@ -30,7 +30,7 @@ async function expectSaved(page: Page, url: string, expected: string): Promise<v
   await expect.poll(() => savedContent(page, url), { timeout: 15_000 }).toBe(expected);
 }
 
-test.describe('Listen-Einrückung', () => {
+test.describe('List indentation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/notes');
     await deleteAllNotes(page);
@@ -40,7 +40,7 @@ test.describe('Listen-Einrückung', () => {
   // Both directions in one note, because Shift+Tab is not the inverse of Tab by construction:
   // indentMore inserts the unit, while indentLess re-computes the column and rebuilds the
   // indent from it. A unit that only half-changed would show up here and nowhere else.
-  test('Tab rückt Bullet-Listen um 4 Spaces ein, Shift+Tab wieder aus', async ({ page }) => {
+  test('Tab indents bullet lists by 4 spaces, Shift+Tab outdents again', async ({ page }) => {
     const url = await createNote(page, 'Bullet-Einrückung', '- a');
 
     // Enter continues the list (`- `), Tab then indents that whole line.
@@ -65,7 +65,7 @@ test.describe('Listen-Einrückung', () => {
     await expect(preview.locator('pre')).toHaveCount(0);
   });
 
-  test('Tab rückt nummerierte Listen um 4 Spaces ein', async ({ page }) => {
+  test('Tab indents numbered lists by 4 spaces', async ({ page }) => {
     const url = await createNote(page, 'Ordered-Einrückung', '1. a');
 
     await page.keyboard.press('Enter');
@@ -77,7 +77,7 @@ test.describe('Listen-Einrückung', () => {
     await expectSaved(page, url, '1. a\n    2. b');
   });
 
-  test('Tab rückt Checkboxen um 4 Spaces ein', async ({ page }) => {
+  test('Tab indents checkboxes by 4 spaces', async ({ page }) => {
     const url = await createNote(page, 'Checkbox-Einrückung', '- [ ] a');
 
     await page.keyboard.press('Enter');

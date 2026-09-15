@@ -217,6 +217,10 @@ by looking from the doc back at the tree.
 - PascalCase components, camelCase utils, kebab-case routes
 - Page-specific components co-located inside the route folder
 - No unused imports, dead code, commented-out blocks, or exports whose last caller the diff removed
+- **Language residue.** The boundary itself arrives via `CLAUDE.md` § Key Rules — do not restate it.
+  Only the residue is yours: `scripts/check-language.ts` runs on a wordlist, so bare German compound
+  labels with no verb and no function word (`// --- Papierkorb ---`, `describe('ToDo-Board')`) pass it
+  untouched. Report those; never report a quoted UI string, which the rule permits.
 - **Override probe — run it, don't skim it.** Wherever the diff hands a `className` to a
   `components/ui/` component — **also when that class list is unchanged**, since the other half sits
   in a file the diff never touches — open the wrapper's base classes and resolve the effective

@@ -28,7 +28,7 @@ export function AssignTagsPopover({ selection, view, currentTagPath }: AssignTag
 
   // Base = the tags actually assigned to (shared by) the selected notes, per their
   // frontmatter — NOT the sidebar position. These are pre-filled so they can be kept
-  // or removed (abwählen). In the tags view the browsed folder tag is always offered
+  // or removed ("abwählen"). In the tags view the browsed folder tag is always offered
   // too, so it works even on nested-tag notes. Synthetic/reserved tags are excluded.
   const baseTags = useMemo(() => {
     const selected = notes.filter((n) => selection.selectedIds.has(n.id));

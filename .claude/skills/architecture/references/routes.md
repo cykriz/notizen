@@ -1,6 +1,6 @@
 # Architecture — API Routes & Server Actions
 
-Referenz des `architecture` Skills. Geladen bei Änderungen an `app/api/**`, `app/share/**` oder `*Actions.ts`.
+Reference of the `architecture` skill. Loaded for changes to `app/api/**`, `app/share/**` or `*Actions.ts`.
 
 ## API Routes
 
@@ -42,5 +42,5 @@ A valid share token grants read access to the shared note AND every attachment o
 
 - `app/share/[token]/SharedNoteView.tsx` — public read-only note renderer
 
-Die Segment-Overrides (`app/share/layout.tsx`, `error.tsx`, `not-found.tsx`) und die
-`loading.tsx`-Falle der Share-Seite stehen in `references/pages.md`.
+The segment overrides (`app/share/layout.tsx`, `error.tsx`, `not-found.tsx`) and the
+`loading.tsx` trap of the share page are in `references/pages.md`.

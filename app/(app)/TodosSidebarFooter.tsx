@@ -4,7 +4,7 @@ import { useSyncExternalStore } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SidebarFooter } from '@/components/ui/sidebar';
-import { PAPIERKORB_LABEL, TODOS_OVERVIEW_LABEL } from '@/lib/constants';
+import { TODOS_OVERVIEW_LABEL, TRASH_LABEL } from '@/lib/constants';
 import { TrashOffIcon } from './TrashOffIcon';
 import { todosViewStore } from './todosViewStore';
 
@@ -28,7 +28,7 @@ export function TodosSidebarFooter() {
           }}
         >
           {toTrash ? <Trash2 /> : <TrashOffIcon />}
-          {toTrash ? PAPIERKORB_LABEL : TODOS_OVERVIEW_LABEL}
+          {toTrash ? TRASH_LABEL : TODOS_OVERVIEW_LABEL}
         </Button>
       </div>
     </SidebarFooter>

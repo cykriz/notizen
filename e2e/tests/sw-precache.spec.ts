@@ -86,7 +86,7 @@ async function loadAndAwaitRepair(page: Page): Promise<void> {
     .toEqual(ALL_PRECACHED);
 }
 
-test.describe('Service-Worker-Precache', () => {
+test.describe('Service worker precache', () => {
   let hydrationErrors: string[] = [];
 
   test.beforeEach(async ({ page }) => {
@@ -112,7 +112,7 @@ test.describe('Service-Worker-Precache', () => {
     expect(hydrationErrors).toEqual([]);
   });
 
-  test('ein geleerter pages-Cache wird beim nächsten Online-Mount wieder aufgefüllt', async ({
+  test('an emptied pages cache is refilled on the next online mount', async ({
     page,
   }) => {
     // Leave the (app) tree before breaking things: /offline mounts no
@@ -135,7 +135,7 @@ test.describe('Service-Worker-Precache', () => {
     expect(report?.missingStatic).toBe(0);
   });
 
-  test('offline lädt die App auch nach einem geleerten Cache statt des 503-Notnagels', async ({
+  test('offline the app still loads after an emptied cache instead of the 503 fallback', async ({
     page,
   }) => {
     // Same reason as above: break the cache from outside the (app) tree.
@@ -167,7 +167,7 @@ test.describe('Service-Worker-Precache', () => {
     expect(unknownNote?.status()).toBe(200);
   });
 
-  test('nach dem Abmelden bleibt /offline im Cache, die Nutzerseiten nicht', async ({ page }) => {
+  test('after signing out /offline stays cached, the user pages do not', async ({ page }) => {
     await page.getByRole('button', { name: 'Abmelden' }).click();
     await page.waitForURL(/\/login/, { timeout: 15_000 });
 

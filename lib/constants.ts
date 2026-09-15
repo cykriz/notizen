@@ -155,7 +155,7 @@ export const QUADRANT_KEYS = Object.values(QUADRANT);
 export const INBOX_SORT_THRESHOLD = 10;
 export const INBOX_SORT_HINT = 'Zeit zu sortieren';
 
-// --- Papierkorb (Trash) & per-user settings ---
+// --- Trash & per-user settings ---
 // Per-user trash lives at {userRoot}/.trash/ (sibling of notes/ and todos.json),
 // so listNotes/findSlugByNoteId (which only read root/notes) never see it.
 export const TRASH_DIR = '.trash';
@@ -176,7 +176,7 @@ export const TRASH_RETENTION_OPTIONS: readonly { days: number; label: string }[]
 ];
 
 // German UI strings (single-sourced, never inline in components).
-export const PAPIERKORB_LABEL = 'Papierkorb';
+export const TRASH_LABEL = 'Papierkorb';
 export const TRASH_CLOSE_LABEL = 'Papierkorb schließen';
 export const VIEW_TAGS_LABEL = 'Nach Tags';
 export const VIEW_ALL_LABEL = 'Alle Notizen';

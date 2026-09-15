@@ -1,29 +1,29 @@
 ---
-description: Delegiert den Review aller nicht-committeten Änderungen an den Subagenten `review-changes`
+description: Delegates the review of all uncommitted changes to the `review-changes` subagent
 ---
 
-Delegiere den Review — **führe ihn nicht selbst aus**. Die Prüflogik liegt bewusst außerhalb des
-Hauptkontexts, im Sub-Agenten.
+Delegate the review — **do not run it yourself**. The review logic deliberately lives outside the
+main context, in the subagent.
 
-1. **Primärweg.** `Agent`-Tool, `subagent_type: review-changes`, `run_in_background: false`. Beende
-   den Turn nicht, bevor der Agent geantwortet hat. Prompt **exakt**:
+1. **Primary path.** `Agent` tool, `subagent_type: review-changes`, `run_in_background: false`. Do not
+   end the turn before the agent has answered. Prompt **exactly**:
 
-   > Reviewe alle nicht-committeten Änderungen (untracked, unstaged, staged) in diesem Repo.
+   > Review all uncommitted changes (untracked, unstaged, staged) in this repo.
 
-   Nichts darüber hinaus — kein Kontext, keine Absicht, keine Zusammenfassung. Der Agent urteilt blind.
+   Nothing beyond that — no context, no intent, no summary. The agent judges blind.
 
-2. **Fallback**, und nur dann: der Aufruf schlägt mit unbekanntem `subagent_type` fehl. Die
-   Agent-Registry wird beim Session-Start gebaut, ein frisch angelegter Agent greift erst nach einem
-   Neustart. Dann **genau ein** Versuch mit `subagent_type: general-purpose` und dem Prompt:
+2. **Fallback**, and only then: the call fails with an unknown `subagent_type`. The
+   agent registry is built at session start, a freshly created agent takes effect only after a
+   restart. Then **exactly one** attempt with `subagent_type: general-purpose` and the prompt:
 
-   > Lies `.claude/agents/review-changes.md`; der Body ab der Frontmatter sind DEINE Anweisungen; du
-   > bist rein lesend. Reviewe alle nicht-committeten Änderungen (untracked, unstaged, staged) in
-   > diesem Repo.
+   > Read `.claude/agents/review-changes.md`; the body from the frontmatter onwards is YOUR
+   > instruction set; you are read-only. Review all uncommitted changes (untracked, unstaged, staged)
+   > in this repo.
 
-   ⚠️ `general-purpose` **hat** Write/Edit — dort hängt die Read-only-Zusage allein am Prompt.
-   Bevorzuge den Primärweg.
+   ⚠️ `general-purpose` **does** have Write/Edit — there the read-only promise hangs on the prompt
+   alone. Prefer the primary path.
 
-3. **Beide Wege gescheitert** → in einer Zeile melden. **Nicht** ersatzweise selbst reviewen.
+3. **Both paths failed** → report in one line. Do **not** review yourself as a substitute.
 
-Was mit dem Befund geschieht, steht in `CLAUDE.md` § "Code Review (automatic)" — Berichts-Kontrakt
-und Laufzeit-Gates dort, nicht hier.
+What happens with the findings is in `CLAUDE.md` § "Code Review (automatic)" — reporting contract
+and runtime gates there, not here.

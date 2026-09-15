@@ -1,7 +1,7 @@
 # Architecture — Core Functions
 
-Referenz des `architecture` Skills. Geladen bei Änderungen an `lib/**` oder `worker/**`.
-Kuratiert, nicht vollständig — s. `SKILL.md`. Komponenten/Hooks: `references/ui.md`.
+Reference of the `architecture` skill. Loaded for changes to `lib/**` or `worker/**`.
+Curated, not complete — see `SKILL.md`. Components/hooks: `references/ui.md`.
 
 ## Core Functions
 
@@ -57,10 +57,10 @@ Kuratiert, nicht vollständig — s. `SKILL.md`. Komponenten/Hooks: `references/
 - `app/(app)/navTabs.ts` — shared `NAV_TABS` (route + label + icon) and `isTabActive(href, pathname)` used by sidebar header and mobile bottom nav
 - `app/(app)/failedSyncTag.ts` — render-time helper `withFailedSyncTag(notes, failedIds)` injects the reserved `FAILED_SYNC_TAG` (`sync-fehler`, see `lib/constants.ts`) onto notes whose sync permanently failed; sidebar-only, never persisted
 
-### Helfer für TTS und Client-Storage
+### Helpers for TTS and client storage
 
-Konsumiert von `components/ReadAloudControls.tsx`, `hooks/useSpeech.ts`, `hooks/useSpeechVoices.ts` —
-die liegen in `references/ui.md`.
+Consumed by `components/ReadAloudControls.tsx`, `hooks/useSpeech.ts`, `hooks/useSpeechVoices.ts` —
+those are in `references/ui.md`.
 
 - `lib/markdownToPlainText.ts` — markdown→plain text + sentence chunking for TTS
 - `lib/selectGermanVoice.ts` — rank/select natural German system voices

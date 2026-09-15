@@ -3,28 +3,29 @@ name: architecture
 description: Data model, filesystem layout, API routes, core functions, component inventory, and page structure for the notes app. Use when building new features, adding routes, or understanding how the app fits together.
 ---
 
-Der Bestand steht in den Referenzen unten — **lies nur die, deren Pfadklasse du anfasst**, nie alle.
-Diese Datei trägt Datenmodell und Filesystem-Layout, weil beide für jede Pfadklasse gelten.
+The inventory is in the references below — **read only the ones whose path class you touch**, never
+all of them. This file carries the data model and filesystem layout, because both apply to every
+path class.
 
-## Referenzen (eine Ebene tief, Pfade **repo-relativ**)
+## References (one level deep, paths **repo-relative**)
 
-| geänderter Pfad | laden |
+| changed path | load |
 |---|---|
 | `lib/**`, `worker/**` | `.claude/skills/architecture/references/core.md` |
-| `components/**`, `hooks/**`, Client-Komponenten unter `app/(app)/**` | `.claude/skills/architecture/references/ui.md` |
+| `components/**`, `hooks/**`, client components under `app/(app)/**` | `.claude/skills/architecture/references/ui.md` |
 | `app/api/**`, `app/share/**`, `*Actions.ts` | `.claude/skills/architecture/references/routes.md` |
 | `app/**/page.tsx`, `layout.tsx`, `error.tsx`, `not-found.tsx` | `.claude/skills/architecture/references/pages.md` |
-| **Pfad unklar** | `core.md` + `ui.md` — Default, nie eine Pfadklasse ohne Zweig lassen |
+| **path unclear** | `core.md` + `ui.md` — default, never leave a path class without a branch |
 
-⚠️ **Erste passende Zeile gewinnt.** `app/share/[token]/page.tsx` trifft `app/share/**` *und*
-`app/**/page.tsx`: es zählt `routes.md`. Wo eine Referenz Nachbarschaft braucht, trägt sie selbst einen
-Zeiger — Referenzen bleiben eine Ebene tief.
+⚠️ **The first matching row wins.** `app/share/[token]/page.tsx` matches `app/share/**` *and*
+`app/**/page.tsx`: `routes.md` counts. Where a reference needs adjacency, it carries a pointer
+itself — references stay one level deep.
 
-⚠️ **Das Inventar ist kuratiert, nicht vollständig** — verzeichnet ist, was eine eigene Zuständigkeit
-oder eine nicht-offensichtliche Begründung trägt; rein mechanische Helfer fehlen bewusst. Ein fehlender
-Eintrag ist deshalb nur dann ein Finding, wenn das neue Modul eine solche Zuständigkeit trägt
-(`checks.md` § "Skill Compliance": Module, die *dorthin gehören*). Neue Einträge kommen in die
-**Referenz ihrer Pfadklasse**, nicht in diese Datei.
+⚠️ **The inventory is curated, not complete** — what is listed is whatever carries a responsibility of
+its own or a non-obvious rationale; purely mechanical helpers are deliberately absent. A missing
+entry is therefore only a finding if the new module carries such a responsibility
+(`checks.md` § "Skill Compliance": modules that *belong there*). New entries go into the
+**reference of their path class**, not into this file.
 
 ## Data Model
 

@@ -21,7 +21,7 @@ any step of your planning, it comes before it.
 
 5. **Output to the user — maximum brevity.** One status line `Auto review: N findings`, then only what
    you could **not** decide yourself. **Adopted findings stay silent** — they are visible in the plan
-   file. Dropped ones are named on **one** line without reasons (`verworfen: F2, F5`); that line is the
+   file. Dropped ones are named on **one** line without reasons (`dropped: F2, F5`); that line is the
    user's control over false positives, so *dropped* is fine but *unmentioned* is not.
    **No** review markdown, **no** code block, no tilde block, no table, no meta prose about hooks or
    about a tool having blocked you.

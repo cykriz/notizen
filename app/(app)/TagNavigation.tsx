@@ -99,15 +99,15 @@ export function TagNavigation({ notes, childNodes, currentPath, setCurrentPath, 
   }
 
   return (
-    // Eigene Fläche für den Navigationsteil: das ist die Grenze, die zählt — Container
-    // gegen Notiz. `bg-background` statt `bg-sidebar-accent`, weil letzteres exakt der
-    // Hover-Ton der Zeilen ist und den Hover verschlucken würde; so wächst der
-    // Hover-Kontrast stattdessen, weil die Zeilen von einer entfernteren Fläche starten.
+    // A surface of its own for the navigation part: that is the boundary that counts —
+    // container against note. `bg-background` instead of `bg-sidebar-accent`, because the
+    // latter is exactly the rows' hover tone and would swallow the hover; this way the
+    // hover contrast grows instead, because the rows start from a more distant surface.
     //
-    // Der Ring trägt die Grenze im Light-Theme, wo die Füllung allein nicht reicht:
-    // --background 1.0 gegen --sidebar 0.985 sind 1,5% Helligkeit. `ring` statt `border`,
-    // weil ein Ring keine Box-Breite kostet — die Breadcrumb-Zeile darunter ist auf jedes
-    // Pixel angewiesen, um tiefe Pfade unabgeschnitten zu zeigen.
+    // The ring carries the boundary in the light theme, where the fill alone is not enough:
+    // --background 1.0 against --sidebar 0.985 is 1.5% lightness. `ring` instead of
+    // `border`, because a ring costs no box width — the breadcrumb row below it depends on
+    // every pixel to show deep paths untruncated.
     <div
       className="flex max-h-[calc(0.5*var(--app-h))] flex-col gap-1 overflow-y-auto rounded-lg bg-background p-1 ring-1 ring-sidebar-border"
       onDragLeave={handleContainerDragLeave}

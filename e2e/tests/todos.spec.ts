@@ -42,28 +42,28 @@ async function moveToDo(page: Page, title: string): Promise<void> {
   await expect(dialog).toBeHidden();
 }
 
-test.describe('ToDo-Board', () => {
+test.describe('Todo board', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/todos');
     await deleteAllTodos(page);
     await page.goto('/todos');
   });
 
-  test('zeigt genau drei Spalten', async ({ page }) => {
+  test('shows exactly three columns', async ({ page }) => {
     for (const meta of TODO_COLUMN_META) {
       await expect(page.getByText(meta.label, { exact: true }).first()).toBeVisible();
     }
     await expect(page.locator('[data-slot="card"]')).toHaveCount(TODO_COLUMN_META.length);
 
-    // Die beiden Planungsspalten des alten Modells sind ersatzlos weg.
+    // The old model's two planning columns are gone without replacement.
     await expect(page.getByText('Einplanen', { exact: true })).toHaveCount(0);
     await expect(page.getByText('Eingeplant', { exact: true })).toHaveCount(0);
   });
 
-  /** Geometrie, nicht Sichtbarkeit: `toBeVisible`/`toHaveCount` waren auch dann wahr, als
-   *  CardHeaders Basis-`grid` den Kopf in zwei Zeilen brach und der Zähler unter dem Titel
-   *  landete. Nur die Lage der beiden zueinander erkennt das. */
-  test('Spaltenkopf hält Zähler und Titel in einer Zeile', async ({ page }) => {
+  /** Geometry, not visibility: `toBeVisible`/`toHaveCount` were true even when
+   *  CardHeader's base `grid` broke the header into two rows and the counter landed
+   *  below the title. Only the position of the two relative to each other detects that. */
+  test('column header keeps counter and title on one row', async ({ page }) => {
     await addToInbox(page, 'Erste');
     await addToInbox(page, 'Zweite');
 
@@ -71,25 +71,25 @@ test.describe('ToDo-Board', () => {
     const title = await boxOf(header.locator('[data-slot="card-title"]'));
     const counter = await boxOf(header.getByText('2', { exact: true }));
 
-    // Vertikal überlappend heißt: eine Zeile. Die Waagerechte taugt hier nicht — `ml-auto`
-    // schiebt den Zähler auch in einer eigenen, volle Breite einnehmenden Zeile nach rechts,
-    // die kaputte Variante sah auf dieser Achse also genauso aus wie die richtige.
+    // Overlapping vertically means: one row. The horizontal axis is no use here — `ml-auto`
+    // pushes the counter to the right even on a row of its own taking the full width,
+    // so on that axis the broken variant looked exactly like the correct one.
     expect(counter.y).toBeLessThan(title.y + title.height);
     expect(title.y).toBeLessThan(counter.y + counter.height);
   });
 
-  test('Erledigen sperrt, sobald 3 Slots belegt sind', async ({ page }) => {
+  test('"Erledigen" locks as soon as 3 slots are taken', async ({ page }) => {
     for (let i = 1; i <= DO_LIMIT; i++) {
       await addToInbox(page, `Slot${String(i)}`);
       await moveToDo(page, `Slot${String(i)}`);
     }
 
-    // Quick-Add und Stift der vollen Spalte sind gesperrt …
+    // Quick-add and the pencil of the full column are locked …
     const doColumn = column(page, DO_META.label);
     await expect(doColumn.getByPlaceholder(DO_FULL_PLACEHOLDER)).toBeDisabled();
     await expect(doColumn.getByRole('button', { name: ADD_DETAILED_LABEL })).toBeDisabled();
 
-    // … und der Dialog bietet Erledigen nicht mehr an.
+    // … and the dialog no longer offers "Erledigen".
     await addToInbox(page, 'Vierter');
     await page.getByText('Vierter').first().click();
     const dialog = page.getByRole('dialog');
@@ -97,7 +97,7 @@ test.describe('ToDo-Board', () => {
     await expect(page.getByRole('option', { name: DO_META.label })).toBeDisabled();
   });
 
-  test('Abhaken schiebt nach Erledigt, Ent-Haken bei vollem Erledigen in den Eingang', async ({ page }) => {
+  test('checking moves to "Erledigt", unchecking with "Erledigen" full moves to "Eingang"', async ({ page }) => {
     await addToInbox(page, 'Wanderer');
     await moveToDo(page, 'Wanderer');
     await expect(column(page, DO_META.label).getByText('Wanderer')).toBeVisible();
@@ -105,19 +105,19 @@ test.describe('ToDo-Board', () => {
     await column(page, DO_META.label).getByRole('checkbox').click();
     await expect(column(page, DONE_META.label).getByText('Wanderer')).toBeVisible();
 
-    // Slots mit anderen Aufgaben füllen, während 'Wanderer' erledigt ist.
+    // Fill the slots with other todos while 'Wanderer' is done.
     for (let i = 1; i <= DO_LIMIT; i++) {
       await addToInbox(page, `Fueller${String(i)}`);
       await moveToDo(page, `Fueller${String(i)}`);
     }
 
-    // Ent-Haken darf das Limit nicht brechen — die Aufgabe landet im Eingang.
+    // Unchecking must not break the limit — the todo lands in "Eingang".
     await column(page, DONE_META.label).getByRole('checkbox').click();
     await expect(column(page, INBOX_META.label).getByText('Wanderer')).toBeVisible();
     await expect(column(page, DO_META.label).getByText('Wanderer')).toHaveCount(0);
   });
 
-  test('Ent-Haken bei freiem Slot bringt die Aufgabe zurück nach Erledigen', async ({ page }) => {
+  test('unchecking with a free slot brings the todo back to "Erledigen"', async ({ page }) => {
     await addToInbox(page, 'Rueckkehrer');
     await moveToDo(page, 'Rueckkehrer');
     await column(page, DO_META.label).getByRole('checkbox').click();
@@ -127,7 +127,7 @@ test.describe('ToDo-Board', () => {
     await expect(column(page, DO_META.label).getByText('Rueckkehrer')).toBeVisible();
   });
 
-  test('Erledigt leeren verschiebt in den Papierkorb', async ({ page }) => {
+  test('clearing "Erledigt" moves to the trash', async ({ page }) => {
     await addToInbox(page, 'Fertig');
     await column(page, INBOX_META.label).getByRole('checkbox').click();
     await expect(column(page, DONE_META.label).getByText('Fertig')).toBeVisible();
@@ -135,13 +135,13 @@ test.describe('ToDo-Board', () => {
     await column(page, DONE_META.label).getByRole('button', { name: new RegExp(CLEAR_DONE_LABEL) }).click();
     await expect(page.getByText('Fertig')).toHaveCount(0);
 
-    // Soft-Delete: wiederherstellbar, nichts geht verloren.
+    // Soft delete: restorable, nothing is lost.
     const trash = await page.request.get('/api/trash');
     const body = (await trash.json()) as { todos: { title: string }[] };
     expect(body.todos.map((t) => t.title)).toContain('Fertig');
   });
 
-  test('Regelblock klappt auf und zu', async ({ page }) => {
+  test('the rules block expands and collapses', async ({ page }) => {
     const trigger = page.getByRole('button', { name: 'Regeln' });
     await expect(page.getByText(/3-Slot-Regel/)).toHaveCount(0);
 

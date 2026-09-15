@@ -408,8 +408,8 @@ dialog always reaches you. Read it — it is under 200 lines.
 
 If you would rather not run repo code in your sessions, delete `.claude/settings.json`.
 Everything else under `.claude/` (skills, agents, review criteria) is documentation and
-executes nothing. The same applies to `scripts/pre-commit`, which only takes effect if you
-copy it into `.git/hooks/` yourself.
+executes nothing. The same applies to `scripts/pre-commit` and `scripts/commit-msg`, which only take
+effect if you copy them into `.git/hooks/` yourself.
 
 ## Security
 

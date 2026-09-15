@@ -23,7 +23,7 @@ export type TodoColumnKey = (typeof TODO_COLUMN)[keyof typeof TODO_COLUMN];
 export const DO_LIMIT = 3;
 
 export const TODO_COLUMN_META: readonly TodoColumnMeta[] = [
-  // Eingang steht bewusst an erster Stelle (Dump-First-Workflow, mobil große Kachel).
+  // "Eingang" deliberately comes first (dump-first workflow, large tile on mobile).
   { key: TODO_COLUMN.INBOX, icon: '📥', label: 'Eingang', description: 'Alles landet zuerst hier' },
   {
     key: TODO_COLUMN.DO,

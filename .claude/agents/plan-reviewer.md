@@ -23,7 +23,7 @@ and a stranger's plan checked against the notes app invariants produces plausibl
 ## 2. Criteria and procedure
 
 Project rules and conventions are **already in your context** (`CLAUDE.md`) — judge against them and
-**do not read that file again**. If they are missing there, report it as `Lücke:`.
+**do not read that file again**. If they are missing there, report it as `Gap:`.
 
 Everything else: follow § "How to run this review" at the top of `.claude/plan-review-criteria.md` — it
 defines what to read, which skills to load, and the evidence standard. It is the plan-level layer over

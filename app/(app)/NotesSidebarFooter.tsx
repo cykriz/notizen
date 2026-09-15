@@ -9,10 +9,10 @@ import { SidebarFooter } from '@/components/ui/sidebar';
 import {
   CANCEL_LABEL,
   NEW_FOLDER_LABEL,
-  PAPIERKORB_LABEL,
   SELECT_NOTES_LABEL,
   SELECTED_COUNT_SUFFIX,
   TRASH_CLOSE_LABEL,
+  TRASH_LABEL,
   VIEW_ALL_LABEL,
   VIEW_TAGS_LABEL,
 } from '@/lib/constants';
@@ -105,7 +105,7 @@ export function NotesSidebarFooter({
           onClick={() => {
             viewStore.toggleTrash();
           }}
-          title={view === 'trash' ? TRASH_CLOSE_LABEL : PAPIERKORB_LABEL}
+          title={view === 'trash' ? TRASH_CLOSE_LABEL : TRASH_LABEL}
         >
           {view === 'trash' ? <TrashOffIcon /> : <Trash2 />}
         </Button>

@@ -1,12 +1,12 @@
 # Architecture — Components, Hooks & shadcn
 
-Referenz des `architecture` Skills. Geladen bei Änderungen an `components/**`, `hooks/**` oder Client-Komponenten unter `app/(app)/**`.
-Kuratiert, nicht vollständig — s. `SKILL.md`.
+Reference of the `architecture` skill. Loaded for changes to `components/**`, `hooks/**` or client components under `app/(app)/**`.
+Curated, not complete — see `SKILL.md`.
 
-Von hier mitbenutzt, aber nach Pfadklasse anderswo inventarisiert:
+Used from here too, but inventoried elsewhere by path class:
 
 - TTS-/Storage-Helfer `lib/markdownToPlainText.ts`, `lib/selectGermanVoice.ts`, `lib/localStorageState.ts` → `references/core.md`
-- `app/share/[token]/SharedNoteView.tsx` (Renderer der öffentlichen Share-Seite) → `references/routes.md`
+- `app/share/[token]/SharedNoteView.tsx` (renderer of the public share page) → `references/routes.md`
 
 ## Key Components
 
@@ -26,7 +26,7 @@ Von hier mitbenutzt, aber nach Pfadklasse anderswo inventarisiert:
 | AppSidebarHeader | `app/(app)/AppSidebarHeader.tsx` — tabs (Notizen/Aufgaben), sync indicator, LogoutButton |
 | LogoutButton | `app/(app)/LogoutButton.tsx` — logout submit button; calls `clearSwCaches` before the server action so SW pages cache is purged pre-redirect |
 | OfflineReloadButton | `app/offline/OfflineReloadButton.tsx` — client island used by `/offline` for the "Erneut versuchen" reload button |
-| NotesSidebarContent | `app/(app)/NotesSidebarContent.tsx` — Tags/Alle toggle and main note list (pinned moved to PinnedNotesGroup) |
+| NotesSidebarContent | `app/(app)/NotesSidebarContent.tsx` — Tags/"Alle" toggle and main note list (pinned moved to PinnedNotesGroup) |
 | PinnedNotesGroup | `app/(app)/PinnedNotesGroup.tsx` — pinned-notes sidebar group, shown after SharedNotesEntry; caps at 40vh and scrolls internally |
 | TodosSidebarContent | `app/(app)/TodosSidebarContent.tsx` — todos sidebar content |
 | TagBrowser | `app/(app)/TagBrowser.tsx` — folder-style drill-down |

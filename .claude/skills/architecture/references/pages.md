@@ -1,6 +1,6 @@
 # Architecture — Layout & Pages
 
-Referenz des `architecture` Skills. Geladen bei Änderungen an `page.tsx`, `layout.tsx`, `error.tsx`, `not-found.tsx`.
+Reference of the `architecture` skill. Loaded for changes to `page.tsx`, `layout.tsx`, `error.tsx`, `not-found.tsx`.
 
 ## Layout & Pages
 

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Commit messages are English (CLAUDE.md § Key Rules). German survives only as a quoted UI string,
+# e.g. fix(ui): "Unbenannt" no longer overwritten — the checker strips quoted spans before judging.
+# Git runs hooks from the repo root, so the relative path holds.
+bun run scripts/check-language.ts --commit-msg "$1"

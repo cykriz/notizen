@@ -16,7 +16,7 @@ Two consumers:
 ## How to run this review
 
 1. **`CLAUDE.md` is already in your context** — judge against it and do **not** read it again. If it is
-   missing there, report that as `Lücke:`.
+   missing there, report that as `Gap:`.
 2. **Read this file in full**, plus `.claude/review/checks.md` §§ "Step 1", "2a", "Severity Floors",
    "Next.js Specifics" and "Style & Conventions" — every section this file points at. Not from memory.
    Ignore its § "2b" apart from the one check named below — see "Not Checkable at the Plan Level".

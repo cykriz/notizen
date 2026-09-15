@@ -119,7 +119,7 @@ async function scrollTopOf(page: Page): Promise<number> {
   return await resultList(page).evaluate((el) => el.scrollTop);
 }
 
-test.describe('Befehlspalette', () => {
+test.describe('Command palette', () => {
   let hydrationErrors: string[];
 
   test.beforeEach(async ({ page }) => {
@@ -146,7 +146,7 @@ test.describe('Befehlspalette', () => {
     expect(hydrationErrors).toEqual([]);
   });
 
-  test('bester Treffer steht oben und ist ohne Scrollen sichtbar', async ({ page }) => {
+  test('the best match is at the top and visible without scrolling', async ({ page }) => {
     const input = await openPalette(page);
     await input.fill(TARGET_TITLE);
 
@@ -155,7 +155,7 @@ test.describe('Befehlspalette', () => {
     expect(await scrollTopOf(page)).toBe(0);
   });
 
-  test('eine Hex-Eingabe trifft keine Notiz nur wegen ihrer id', async ({ page }) => {
+  test('a hex input does not match a note just because of its id', async ({ page }) => {
     const input = await openPalette(page);
     await input.fill(HEX_QUERY);
 
@@ -165,7 +165,7 @@ test.describe('Befehlspalette', () => {
     await expect(rows(page).filter({ hasText: DECOY_TITLE })).toHaveCount(0);
   });
 
-  test('eine neue Eingabe beginnt oben, auch wenn die Liste gescrollt war', async ({ page }) => {
+  test('a new input starts at the top, even if the list was scrolled', async ({ page }) => {
     const input = await openPalette(page);
     // Matches every filler, so the list is long enough to scroll.
     await input.fill(COMMON_WORD);
@@ -191,7 +191,7 @@ test.describe('Befehlspalette', () => {
   // Scrolling by wheel leaves the selection alone, and refining the query in a way that keeps
   // the same row on top leaves it alone too — so its scrollIntoView never fires and the offset
   // survives with the best hit above the fold. This is what the reset in CommandList is for.
-  test('Scrollen und Tippen ohne Wechsel des Top-Treffers setzt den Scroll zurück', async ({ page }) => {
+  test('scrolling and typing without a change of top match resets the scroll', async ({ page }) => {
     const input = await openPalette(page);
     await input.fill(COMMON_WORD);
     const topRow = await rows(page).first().textContent();
@@ -210,7 +210,7 @@ test.describe('Befehlspalette', () => {
     await expect(rows(page).first()).toBeInViewport();
   });
 
-  test('geleerte Eingabe zeigt die angepinnte Notiz oben, nicht die alte Relevanzordnung', async ({ page }) => {
+  test('an emptied input shows the pinned note at the top, not the old relevance order', async ({ page }) => {
     const input = await openPalette(page);
     await input.fill(TARGET_TITLE);
     await expect(rows(page).first()).toHaveText(new RegExp(TARGET_TITLE));
@@ -223,7 +223,7 @@ test.describe('Befehlspalette', () => {
     expect(await scrollTopOf(page)).toBe(0);
   });
 
-  test('Tag-Modus über @ findet den Tag und rankt ihn oben', async ({ page }) => {
+  test('tag mode via @ finds the tag and ranks it at the top', async ({ page }) => {
     const input = await openPalette(page);
     await input.fill('@alpha');
 
@@ -233,7 +233,7 @@ test.describe('Befehlspalette', () => {
 
   // The create row must never steal the preselection from a real tag: Enter on a half-typed
   // query has to keep navigating, or every jump becomes an accidental tag.
-  test('Tag-Modus über @ bietet Erstellen an, ohne den besten Treffer zu verdrängen', async ({ page }) => {
+  test('tag mode via @ offers creation without displacing the best match', async ({ page }) => {
     const input = await openPalette(page);
     await input.fill(`@${AMBIGUOUS_TAG_QUERY}`);
 
@@ -243,7 +243,7 @@ test.describe('Befehlspalette', () => {
     await expect(createRow).not.toHaveAttribute('data-selected', 'true');
   });
 
-  test('Tag-Modus über @ legt einen neuen Tag an und öffnet eine Notiz darin', async ({ page }) => {
+  test('tag mode via @ creates a new tag and opens a note in it', async ({ page }) => {
     const input = await openPalette(page);
     await input.fill(`@${NEW_TAG}`);
 
@@ -265,7 +265,7 @@ test.describe('Befehlspalette', () => {
     await expect(rows(page).filter({ hasText: tagCreateLabel(NEW_TAG) })).toHaveCount(0);
   });
 
-  test('Mod+P schließt die offene Palette und verwirft die Suche', async ({ page }) => {
+  test('Mod+P closes the open palette and discards the search', async ({ page }) => {
     const input = await openPalette(page);
     await input.fill(TARGET_TITLE);
 
@@ -284,7 +284,7 @@ test.describe('Befehlspalette', () => {
   // `case "p"` in its vimBindings switch) and through the identical global listener — and on /todos
   // its owner opens a dialog instead of closing the palette, so the selection survives to be
   // asserted. Anything that puts the global listener back into the bubble phase fails here.
-  test('ein Mod-Shortcut bei offener Palette bewegt die Auswahl nicht mehr', async ({ page }) => {
+  test('a Mod shortcut no longer moves the selection while the palette is open', async ({ page }) => {
     await page.goto('/todos');
     const input = await openPalette(page);
     await input.fill(COMMON_WORD);
@@ -302,7 +302,7 @@ test.describe('Befehlspalette', () => {
     await expect(rows(page).nth(1)).toHaveAttribute('data-selected', 'true');
   });
 
-  test('der Such-Button der Bottom-Nav öffnet die Palette auf dem Handy', async ({ page }) => {
+  test('the bottom nav search button opens the palette on the phone', async ({ page }) => {
     await page.setViewportSize(PHONE_VIEWPORT);
 
     // Dismissed first, and awaited rather than blind-dismissed: the sheet opens from an effect that
@@ -332,7 +332,7 @@ test.describe('Befehlspalette', () => {
   });
 
   // The other half of the same class: nothing about the mobile anchoring may reach the desktop.
-  test('auf dem Desktop bleibt die Palette vertikal zentriert', async ({ page }) => {
+  test('on the desktop the palette stays vertically centred', async ({ page }) => {
     await openPalette(page);
 
     const box = await dialogBox(page);
@@ -344,7 +344,7 @@ test.describe('Befehlspalette', () => {
 // Own context, own describe, and no seeding on purpose: the route below has to be installed before
 // the very first navigation of this browser context. Any earlier `goto` would put the palette chunk
 // into the memory cache, where Chromium serves it without a network request Playwright could hold.
-test.describe('Befehlspalette — erster Mod+P nach dem Seitenwechsel', () => {
+test.describe('Command palette — first Mod+P after the page change', () => {
   // Mandatory: the SW precaches every /_next/static/ asset including next/dynamic chunks
   // (worker/swPrecache.ts). A cached chunk arrives without a request, page.route would never fire,
   // and the negative control below would quietly pass against the very code it is meant to catch.
@@ -392,7 +392,7 @@ test.describe('Befehlspalette — erster Mod+P nach dem Seitenwechsel', () => {
     };
   }
 
-  test('der Druck landet, während der Palette-Chunk noch unterwegs ist', async ({ page }) => {
+  test('the keypress lands while the palette chunk is still in flight', async ({ page }) => {
     const chunk = await holdPaletteChunk(page);
 
     await page.goto('/notes');
@@ -407,7 +407,7 @@ test.describe('Befehlspalette — erster Mod+P nach dem Seitenwechsel', () => {
 
   // Same guarantee for the tap, and it needs its own test: the button is a second owner of the
   // store, and it is the only entry point on a device that has no Mod key to retry with.
-  test('der Tap auf den Such-Button landet ebenso', async ({ page }) => {
+  test('the tap on the search button lands just as well', async ({ page }) => {
     await page.setViewportSize(PHONE_VIEWPORT);
     const chunk = await holdPaletteChunk(page);
 

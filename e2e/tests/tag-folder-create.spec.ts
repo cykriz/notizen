@@ -69,7 +69,7 @@ async function openFolderDialog(page: Page): Promise<Locator> {
   return dialog;
 }
 
-test.describe('Neuer Ordner (Sidebar)', () => {
+test.describe('New folder (sidebar)', () => {
   let hydrationErrors: string[];
 
   test.beforeEach(async ({ page }) => {
@@ -85,7 +85,7 @@ test.describe('Neuer Ordner (Sidebar)', () => {
     expect(hydrationErrors).toEqual([]);
   });
 
-  test('legt auf oberster Ebene an und springt in den neuen Ordner', async ({ page }) => {
+  test('creates at the top level and jumps into the new folder', async ({ page }) => {
     const dialog = await openFolderDialog(page);
     await expect(dialog.getByText(FOLDER_ROOT_DESCRIPTION)).toBeVisible();
 
@@ -105,7 +105,7 @@ test.describe('Neuer Ordner (Sidebar)', () => {
   // active folder is prepended, and a note with a *different* tag is necessarily open while it
   // happens — which is also the only way to run `createTagFolder`'s jump-first-create-second
   // ordering against a competing tag sync.
-  test('legt unter dem aktiven Ordner an, normalisiert, und bleibt dort', async ({ page }) => {
+  test('creates under the active folder, normalises, and stays there', async ({ page }) => {
     await createNoteWithTag(page, 'Arbeitsnotiz', 'Inhalt.', PARENT_FOLDER);
     // The sidebar follows the note into its folder once the note gains its first tag. Clicking
     // before this lands would find folderParent still empty and silently test the root branch.
@@ -135,7 +135,7 @@ test.describe('Neuer Ordner (Sidebar)', () => {
   // Two independent gates gone through separately: `disabled` on the button, and the
   // `if (!canSubmit) return` inside handleSubmit that Enter has to hit, because Enter never
   // touches the button at all.
-  test('lässt nicht durch, was kein Tag werden darf', async ({ page }) => {
+  test('does not let through what must not become a tag', async ({ page }) => {
     const dialog = await openFolderDialog(page);
     const input = folderNameInput(page);
 
@@ -180,7 +180,7 @@ test.describe('Neuer Ordner (Sidebar)', () => {
     expect((await res.json()) as unknown[]).toHaveLength(0);
   });
 
-  test('Abbrechen legt nichts an und lässt kein Feld stehen', async ({ page }) => {
+  test('cancelling creates nothing and leaves no field filled', async ({ page }) => {
     await openFolderDialog(page);
     await folderNameInput(page).fill('Verworfen');
     await folderDialog(page).getByRole('button', { name: CANCEL_LABEL, exact: true }).click();

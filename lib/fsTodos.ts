@@ -105,7 +105,7 @@ export async function deleteTodo(id: string, root: string): Promise<void> {
   });
 }
 
-// --- Papierkorb (Trash) ---
+// --- Trash ---
 
 export async function restoreTodo(id: string, root: string): Promise<void> {
   await withTodosLock(root, async () => {
