@@ -12,4 +12,4 @@ Reference of the `architecture` skill. Loaded for changes to `page.tsx`, `layout
 - `app/(app)/error.tsx` — Error boundary
 - `app/share/[token]/page.tsx` — Public read-only shared note view (no `loading.tsx`: a Suspense boundary would flush 200 headers before `notFound()` could set 404)
 - `app/share/layout.tsx`, `app/share/error.tsx`, `app/share/not-found.tsx` — share segment overrides (suppress PWA metadata, render anonymous error / 404 UI)
-- Mobile: bottom tab bar via MobileBottomNav (`lg:hidden`) — Notizen / Suche / Aufgaben, the middle button opening the command palette
+- Mobile: bottom tab bar via MobileBottomNav (`lg:hidden`) — Notizen / Suche / Aufgaben, the middle button opening the command palette. A tap on the *active* tab toggles the sidebar sheet; nothing opens it automatically, so this is the only pointer affordance for the note list on a phone

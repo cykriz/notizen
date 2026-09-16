@@ -1,13 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { TEST_USER } from '../playwright.config';
+import { NOTES_EMPTY_STATE } from './helpers';
 
 test.describe('Smoke Tests', () => {
   test('can see the notes page when authenticated', async ({ page }) => {
     await page.goto('/notes');
     await expect(page).toHaveURL('/notes');
-    await expect(
-      page.getByText('Wähle eine Notiz aus, um zu beginnen'),
-    ).toBeVisible();
+    await expect(page.getByText(NOTES_EMPTY_STATE)).toBeVisible();
   });
 });
 
@@ -25,9 +24,7 @@ test.describe('Unauthenticated', () => {
     await page.getByLabel('Passwort').fill(TEST_USER.password);
     await page.getByRole('button', { name: 'Anmelden' }).click();
     await expect(page).toHaveURL(/\/notes/, { timeout: 15_000 });
-    await expect(
-      page.getByText('Wähle eine Notiz aus, um zu beginnen'),
-    ).toBeVisible();
+    await expect(page.getByText(NOTES_EMPTY_STATE)).toBeVisible();
   });
 
   test('setup page redirects to login when users exist', async ({ page }) => {

@@ -7,6 +7,10 @@ import { clearLocalState, readPendingQueue } from './storageHelpers';
  *  and the mobile-only chrome switch over. */
 export const PHONE_VIEWPORT = { width: 390, height: 844 };
 
+/** The empty state of `/notes`. Asserted by more than one spec, and it doubles as a barrier:
+ *  it comes from the page component itself, so seeing it means that component has mounted. */
+export const NOTES_EMPTY_STATE = 'Wähle eine Notiz aus, um zu beginnen';
+
 /**
  * Collects anything that smells like a hydration mismatch, for the run of one test.
  *

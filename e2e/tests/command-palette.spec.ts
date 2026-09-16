@@ -1,6 +1,6 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { tagCreateLabel } from '../../lib/tagConstants';
-import { PHONE_VIEWPORT, deleteAllNotes, watchForHydrationErrors } from './helpers';
+import { NOTES_EMPTY_STATE, PHONE_VIEWPORT, deleteAllNotes, watchForHydrationErrors } from './helpers';
 import { currentLabel } from './tagLocators';
 import { boxOf } from './geometry';
 
@@ -63,10 +63,20 @@ function searchButton(page: Page): Locator {
   return page.getByRole('button', { name: 'Suchen', exact: true });
 }
 
-/** The sidebar in its mobile form. `/notes` opens it on mount (MobileSidebarOpener) and its
- *  overlay covers the bottom bar, so a mobile test has to dismiss it exactly as a user does. */
+/** The sidebar in its mobile form — a Radix sheet whose overlay covers the bottom bar. Nothing
+ *  opens it on its own; only the tap on the active bottom-nav tab or Mod+B does. */
 function mobileSidebar(page: Page): Locator {
   return page.locator('[data-slot=sidebar][data-mobile=true]');
+}
+
+/** The bottom bar itself. */
+function mainNav(page: Page): Locator {
+  return page.getByRole('navigation', { name: 'Hauptnavigation' });
+}
+
+/** A bottom-nav tab, scoped to the bar: "Notizen" also names rows inside the sidebar sheet. */
+function navTab(page: Page, label: string): Locator {
+  return mainNav(page).getByRole('button', { name: label, exact: true });
 }
 
 /** Create a note through the API — far faster than driving the editor, and the only way to
@@ -305,14 +315,7 @@ test.describe('Command palette', () => {
   test('the bottom nav search button opens the palette on the phone', async ({ page }) => {
     await page.setViewportSize(PHONE_VIEWPORT);
 
-    // Dismissed first, and awaited rather than blind-dismissed: the sheet opens from an effect that
-    // runs after the resize, so an early Escape would be swallowed. While it is open the rest of the
-    // page is `aria-hidden` (Radix modal), which puts the bar outside the a11y tree entirely.
-    await expect(mobileSidebar(page)).toBeVisible();
-    await page.keyboard.press('Escape');
-    await expect(mobileSidebar(page)).toBeHidden();
-
-    const nav = page.getByRole('navigation', { name: 'Hauptnavigation' });
+    const nav = mainNav(page);
     await expect(nav).toBeVisible();
 
     await waitForAppHydrated(page);
@@ -344,6 +347,45 @@ test.describe('Command palette', () => {
 // Own context, own describe, and no seeding on purpose: the route below has to be installed before
 // the very first navigation of this browser context. Any earlier `goto` would put the palette chunk
 // into the memory cache, where Chromium serves it without a network request Playwright could hold.
+test.describe('Mobile sidebar', () => {
+  let hydrationErrors: string[];
+
+  test.beforeEach(({ page }) => {
+    hydrationErrors = watchForHydrationErrors(page);
+  });
+
+  test.afterEach(() => {
+    expect(hydrationErrors).toEqual([]);
+  });
+
+  // The sheet used to open itself on `/notes` and cover the bottom bar, which took the choice —
+  // open the list or go straight to the palette — away from the user.
+  test('the sidebar stays closed on the phone until it is asked for', async ({ page }) => {
+    // The phone size has to be in place *before* the load. After a desktop load `--app-h` is
+    // already set, so `waitForAppHydrated` returns before any resize-driven effect has run and a
+    // "not visible" would prove nothing.
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/notes');
+    await waitForAppHydrated(page);
+    // The empty state is the barrier: it comes from the same page component, so seeing it means
+    // that component's mount effects ran — exactly the ones that used to open the sheet.
+    await expect(page.getByText(NOTES_EMPTY_STATE)).toBeVisible();
+    await expect(mobileSidebar(page)).toBeHidden();
+
+    // The other half of the report: leaving and re-entering `/notes` remounted that component.
+    await navTab(page, 'Aufgaben').click();
+    await expect(page).toHaveURL(/\/todos/);
+    await navTab(page, 'Notizen').click();
+    await expect(page.getByText(NOTES_EMPTY_STATE)).toBeVisible();
+    await expect(mobileSidebar(page)).toBeHidden();
+
+    // Counter-check: the tap on the active tab still opens it. A sheet that never opens at all
+    // would satisfy both assertions above just as well.
+    await navTab(page, 'Notizen').click();
+    await expect(mobileSidebar(page)).toBeVisible();
+  });
+});
+
 test.describe('Command palette — first Mod+P after the page change', () => {
   // Mandatory: the SW precaches every /_next/static/ asset including next/dynamic chunks
   // (worker/swPrecache.ts). A cached chunk arrives without a request, page.route would never fire,
@@ -411,7 +453,6 @@ test.describe('Command palette — first Mod+P after the page change', () => {
     await page.setViewportSize(PHONE_VIEWPORT);
     const chunk = await holdPaletteChunk(page);
 
-    // /todos, not /notes: no sidebar sheet opens on mount there, so nothing covers the bottom bar.
     await page.goto('/todos');
     await waitForAppHydrated(page);
     await chunk.waitUntilHeld();
