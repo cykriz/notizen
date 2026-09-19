@@ -10,7 +10,8 @@ interface UseSyncDrainArgs {
   setHasPendingSync: React.Dispatch<React.SetStateAction<boolean>>;
   setFailedSyncCount: React.Dispatch<React.SetStateAction<number>>;
   setFailedSyncVersion: React.Dispatch<React.SetStateAction<number>>;
-  refreshFromServer: () => Promise<void>;
+  /** Resolves false when the pull did not fully land — see useServerPull. */
+  refreshFromServer: () => Promise<boolean>;
 }
 
 /**
@@ -92,7 +93,7 @@ export function useSyncDrain({
    *
    * One function for both paths on purpose: the backoff effect and the manual
    * button share it, so a change to the drain semantics cannot apply to only one
-   * of them. Rejects only for a manual sync that could not empty the outbox.
+   * of them. Rejects only for a manual sync that did not fully land.
    */
   const drain = useCallback(async (manual: boolean) => {
     const hadQueuedWork = getPendingCount() > 0;
@@ -121,9 +122,13 @@ export function useSyncDrain({
       return;
     }
 
-    await refreshFromServer().catch(() => {
-      // offline — ignore
-    });
+    // The pull reports rather than throws, and the automatic retry runs again
+    // anyway — but a manual sync that silently fetched nothing is exactly the
+    // "clicking does nothing" the button was reported for. Say so.
+    const pulled = await refreshFromServer().catch(() => false);
+    if (manual && !pulled) {
+      throw new Error('Sync incomplete: pull from server failed');
+    }
   }, [isOnlineRef, push, syncFailedState, refreshFromServer]);
 
   /** User-initiated: push whatever is queued, then pull. Rejects if the push failed. */

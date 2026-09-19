@@ -1,14 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { NoteSummary, Todo } from '@/lib/types';
-import { parseNoteSummaryRowsStrict, parseTodoRowsStrict } from '@/lib/schemas';
-import { readJson } from '@/lib/offlineWrite';
-import { SYNC_QUEUE_KEY, getCachedNotesList, getCachedTodos, setCachedNotesList, setCachedTodos } from '@/lib/localCache';
-import { mergeById } from '@/lib/localCacheMerge';
+import { SYNC_QUEUE_KEY } from '@/lib/localCache';
 import { getPendingCount } from '@/lib/syncQueue';
 import { FAILED_SYNC_KEY } from '@/lib/failedSyncQueue';
 import { SYNC_RETRY_INTERVAL_MS, SYNC_RETRY_MAX_INTERVAL_MS } from '@/lib/constants';
-import { fetchHealth } from '@/lib/fetchHealth';
 import { useFailedSyncActions } from '@/hooks/useFailedSyncActions';
+import { useServerPull } from '@/hooks/useServerPull';
 import { useSyncDrain } from '@/hooks/useSyncDrain';
 
 interface UseDataSyncArgs {
@@ -33,50 +30,7 @@ export function useDataSync({ isOnline, isOnlineRef, setNotes, setTodos }: UseDa
   // keys depending on queue *contents* should use this, not failedSyncCount.
   const [failedSyncVersion, setFailedSyncVersion] = useState(0);
 
-  const refreshFromServer = useCallback(async () => {
-    if (!isOnlineRef.current) {
-      return;
-    }
-
-    try {
-      // Not redundant with isOnlineRef: that carries useOnlineStatus's last
-      // result, which only refreshes on mount / online / visibilitychange. A
-      // foreign server on the same port answering `[]` would pass the strict
-      // parsers below and wipe the offline cache — this is the gate.
-      if (!(await fetchHealth())) {
-        return;
-      }
-
-      const [notesRes, todosRes] = await Promise.all([fetch('/api/notes'), fetch('/api/todos')]);
-
-      // readJson, not res.json(): a non-JSON 200 (an HTML error page from a proxy
-      // or login redirect) would otherwise throw into the `catch` below — which is
-      // labelled "offline — ignore" — and take the todo pull down with it.
-      //
-      // Strict parsers, so an unreadable body skips the merge instead of being
-      // read as "the server has nothing", which would wipe the offline cache.
-      if (notesRes.ok) {
-        const serverNotes = parseNoteSummaryRowsStrict(await readJson(notesRes));
-        if (serverNotes !== null) {
-          const mergedNotes = mergeById(serverNotes, getCachedNotesList());
-          setNotes(mergedNotes);
-          setCachedNotesList(mergedNotes);
-        }
-      }
-
-      if (todosRes.ok) {
-        const serverTodos = parseTodoRowsStrict(await readJson(todosRes));
-        if (serverTodos !== null) {
-          const mergedTodos = mergeById(serverTodos, getCachedTodos());
-          setTodos(mergedTodos);
-          setCachedTodos(mergedTodos);
-        }
-      }
-
-    } catch {
-      // offline — ignore
-    }
-  }, [isOnlineRef, setNotes, setTodos]);
+  const { refreshFromServer, pulledNoteIds } = useServerPull({ isOnlineRef, setNotes, setTodos });
 
   // Persists across effect re-runs so backoff isn't reset when hasPendingSync toggles.
   const delayRef = useRef(SYNC_RETRY_INTERVAL_MS);
@@ -184,6 +138,7 @@ export function useDataSync({ isOnline, isOnlineRef, setNotes, setTodos }: UseDa
   return {
     hasPendingSync,
     failedSyncCount,
+    pulledNoteIds,
     failedSyncVersion,
     refreshFromServer,
     syncPending,

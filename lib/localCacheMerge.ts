@@ -34,7 +34,7 @@ export function mergeById<T extends { id: string; updatedAt: string }>(
 ): T[] {
   const queue = getSyncQueue();
   const pendingDeletes = new Set(queue.filter((e) => e.action === 'delete').map((e) => e.entityId));
-  const pendingAll = new Set([...queue, ...getFailedSyncQueue()].map((e) => e.entityId));
+  const pendingAll = pendingEntityIds();
   const tombstones = getTombstones();
   const cachedMap = new Map(cached.map((item) => [item.id, item]));
   const seen = new Set<string>();
@@ -123,7 +123,15 @@ function cleanTombstones(): void {
 
 // --- Sync Queue Helpers ---
 
-function pendingEntityIds(): Set<string> {
+/**
+ * Every id with unsent work — queued or permanently failed.
+ *
+ * Exported because it is the "local wins" rule itself: the cache sweep skips
+ * these keys, mergeById keeps their cache-only rows, and syncNoteBodies refuses
+ * to pull a server body over them. Three copies of one decision is how they
+ * drift apart.
+ */
+export function pendingEntityIds(): Set<string> {
   const queue = getSyncQueue();
   const failed = getFailedSyncQueue();
   return new Set([...queue, ...failed].map((e) => e.entityId));

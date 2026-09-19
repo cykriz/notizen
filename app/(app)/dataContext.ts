@@ -36,7 +36,11 @@ export interface DataContextValue {
   // delete for the id, then re-pulls the active lists from the server.
   restoreFromTrash: (type: SyncEntityType, id: string) => Promise<void>;
   getCachedNoteContent: (id: string) => Note | null;
-  refreshFromServer: () => Promise<void>;
+  // Ids whose cached BODY the last pull replaced, as a fresh array per pull.
+  // /api/notes carries no content, so this is the only signal an open editor
+  // gets that the text under it changed and the change was not its own save.
+  pulledNoteIds: string[];
+  refreshFromServer: () => Promise<boolean>;
   /** Re-read both sync queues from localStorage — they are invisible to React. */
   reseedFromQueues: () => void;
   // User-initiated sync: pushes the outbox first, THEN pulls. refreshFromServer

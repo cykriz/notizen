@@ -25,7 +25,7 @@ interface UseFailedSyncActionsArgs {
   isOnlineRef: React.RefObject<boolean>;
   setFailedSyncCount: React.Dispatch<React.SetStateAction<number>>;
   setFailedSyncVersion: React.Dispatch<React.SetStateAction<number>>;
-  refreshFromServer: () => Promise<void>;
+  refreshFromServer: () => Promise<boolean>;
   syncPending: () => void;
 }
 

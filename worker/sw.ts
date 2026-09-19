@@ -10,6 +10,7 @@ import {
 } from '@/lib/constants';
 import {
   CACHE,
+  MISC_CACHE_MAX,
   cacheFirst,
   networkFirst,
   networkFirstWithFallback,
@@ -144,12 +145,22 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Next's RSC payloads (client-side navigation and prefetch) are neither
+  // navigations nor /api/, so they used to land in stale-while-revalidate. Their
+  // cache key is stable for a whole build, which meant every client navigation
+  // to a note served the server render from its first visit — no manual sync
+  // could ever make that page current. Network-first: fresh online, cached
+  // offline, i.e. what the app does without a service worker at all.
+  const isRscRequest = request.headers.get('RSC') === '1' || url.searchParams.has('_rsc');
+
   if (request.mode === 'navigate') {
     event.respondWith(networkFirstWithFallback(request, CACHE.pages, PROTECTED_PAGE_PATHS, OFFLINE_SHELL_PATH));
   } else if (url.pathname.startsWith(STATIC_ASSET_PREFIX)) {
     event.respondWith(cacheFirst(request, CACHE.static));
   } else if (url.pathname.startsWith('/api/')) {
     event.respondWith(networkFirst(request, CACHE.api));
+  } else if (isRscRequest) {
+    event.respondWith(networkFirst(request, CACHE.misc, MISC_CACHE_MAX));
   } else {
     event.respondWith(staleWhileRevalidate(request, CACHE.misc));
   }

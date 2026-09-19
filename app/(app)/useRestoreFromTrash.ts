@@ -9,7 +9,7 @@ import type { SyncEntityType } from '@/lib/types';
 // tombstoned ids for 7 days); this then re-pulls the active lists so the item
 // reappears. Shared with the failed-sync inspector's push path, which restores
 // before re-uploading so a 404'd note is never duplicated server-side.
-export function useRestoreFromTrash(refreshFromServer: () => Promise<void>) {
+export function useRestoreFromTrash(refreshFromServer: () => Promise<boolean>) {
   return useCallback(
     async (type: SyncEntityType, id: string) => {
       if (!(await restoreTrashedEntity(type, id))) {

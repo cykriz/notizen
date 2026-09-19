@@ -8,27 +8,33 @@ import {
   failedSyncIndicatorTitle,
 } from '@/lib/failedSyncConstants';
 import {
+  SYNC_DONE_TITLE,
+  SYNC_ERROR_FLASH_MS,
   SYNC_ERROR_TITLE,
+  SYNC_DONE_FLASH_MS,
   SYNC_IDLE_LABEL,
   SYNC_IDLE_TITLE,
   SYNC_OFFLINE_TITLE,
   SYNC_PENDING_LABEL,
   SYNC_PENDING_TITLE,
 } from '@/lib/syncStatusConstants';
-import { Cloud, CloudAlert, CloudOff, CloudUpload, RefreshCcw } from 'lucide-react';
+import { Cloud, CloudAlert, CloudCheck, CloudOff, CloudUpload, RefreshCcw } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export function SyncStatusIndicator() {
   const { isOnline, hasPendingSync, failedSyncCount, syncNow, reseedFromQueues } = useData();
   const [syncing, setSyncing] = useState(false);
   const [refreshError, setRefreshError] = useState(false);
+  const [refreshDone, setRefreshDone] = useState(false);
   const [failedOpen, setFailedOpen] = useState(false);
-  const errorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // One timer for both flashes — they are mutually exclusive, and a shared
+  // handle is what guarantees a later result clears the earlier one's reset.
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     return () => {
-      if (errorTimer.current) {
-        clearTimeout(errorTimer.current);
+      if (flashTimer.current) {
+        clearTimeout(flashTimer.current);
       }
     };
   }, []);
@@ -38,17 +44,22 @@ export function SyncStatusIndicator() {
   const handleSync = useCallback(async () => {
     setSyncing(true);
     setRefreshError(false);
-    if (errorTimer.current) {
-      clearTimeout(errorTimer.current);
+    setRefreshDone(false);
+    if (flashTimer.current) {
+      clearTimeout(flashTimer.current);
     }
 
     try {
       await syncNow();
+      setRefreshDone(true);
+      flashTimer.current = setTimeout(() => {
+        setRefreshDone(false);
+      }, SYNC_DONE_FLASH_MS);
     } catch {
       setRefreshError(true);
-      errorTimer.current = setTimeout(() => {
+      flashTimer.current = setTimeout(() => {
         setRefreshError(false);
-      }, 3000);
+      }, SYNC_ERROR_FLASH_MS);
     } finally {
       setSyncing(false);
     }
@@ -59,11 +70,15 @@ export function SyncStatusIndicator() {
       return SYNC_ERROR_TITLE;
     }
 
+    if (refreshDone) {
+      return SYNC_DONE_TITLE;
+    }
+
     return hasPendingSync ? SYNC_PENDING_TITLE : SYNC_IDLE_TITLE;
   }
 
   // The one place the icon precedence lives: in progress beats error beats
-  // unsent work beats resting.
+  // just-finished beats unsent work beats resting.
   function renderIcon() {
     if (syncing) {
       return <RefreshCcw className="h-3.5 w-3.5 text-muted-foreground animate-spin direction-reverse" />;
@@ -71,6 +86,10 @@ export function SyncStatusIndicator() {
 
     if (refreshError) {
       return <CloudAlert className="h-3.5 w-3.5 text-destructive" />;
+    }
+
+    if (refreshDone) {
+      return <CloudCheck className="h-3.5 w-3.5 text-muted-foreground" />;
     }
 
     if (hasPendingSync) {

@@ -43,7 +43,7 @@ export function NotePageClient({
   note,
   noteId,
 }: NotePageClientProps) {
-  const { getCachedNoteContent, notes } = useData();
+  const { getCachedNoteContent, notes, pulledNoteIds } = useData();
 
   // First render uses the server `noteId` so SSR and hydration always match.
   // After mount we reconcile against the address bar: for a shell-served page
@@ -58,12 +58,21 @@ export function NotePageClient({
   // edits saved while the SW served stale HTML) and swaps it in via dispatch.
   const [resolvedNote, applyCache] = useReducer(cacheReducer, note);
 
+  // A sync pull writes the server's body into localStorage; neither the `note`
+  // prop nor the reactive lists change when it does, so pulledNoteIds is what
+  // tells this effect to look again.
+  //
+  // Keep the dependency list exactly as it is. It is the reason the editor key
+  // below can be derived from `resolvedNote.updatedAt`: an autosave writes the
+  // cache and the notes list, but neither is a dependency here, so the effect
+  // does not re-run and resolvedNote can only move when a PULL moved it. Adding
+  // `notes` would remount the editor mid-keystroke.
   useEffect(() => {
     const cached = getCachedNoteContent(resolvedId);
     if (cached !== null) {
       applyCache(cached);
     }
-  }, [resolvedId, getCachedNoteContent]);
+  }, [resolvedId, getCachedNoteContent, pulledNoteIds]);
 
   // Cache the server-provided note for offline access, but never overwrite a
   // newer local version (offline edits have a later updatedAt).
@@ -118,7 +127,11 @@ export function NotePageClient({
 
   return (
     <NoteEditor
-      key={resolvedNote.id}
+      // NoteEditor seeds title/content into useState once, so pulled text only
+      // becomes visible through a remount. Derived from the version cacheReducer
+      // actually accepted, never from the pull alone: a pull that brought
+      // nothing newer than what is on screen must not throw away the cursor.
+      key={`${resolvedNote.id}:${resolvedNote.updatedAt}`}
       note={resolvedNote}
       allTags={effectiveTags}
       notes={effectiveOtherNotes}

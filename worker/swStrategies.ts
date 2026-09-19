@@ -123,11 +123,17 @@ export async function networkFirstWithFallback(
 
 /**
  * A 2xx response is safe to store only when it isn't a partial (206 — the Cache
- * API rejects those) and isn't a large media file (would evict note data from
- * the small FIFO api cache). Missing Content-Length → treat as small.
+ * API rejects those), isn't a large media file (would evict note data from the
+ * small FIFO api cache), and isn't a redirect. Missing Content-Length → treat
+ * as small.
+ *
+ * The redirect rule is shouldCacheNavigation's, for the same reason: an expired
+ * session answers 200 from /login after a 307, and storing that under the
+ * requested key serves logged-out content to an authenticated user later. It
+ * applies here too now that RSC payloads — page responses — use this strategy.
  */
 function isCacheableApiResponse(response: Response): boolean {
-  if (!response.ok || response.status === 206) {
+  if (!response.ok || response.status === 206 || response.redirected) {
     return false;
   }
 
@@ -135,15 +141,25 @@ function isCacheableApiResponse(response: Response): boolean {
   return len === null || Number(len) <= API_CACHE_MAX_BYTES;
 }
 
-/** API / data: network-first, fall back to cache. Never cache 401s. */
-export async function networkFirst(request: Request, cacheName: string): Promise<Response> {
+/**
+ * API / data: network-first, fall back to cache. Never cache 401s.
+ *
+ * `maxEntries` is a parameter rather than a constant because RSC payloads use
+ * this strategy against the misc cache: trimming it to the api cap would shrink
+ * that cache from 50 to 20 and evict entries the SWR path expects to keep.
+ */
+export async function networkFirst(
+  request: Request,
+  cacheName: string,
+  maxEntries: number = API_CACHE_MAX,
+): Promise<Response> {
   try {
     const response = await fetch(request);
     if (isCacheableApiResponse(response)) {
       const cache = await caches.open(cacheName);
       void cache
         .put(request, response.clone())
-        .then(() => trimCache(cacheName, API_CACHE_MAX))
+        .then(() => trimCache(cacheName, maxEntries))
         .catch(() => undefined);
     }
 
