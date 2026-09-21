@@ -9,8 +9,8 @@ import { tagNavigationStore } from './tagNavigationStore';
 import { viewStore } from './viewStore';
 
 // Shared note-creation for the sidebar and the command palette: creates a note with the
-// given tags, closes the mobile sidebar, and navigates to the new note. Guards against
-// concurrent creates via pendingRef.
+// given tags and title, closes the mobile sidebar, and navigates to the new note. Guards
+// against concurrent creates via pendingRef.
 export function useCreateNote() {
   const { createNote } = useData();
   const { setOpenMobile } = useSidebar();
@@ -19,14 +19,18 @@ export function useCreateNote() {
   const pendingRef = useRef(false);
 
   const createNoteWithTags = useCallback(
-    (tags: string[]) => {
+    // `title` defaults so every caller that has no name to give — the sidebar button, the
+    // double-click, the empty state, createTagFolder — stays untouched. Only the palette's
+    // create row passes one, and `content` stays '' either way: that empty body is what puts
+    // the new note into edit mode with the cursor already in it (useNoteInitialState).
+    (tags: string[], title: string = DEFAULT_NOTE_TITLE) => {
       if (pendingRef.current) {
         return;
       }
 
       pendingRef.current = true;
       setPending(true);
-      void createNote({ title: DEFAULT_NOTE_TITLE, content: '', tags })
+      void createNote({ title, content: '', tags })
         .then((note) => {
           if (note.slug !== '') {
             setOpenMobile(false);

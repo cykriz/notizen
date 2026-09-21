@@ -1,21 +1,20 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
-import { ListChecks } from 'lucide-react';
+import { CommandDialog, CommandInput, CommandList, CommandEmpty } from '@/components/ui/command';
 import {
-  CommandDialog,
-  CommandInput,
-  CommandList,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-} from '@/components/ui/command';
-import { NoteCommandItem } from '@/components/NoteCommandItem';
-import { noteSearchText, rankByQuery, sortNotesForPalette, tagCreateCandidate } from '@/lib/commandSearch';
+  noteCreateCandidate,
+  noteSearchText,
+  rankByQuery,
+  sortNotesForPalette,
+  tagCreateCandidate,
+} from '@/lib/commandSearch';
 import { listAllTagPaths } from '@/lib/tagTree';
-import { NOTES_PATH } from '@/lib/pathConstants';
+import { NOTES_PATH, NOTES_PATH_PREFIX, TODOS_PATH } from '@/lib/pathConstants';
+import { CommandPaletteNotes } from './CommandPaletteNotes';
 import { CommandPaletteTags } from './CommandPaletteTags';
+import { currentFolderStore, folderTags } from './currentFolderStore';
 import { useCreateNote } from './useCreateNote';
 import { useReportedTransition } from './navigationLoading';
 import { viewStore } from './viewStore';
@@ -51,7 +50,14 @@ function CommandPaletteContent({ notes, todos, onClose }: CommandPaletteContentP
   const startNavigation = useReportedTransition();
   // Not hoisted out of this (unmounting) subtree: the create is a promise whose continuation
   // survives the unmount, and `pending` is never rendered here.
-  const { createTagFolder } = useCreateNote();
+  const { createNoteWithTags, createTagFolder } = useCreateNote();
+  // The folder the sidebar is browsing — the palette creates into the same one its
+  // "Neue Notiz" button does. Published by AppSidebar; see currentFolderStore.
+  const folderPath = useSyncExternalStore(
+    currentFolderStore.subscribe,
+    currentFolderStore.getSnapshot,
+    currentFolderStore.getServerSnapshot,
+  );
 
   const isTagMode = inputValue.startsWith('@');
   const tagQuery = isTagMode ? inputValue.slice(1).toLowerCase() : '';
@@ -72,6 +78,9 @@ function CommandPaletteContent({ notes, todos, onClose }: CommandPaletteContentP
     () => (isTagMode ? tagCreateCandidate(tagQuery, allTagPaths) : null),
     [isTagMode, tagQuery, allTagPaths],
   );
+  // No isTagMode guard: noteQuery is already '' there, and the row only renders in the
+  // non-tag branch anyway.
+  const createTitle = useMemo(() => noteCreateCandidate(noteQuery), [noteQuery]);
 
   const navigate = useCallback(
     (path: string) => {
@@ -104,6 +113,31 @@ function CommandPaletteContent({ notes, todos, onClose }: CommandPaletteContentP
     [createTagFolder, navigate],
   );
 
+  // Create first, close second — same contract as handleTagCreate: the create's continuation
+  // survives this subtree's unmount. Not through `navigate`, which would push NOTES_PATH
+  // against the hook's own push to the new note. A double Enter is caught twice over:
+  // useCreateNote's pendingRef, and this onClose unmounting the row in the same tick. Offline
+  // it ends silently — no slug yet, so the hook skips its push and only the sidebar's new row
+  // shows the note; the consolation push handleTagSelect makes would race the online one.
+  const handleNoteCreate = useCallback(
+    (title: string) => {
+      createNoteWithTags(folderTags(folderPath), title);
+      onClose();
+    },
+    [createNoteWithTags, folderPath, onClose],
+  );
+
+  const handleNoteSelect = useCallback(
+    (id: string) => {
+      navigate(`${NOTES_PATH_PREFIX}${id}`);
+    },
+    [navigate],
+  );
+
+  const handleTodoSelect = useCallback(() => {
+    navigate(TODOS_PATH);
+  }, [navigate]);
+
   return (
     <>
       {/* Controlled, because with cmdk's filtering off (the Command default) the query has to be
@@ -114,6 +148,8 @@ function CommandPaletteContent({ notes, todos, onClose }: CommandPaletteContentP
         onValueChange={setInputValue}
       />
       <CommandList>
+        {/* In note mode this now only shows for an empty query in an empty app: as soon as
+            anything is typed, the create row stands here instead. */}
         <CommandEmpty>Keine Ergebnisse gefunden.</CommandEmpty>
 
         {isTagMode ? (
@@ -124,38 +160,15 @@ function CommandPaletteContent({ notes, todos, onClose }: CommandPaletteContentP
             onCreate={handleTagCreate}
           />
         ) : (
-          <>
-            {visibleNotes.length > 0 && (
-              <CommandGroup heading="Notizen">
-                {visibleNotes.map((note) => (
-                  <NoteCommandItem
-                    key={note.id}
-                    note={note}
-                    onSelect={() => {
-                      navigate(`/notes/${note.id}`);
-                    }}
-                  />
-                ))}
-              </CommandGroup>
-            )}
-
-            {visibleTodos.length > 0 && (
-              <CommandGroup heading="Aufgaben">
-                {visibleTodos.map((todo) => (
-                  <CommandItem
-                    key={todo.id}
-                    value={todo.id}
-                    onSelect={() => {
-                      navigate('/todos');
-                    }}
-                  >
-                    <ListChecks />
-                    <span className="truncate">{todo.title}</span>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
-          </>
+          <CommandPaletteNotes
+            notes={visibleNotes}
+            todos={visibleTodos}
+            createTitle={createTitle}
+            folderPath={folderPath}
+            onSelectNote={handleNoteSelect}
+            onSelectTodo={handleTodoSelect}
+            onCreate={handleNoteCreate}
+          />
         )}
       </CommandList>
     </>

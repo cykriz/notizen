@@ -1,4 +1,5 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
+import { noteCreateLabel } from '../../lib/paletteConstants';
 import { tagCreateLabel } from '../../lib/tagConstants';
 import { NOTES_EMPTY_STATE, PHONE_VIEWPORT, deleteAllNotes, watchForHydrationErrors } from './helpers';
 import { currentLabel } from './tagLocators';
@@ -19,6 +20,9 @@ const NEW_TAG = 'arbeit/neu';
 // screen at once, which is where the preselection has to be decided.
 const AMBIGUOUS_TAG_QUERY = 'arb';
 const PINNED_TITLE = `${COMMON_WORD} Angepinnt`;
+// Deliberately share not one letter sequence with any seeded title: cmdk's filter matches a
+// subsequence, so only a title like this leaves the create row as the sole answer.
+const NEW_NOTE_TITLE = 'Zwetschgenkuchen';
 
 // The ids matter. `defaultFilter` used to score the CommandItem value — the note id — as part
 // of the haystack, so a UUID beginning with the query outscored a real title match. Giving the
@@ -273,6 +277,71 @@ test.describe('Command palette', () => {
     await reopened.fill(`@${NEW_TAG}`);
     await expect(rows(page).first()).toHaveText(new RegExp(NEW_TAG.replace('/', '\\/')));
     await expect(rows(page).filter({ hasText: tagCreateLabel(NEW_TAG) })).toHaveCount(0);
+  });
+
+  // The note create row, the ordinary-mode twin of the tag one above. Enter is the whole
+  // point: a title that matches nothing has to become a note without leaving the keyboard.
+  test('a query without a match creates the note in the current folder', async ({ page }) => {
+    // Open the tagged note first — useTagStateSync follows it, so the sidebar really stands in
+    // the folder whose tag the new note has to inherit.
+    const input = await openPalette(page);
+    await input.fill(TARGET_TITLE);
+    await page.keyboard.press('Enter');
+    await expect(currentLabel(page, TARGET_TAG)).toBeVisible();
+
+    const reopened = await openPalette(page);
+    await reopened.fill(NEW_NOTE_TITLE);
+
+    // Nothing else matched, so the create row inherits the preselection and Enter reaches it.
+    const createRow = rows(page).filter({ hasText: noteCreateLabel(NEW_NOTE_TITLE) });
+    await expect(createRow).toHaveAttribute('data-selected', 'true');
+    await page.keyboard.press('Enter');
+
+    // All three at once: the note is open, it carries the typed title, and the cursor sits in
+    // the body — an empty content puts the editor into edit mode and focuses it.
+    await expect(page).toHaveURL(/\/notes\/[^/]+$/);
+    await expect(page.locator('#note-title')).toHaveValue(NEW_NOTE_TITLE);
+    await expect(page.locator('.cm-content')).toBeFocused();
+    await expect(currentLabel(page, TARGET_TAG)).toBeVisible();
+
+    // The durable proof of where it landed: the breadcrumb above would stand in the folder for
+    // an untagged note just as well.
+    const res = await page.request.get('/api/notes');
+    expect(res.ok(), `GET /api/notes failed: ${res.status().toString()}`).toBe(true);
+    const created = ((await res.json()) as { title: string; tags: string[] }[]).find(
+      (n) => n.title === NEW_NOTE_TITLE,
+    );
+    expect(created?.tags).toEqual([TARGET_TAG]);
+  });
+
+  // Same guarantee the tag create row carries: Enter on a half-typed query still opens the
+  // note that is already there.
+  test('the create row does not displace the best match', async ({ page }) => {
+    const input = await openPalette(page);
+    await input.fill(COMMON_WORD);
+
+    const createRow = rows(page).filter({ hasText: noteCreateLabel(COMMON_WORD) });
+    await expect(createRow).toHaveCount(1);
+    await expect(rows(page).first()).toHaveText(new RegExp(COMMON_WORD));
+    await expect(createRow).not.toHaveAttribute('data-selected', 'true');
+  });
+
+  // The deliberate difference from tag mode, where an existing path ends the offer: note titles
+  // are not identities, so a second note of the same name stays creatable.
+  test('an exact title is still offered for creation', async ({ page }) => {
+    const input = await openPalette(page);
+    await input.fill(TARGET_TITLE);
+
+    await expect(rows(page).filter({ hasText: noteCreateLabel(TARGET_TITLE) })).toHaveCount(1);
+  });
+
+  test('neither an empty query nor tag mode offers a note to create', async ({ page }) => {
+    const input = await openPalette(page);
+    await expect(rows(page).first()).toBeVisible();
+    await expect(rows(page).filter({ hasText: 'erstellen' })).toHaveCount(0);
+
+    await input.fill(`@${NEW_TAG}`);
+    await expect(rows(page).filter({ hasText: noteCreateLabel(NEW_TAG) })).toHaveCount(0);
   });
 
   test('Mod+P closes the open palette and discards the search', async ({ page }) => {

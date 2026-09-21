@@ -79,3 +79,17 @@ export function sortNotesForPalette(notes: NoteSummary[]): NoteSummary[] {
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
   });
 }
+
+/**
+ * The title the palette's create row would use, or null when nothing was typed.
+ *
+ * Deliberately without an "already exists" check, unlike `tagCreateCandidate` above: a tag path
+ * is an identity, a note title is free text. Two notes may carry the same title, so the row stays
+ * offered even on an exact hit — it sits below the matches, where Enter cannot reach it by
+ * accident.
+ */
+export function noteCreateCandidate(rawQuery: string): string | null {
+  const title = rawQuery.trim();
+
+  return title === '' ? null : title;
+}

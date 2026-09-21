@@ -9,10 +9,11 @@ import { SHORTCUT } from '@/lib/globalShortcuts';
 import { NOTES_PATH, TODOS_PATH } from '@/lib/pathConstants';
 import { parentTagPath } from '@/lib/tagTree';
 import { usePathname, useRouter } from 'next/navigation';
-import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { AppSidebarBody } from './AppSidebarBody';
 import { AppSidebarHeader } from './AppSidebarHeader';
 import { CreateTagFolderDialog } from './CreateTagFolderDialog';
+import { currentFolderStore, folderTags } from './currentFolderStore';
 import { useData } from './dataContext';
 import { withFailedSyncTag } from './failedSyncTag';
 import { isTabActive } from './navTabs';
@@ -55,6 +56,13 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
   // Folder = tag prefix; never create under the synthetic sync-fehler folder.
   const folderParent = currentTagPath !== '' && currentTagPath !== FAILED_SYNC_TAG ? currentTagPath : '';
 
+  // Publish it for the command palette, which creates into the same folder this button does.
+  // In an effect, not during render: a store write there would notify subscribers mid-render.
+  // No cleanup — AppSidebar stays mounted for the whole (app) route.
+  useEffect(() => {
+    currentFolderStore.set(folderParent);
+  }, [folderParent]);
+
   // Pinned rows, tag folders, and who owns the boundary above the tag navigator.
   const { pinnedNotes, tagChildren, hasTagNav } = useSidebarChrome({
     notes,
@@ -77,7 +85,7 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
   }, [handleTagBack, noteId, notes, router]);
 
   const handleCreate = useCallback(() => {
-    createNoteWithTags(folderParent !== '' ? [folderParent] : []);
+    createNoteWithTags(folderTags(folderParent));
   }, [createNoteWithTags, folderParent]);
 
   const handleCreateFolder = useCallback(

@@ -2,7 +2,13 @@ import { describe, expect, test } from 'bun:test';
 
 import { COMMAND_RESULT_LIMIT, FAILED_SYNC_TAG } from './constants';
 import type { NoteSummary } from './types';
-import { noteSearchText, rankByQuery, sortNotesForPalette, tagCreateCandidate } from './commandSearch';
+import {
+  noteCreateCandidate,
+  noteSearchText,
+  rankByQuery,
+  sortNotesForPalette,
+  tagCreateCandidate,
+} from './commandSearch';
 import { listAllTagPaths } from './tagTree';
 
 function note(over: Partial<NoteSummary> & { id: string; title: string }): NoteSummary {
@@ -136,6 +142,28 @@ describe('commandSearch', () => {
       expect(tagCreateCandidate(FAILED_SYNC_TAG, existing)).toBeNull();
       expect(tagCreateCandidate(`${FAILED_SYNC_TAG}/x`, existing)).toBeNull();
       expect(tagCreateCandidate(`a/${FAILED_SYNC_TAG}`, existing)).toBeNull();
+    });
+  });
+
+  describe('noteCreateCandidate', () => {
+    test('the trimmed query becomes the title, verbatim', () => {
+      expect(noteCreateCandidate('Besprechung Zeta')).toBe('Besprechung Zeta');
+      expect(noteCreateCandidate('  Umzug  ')).toBe('Umzug');
+    });
+
+    test('case and umlauts survive — a title is free text, not a normalized tag path', () => {
+      expect(noteCreateCandidate('Jährliche PRÜFUNG')).toBe('Jährliche PRÜFUNG');
+    });
+
+    test('nothing typed, nothing to create', () => {
+      expect(noteCreateCandidate('')).toBeNull();
+      expect(noteCreateCandidate('   ')).toBeNull();
+    });
+
+    // The counterpart of tagCreateCandidate's "an existing path is not offered": here it IS
+    // offered, because duplicate note titles are allowed.
+    test('an existing title is still offered', () => {
+      expect(noteCreateCandidate('Wocheneinkauf')).toBe('Wocheneinkauf');
     });
   });
 });
