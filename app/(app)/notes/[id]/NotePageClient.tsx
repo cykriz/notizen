@@ -7,6 +7,7 @@ import { NOTES_PATH_PREFIX } from '@/lib/pathConstants';
 import { setCachedNote } from '@/lib/localCache';
 import { warmPageCache } from '@/lib/warmPageCache';
 import { listAllTags } from '@/lib/tagTree';
+import { extractNoteId } from '@/lib/noteUtils';
 import type { Note } from '@/lib/types';
 import { NoteEditor } from './NoteEditor';
 
@@ -26,8 +27,7 @@ function readUrlNoteId(fallback: string): string {
     return fallback;
   }
 
-  const match = /\/notes\/([^/]+)/.exec(window.location.pathname);
-  return match?.[1] ?? fallback;
+  return extractNoteId(window.location.pathname) ?? fallback;
 }
 
 function cacheReducer(state: Note | null, cached: Note): Note | null {
