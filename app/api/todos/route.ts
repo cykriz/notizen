@@ -9,6 +9,8 @@ import { errorResponse, formatZodError } from '@/lib/apiHelpers';
 const CreateTodoSchema = z.object({
   title: z.string().min(1),
   quadrant: TodoQuadrantInputSchema,
+  // Strict here, unlike the cache schema: a request has an author who can be told.
+  order: z.number().optional(),
   description: z.string().optional(),
   dueDate: z.string().optional(),
   linkedNoteIds: z.array(z.string()).optional(),

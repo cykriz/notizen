@@ -23,6 +23,21 @@ const colorMap: Record<TodoColumnKey, { colorClass: string; headerClass: string 
   },
 };
 
+/**
+ * The drop marker: one slot ABOVE every card plus one below the last, so every
+ * insertion point has the same element and there is no second copy to drift.
+ *
+ * Rendered in all three columns, although only Eingang can ever light one: the space
+ * it reserves sets the gap between cards, so dropping it from the other two would
+ * give them a different rhythm.
+ *
+ * A bar with its own height rather than a border on the card: a browser caps a
+ * border-radius at half the box height, so anything thinner renders with visibly
+ * square ends — h-1 buys the 2px radius that makes the ends read as round.
+ * The slot always occupies its height, so lighting it cannot shift the list.
+ */
+export const TODO_DROP_MARKER = 'h-1 rounded-full';
+
 export const todoColumns: TodoColumnCardMeta[] = TODO_COLUMN_META.map((m) => ({
   ...m,
   ...colorMap[m.key],

@@ -30,6 +30,19 @@ async function addToInbox(page: Page, title: string): Promise<void> {
   await expect(page.getByText(title)).toBeVisible({ timeout: 10_000 });
 }
 
+const SEED_TITLES = ['Erste', 'Zweite', 'Dritte'];
+
+/** Three todos in Eingang, created in order. */
+async function seedInbox(page: Page): Promise<void> {
+  for (const title of SEED_TITLES) {
+    await addToInbox(page, title);
+  }
+}
+
+function inboxCards(page: Page) {
+  return column(page, INBOX_META.label).locator('[data-todo-id]');
+}
+
 /** Move a todo into Erledigen through the dialog — the keyboard path, and the one
  *  Playwright can drive reliably (the board's drag & drop is native HTML5). */
 async function moveToDo(page: Page, title: string): Promise<void> {
@@ -150,5 +163,41 @@ test.describe('Todo board', () => {
 
     await trigger.click();
     await expect(page.getByText(/3-Slot-Regel/)).toHaveCount(0);
+  });
+
+  /** The manual Eingang order. The board's drag & drop is native HTML5, which Playwright
+   *  cannot drive — the pointer geometry is covered by lib/todoOrder.test.ts. What is
+   *  asserted here is the rest of the chain: schema, API, pull, merge and comparator. */
+  test('new todos land at the bottom of Eingang, in creation order', async ({ page }) => {
+    await seedInbox(page);
+
+    await page.reload();
+    const titles = await inboxCards(page).allInnerTexts();
+    expect(titles.map((t) => t.split('\n')[0].trim())).toEqual(SEED_TITLES);
+  });
+
+  /** The marker slot is a layout element, so it needs geometry, not just visibility:
+   *  it sits between every pair of cards and sets their spacing. */
+  test('the drop marker reserves its slot between cards', async ({ page }) => {
+    await seedInbox(page);
+
+    const cards = inboxCards(page);
+    const first = await boxOf(cards.nth(0));
+    const second = await boxOf(cards.nth(1));
+    const gap = second.y - (first.y + first.height);
+    expect(gap).toBeGreaterThanOrEqual(3);
+    expect(gap).toBeLessThanOrEqual(5);
+  });
+
+  test('a written order decides the rendered sequence', async ({ page }) => {
+    await seedInbox(page);
+
+    const lastId = await inboxCards(page).last().getAttribute('data-todo-id');
+    // Rank 1 is below every createdAt fallback, so this row must sort to the top.
+    const response = await page.request.put(`/api/todos/${String(lastId)}`, { data: { order: 1 } });
+    expect(response.ok()).toBe(true);
+
+    await page.reload();
+    await expect(inboxCards(page).first()).toContainText(SEED_TITLES[2]);
   });
 });

@@ -173,3 +173,19 @@ describe('TodoQuadrantInputSchema', () => {
     }
   });
 });
+
+describe('parseTodoRows — the manual rank', () => {
+  test('keeps a numeric order (z.object would otherwise strip it)', () => {
+    expect(parseTodoRows([todo({ order: 1500 })])[0].order).toBe(1500);
+  });
+
+  test('keeps the row and drops only the value when order is malformed', () => {
+    const rows = parseTodoRows([todo({ order: 'drei' })]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].order).toBeUndefined();
+  });
+
+  test('strict parsing does not null a whole pull over one bad order', () => {
+    expect(parseTodoRowsStrict([todo({ order: 'drei' })])).toHaveLength(1);
+  });
+});

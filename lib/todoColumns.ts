@@ -41,6 +41,12 @@ export const DO_FULL_PLACEHOLDER = `${String(DO_LIMIT)} Slots belegt`;
 export const CLEAR_DONE_LABEL = 'erledigte löschen';
 export const ADD_DETAILED_LABEL = 'Aufgabe mit Details anlegen';
 
+// dataTransfer MIMEs for dragging a todo card. Named like their siblings
+// NOTE_DRAG_MIME / NOTE_IDS_DRAG_MIME, which live in lib/constants.ts — that file is
+// at its 200-line cap, so the board pair lands here with the other board strings.
+export const TODO_DRAG_MIME = 'application/x-todo-id';
+export const TODO_COLUMN_DRAG_MIME = 'application/x-todo-column';
+
 /** Which column a todo renders in. `completed` wins over the stored quadrant. */
 export function columnOf(todo: Todo): TodoColumnKey {
   return todo.completed ? TODO_COLUMN.DONE : todo.quadrant;

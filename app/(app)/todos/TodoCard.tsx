@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useMemo, useState } from 'react';
+import { memo, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { CloudAlert, FileText, AlignLeft, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { QUADRANT } from '@/lib/constants';
-import { canEnterDo, columnOf } from '@/lib/todoColumns';
+import { TODO_COLUMN_DRAG_MIME, TODO_DRAG_MIME, canEnterDo, columnOf } from '@/lib/todoColumns';
+import { dropsAbove } from '@/lib/todoOrder';
 import { FAILED_SYNC_CARD_LABEL, FAILED_SYNC_CARD_TOOLTIP } from '@/lib/failedSyncConstants';
 import { useData } from '../dataContext';
 import { useReportedTransition } from '../navigationLoading';
@@ -22,13 +23,22 @@ interface TodoCardProps {
   notes: NoteSummary[];
   /** Sync for this todo failed permanently — it exists only on this device. */
   syncFailed?: boolean;
+  /** The card below this one, so the sensor can report "insert after me". */
+  nextId?: string | null;
+  /** Only set while the column is manually ordered — undefined means: no sensor. */
+  onDropBefore?: (id: string | null) => void;
+  /** Derived from the board's dragged id, so there is no second copy of that state. */
+  isDragging: boolean;
+  onDraggingChange: (id: string | null) => void;
 }
 
-export const TodoCard = memo(function TodoCard({ todo, onEdit, notes, syncFailed = false }: TodoCardProps) {
+export const TodoCard = memo(function TodoCard({
+  todo, onEdit, notes, syncFailed = false, nextId = null, onDropBefore,
+  isDragging, onDraggingChange,
+}: TodoCardProps) {
   const { todos, updateTodo, deleteTodo } = useData();
   const router = useRouter();
   const startNavigation = useReportedTransition();
-  const [isDragging, setIsDragging] = useState(false);
 
   /**
    * Un-ticking is the fifth way into "Erledigen": the todo keeps its stored
@@ -36,6 +46,9 @@ export const TodoCard = memo(function TodoCard({ todo, onEdit, notes, syncFailed
    * straight back into a column that may already be full. Writing the quadrant too
    * keeps the limit intact without blocking the click — a free slot returns the
    * todo to where it was, a full one parks it in Eingang.
+   *
+   * No `order` here on purpose: the todo keeps the rank it had before it was ticked,
+   * so it returns to its old position in Eingang instead of jumping to the bottom.
    */
   const handleToggle = (checked: boolean) => {
     const patch = checked
@@ -63,18 +76,25 @@ export const TodoCard = memo(function TodoCard({ todo, onEdit, notes, syncFailed
         'group flex items-start gap-2 rounded-md px-2.5 py-2 md:px-2 md:py-1.5 hover:bg-accent/50 cursor-pointer',
         { 'opacity-50': isDragging },
       )}
+      data-todo-id={todo.id}
       draggable
       onDragStart={(e) => {
-        setIsDragging(true);
-        e.dataTransfer.setData('application/x-todo-id', todo.id);
+        onDraggingChange(todo.id);
+        e.dataTransfer.setData(TODO_DRAG_MIME, todo.id);
         // The COLUMN, not the stored quadrant: a completed todo still carries
         // quadrant 'inbox'/'do', so sending that would make the drop handler treat
         // a drag out of Erledigt as a drop onto its own column and ignore it.
-        e.dataTransfer.setData('application/x-todo-column', columnOf(todo));
+        e.dataTransfer.setData(TODO_COLUMN_DRAG_MIME, columnOf(todo));
         e.dataTransfer.effectAllowed = 'move';
       }}
       onDragEnd={() => {
-        setIsDragging(false);
+        onDraggingChange(null);
+      }}
+      // Position sensor only: the drop stays with the column, whose dragCounter counts
+      // these cards' enter/leave events — hence no stopPropagation.
+      onDragOver={onDropBefore === undefined ? undefined : (e) => {
+        e.preventDefault();
+        onDropBefore(dropsAbove(e.clientY, e.currentTarget.getBoundingClientRect()) ? todo.id : nextId);
       }}
       onClick={() => {
         onEdit(todo);

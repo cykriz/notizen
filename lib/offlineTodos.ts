@@ -11,6 +11,7 @@ export interface CreateTodoInput {
   description?: string;
   dueDate?: string;
   linkedNoteIds?: string[];
+  order?: number;
 }
 
 /**
@@ -45,6 +46,7 @@ export async function createTodoOffline(
     id, title: input.title, quadrant: input.quadrant,
     description: input.description, dueDate: input.dueDate,
     linkedNoteIds: input.linkedNoteIds, completed: false,
+    order: input.order,
     createdAt: now, updatedAt: now,
   };
 
@@ -72,6 +74,7 @@ export interface UpdateTodoInput {
   dueDate?: string | null;
   linkedNoteIds?: string[] | null;
   quadrant?: TodoQuadrant;
+  order?: number;
   completed?: boolean;
 }
 

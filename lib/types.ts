@@ -94,6 +94,10 @@ export interface Todo {
   completed: boolean;
   createdAt: string;
   updatedAt: string;
+  // Manual rank inside "Eingang", fractional so one drag is one write. Only the Eingang
+  // bucket reads it; a row without one ranks by createdAt (see lib/todoOrder.ts), which is
+  // why introducing the field needed no backfill.
+  order?: number;
   // ISO timestamp set when the todo is moved to the trash (soft-delete flag).
   // listTodos/getTodo hide entries carrying it, so it never reaches the active client cache.
   trashedAt?: string;

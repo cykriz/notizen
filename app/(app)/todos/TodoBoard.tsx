@@ -9,6 +9,7 @@ import { useFailedEntityIds } from '../useFailedEntityIds';
 import { useGlobalShortcut } from '@/hooks/useGlobalShortcut';
 import { QUADRANT, SYNC_ENTITY } from '@/lib/constants';
 import { TODO_COLUMN, columnOf, quadrantOf } from '@/lib/todoColumns';
+import { inboxOf } from '@/lib/todoOrder';
 import { SHORTCUT } from '@/lib/globalShortcuts';
 import type { Todo, TodoQuadrant } from '@/lib/fsTodos';
 import type { NoteSummary, TodoColumnKey } from '@/lib/types';
@@ -32,6 +33,10 @@ export function TodoBoard({ todos, notes }: TodoBoardProps) {
   const [defaultQuadrant, setDefaultQuadrant] = useState<TodoQuadrant>(QUADRANT.INBOX);
   const [defaultTitle, setDefaultTitle] = useState('');
   const [dialogKey, setDialogKey] = useState(0);
+  // Which todo is under the cursor right now. Board-level because a drag crosses
+  // columns, and because dataTransfer is unreadable until the drop — without it a
+  // column cannot tell whether its marker would actually move anything.
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   const failedIds = useFailedEntityIds(SYNC_ENTITY.TODO);
 
   const todosByColumn = useMemo(() => {
@@ -43,6 +48,10 @@ export function TodoBoard({ todos, notes }: TodoBoardProps) {
     for (const t of todos) {
       map[columnOf(t)].push(t);
     }
+    // Only Eingang is manually ordered; the other two keep the updatedAt-desc order
+    // listTodos delivered. inboxOf rather than a local sort, so the sequence rendered
+    // here and the one inboxDropRank measures against are the same derivation.
+    map[TODO_COLUMN.INBOX] = inboxOf(todos);
     return map;
   }, [todos]);
 
@@ -94,6 +103,8 @@ export function TodoBoard({ todos, notes }: TodoBoardProps) {
             onAdd={handleAdd}
             onEdit={handleEdit}
             notes={notes}
+            draggingId={draggingId}
+            onDraggingChange={setDraggingId}
           />
         ))}
       </div>

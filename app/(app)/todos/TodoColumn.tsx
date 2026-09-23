@@ -1,12 +1,13 @@
 'use client';
 
-import { memo, useRef, useState } from 'react';
+import { Fragment, memo, useState } from 'react';
 import { ListFilter, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { TodoCard } from './TodoCard';
+import { useTodoColumnDrop } from './useTodoColumnDrop';
 import { useData } from '../dataContext';
 import { INBOX_SORT_HINT, INBOX_SORT_THRESHOLD } from '@/lib/constants';
 import {
@@ -14,13 +15,13 @@ import {
   CLEAR_DONE_LABEL,
   DO_FULL_PLACEHOLDER,
   TODO_COLUMN,
-  canDrop,
   canEnterDo,
   quadrantOf,
 } from '@/lib/todoColumns';
+import { inboxRankFor } from '@/lib/todoOrder';
 import type { NoteSummary, TodoColumnKey } from '@/lib/types';
 import type { Todo } from '@/lib/fsTodos';
-import type { TodoColumnCardMeta } from './todoColumnStyles';
+import { TODO_DROP_MARKER, type TodoColumnCardMeta } from './todoColumnStyles';
 
 interface TodoColumnProps {
   meta: TodoColumnCardMeta;
@@ -30,11 +31,9 @@ interface TodoColumnProps {
   notes: NoteSummary[];
   /** Ids whose sync has permanently failed — rendered as a badge on the card. */
   failedIds: ReadonlySet<string>;
-}
-
-/** The write a drop onto this column implies. */
-function patchForColumn(key: TodoColumnKey): Partial<Todo> {
-  return key === TODO_COLUMN.DONE ? { completed: true } : { completed: false, quadrant: quadrantOf(key) };
+  /** The todo currently being dragged, board-wide. */
+  draggingId: string | null;
+  onDraggingChange: (id: string | null) => void;
 }
 
 export const TodoColumn = memo(function TodoColumn({
@@ -44,6 +43,8 @@ export const TodoColumn = memo(function TodoColumn({
   onEdit,
   notes,
   failedIds,
+  draggingId,
+  onDraggingChange,
 }: TodoColumnProps) {
   const { todos: allTodos, createTodo, updateTodo, deleteTodo } = useData();
   const isDone = meta.key === TODO_COLUMN.DONE;
@@ -52,6 +53,14 @@ export const TodoColumn = memo(function TodoColumn({
   const blocked = meta.key === TODO_COLUMN.DO && !canEnterDo(allTodos);
   const [inputValue, setInputValue] = useState('');
 
+  const { marks, isDragTarget, onDropBefore, sortable, columnProps } = useTodoColumnDrop({
+    columnKey: meta.key,
+    allTodos,
+    blocked,
+    draggingId,
+    updateTodo,
+  });
+
   const handleQuickAdd = () => {
     const trimmed = inputValue.trim();
     if (trimmed === '' || blocked) {
@@ -59,7 +68,10 @@ export const TodoColumn = memo(function TodoColumn({
     }
 
     setInputValue('');
-    void createTodo({ title: trimmed, quadrant: quadrantOf(meta.key) }).catch(console.error);
+    const quadrant = quadrantOf(meta.key);
+    // Bottom of Eingang, right above this input, and it stays there.
+    void createTodo({ title: trimmed, quadrant, ...inboxRankFor(quadrant, allTodos) })
+      .catch(console.error);
   };
 
   const handleEditClick = () => {
@@ -74,50 +86,13 @@ export const TodoColumn = memo(function TodoColumn({
     }
   };
 
-  const [isDragTarget, setIsDragTarget] = useState(false);
-  const dragCounter = useRef(0);
-
-  const handleDragEnter = (e: React.DragEvent) => {
-    e.preventDefault();
-    dragCounter.current += 1;
-    setIsDragTarget(true);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = blocked ? 'none' : 'move';
-  };
-
-  const handleDragLeave = () => {
-    dragCounter.current -= 1;
-    if (dragCounter.current === 0) {
-      setIsDragTarget(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    dragCounter.current = 0;
-    setIsDragTarget(false);
-    const todoId = e.dataTransfer.getData('application/x-todo-id');
-    const fromColumn = e.dataTransfer.getData('application/x-todo-column');
-    if (!canDrop(allTodos, todoId, fromColumn, meta.key)) {
-      return;
-    }
-
-    void updateTodo(todoId, patchForColumn(meta.key)).catch(console.error);
-  };
-
   return (
     <Card
       className={cn('flex flex-col min-h-0 overflow-hidden gap-0 py-0', {
         'ring-2 ring-primary/50': isDragTarget && !blocked,
         'ring-2 ring-destructive': isDragTarget && blocked,
       })}
-      onDragEnter={handleDragEnter}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
+      {...columnProps}
     >
       {/* `flex` instead of `flex-row`: CardHeader brings `grid` along, and twMerge clears
           that only through the same class group (display) — `flex-row` alone would stay
@@ -156,11 +131,36 @@ export const TodoColumn = memo(function TodoColumn({
           )}
         </div>
       </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto mx-2 md:p-1.5 md:px-0">
+      <CardContent
+        className="flex-1 overflow-y-auto mx-2 md:p-1.5 md:px-0"
+        // Only the space below the list, never a card or marker: those are children,
+        // and their own dragover already reported the position.
+        onDragOver={(e) => {
+          if (sortable && e.target === e.currentTarget) {
+            e.preventDefault();
+            onDropBefore(null);
+          }
+        }}
+      >
         {todos.length === 0 && <p className="py-4 text-center text-xs text-muted-foreground">Keine Aufgaben</p>}
-        {todos.map((t) => (
-          <TodoCard key={t.id} todo={t} onEdit={onEdit} notes={notes} syncFailed={failedIds.has(t.id)} />
+        {todos.map((t, i) => (
+          <Fragment key={t.id}>
+            <div className={cn(TODO_DROP_MARKER, { 'bg-primary': marks(t.id) })} />
+            <TodoCard
+              todo={t}
+              onEdit={onEdit}
+              notes={notes}
+              syncFailed={failedIds.has(t.id)}
+              nextId={todos[i + 1]?.id ?? null}
+              onDropBefore={sortable ? onDropBefore : undefined}
+              isDragging={draggingId === t.id}
+              onDraggingChange={onDraggingChange}
+            />
+          </Fragment>
         ))}
+        {/* The bottom slot. Unconditional, so a drag into an EMPTY Eingang also gets an
+            insertion point. */}
+        <div className={cn(TODO_DROP_MARKER, { 'bg-primary': marks(null) })} />
       </CardContent>
       {!isDone && (
         <div className="flex items-center gap-1 border-t px-2 py-1">

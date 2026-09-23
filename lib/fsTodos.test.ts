@@ -220,4 +220,28 @@ describe('fsTodos', () => {
     expect(byId.get('d2')).toBe('inbox');
     expect(byId.get('d3')).toBe('do');
   });
+
+  describe('order — the manual Eingang rank', () => {
+    test('createTodo persists a given order', async () => {
+      const created = await createTodo({ title: 'Mit Rang', quadrant: 'inbox', order: 1500 }, testRoot);
+      expect(created.order).toBe(1500);
+      expect((await getTodo(created.id, testRoot))?.order).toBe(1500);
+    });
+
+    test('createTodo omits the key entirely when no order is given', async () => {
+      const created = await createTodo({ title: 'Ohne Rang', quadrant: 'inbox' }, testRoot);
+      expect(Object.hasOwn(created, 'order')).toBe(false);
+    });
+
+    test('updateTodo writes an order without disturbing the other fields', async () => {
+      const created = await createTodo(
+        { title: 'Verschieben', quadrant: 'inbox', description: 'bleibt' },
+        testRoot,
+      );
+      const updated = await updateTodo(created.id, { order: 2500 }, testRoot);
+      expect(updated.order).toBe(2500);
+      expect(updated.title).toBe('Verschieben');
+      expect(updated.description).toBe('bleibt');
+    });
+  });
 });

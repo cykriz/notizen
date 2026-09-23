@@ -12,6 +12,7 @@ const UpdateTodoSchema = z.object({
   dueDate: z.string().nullable().optional(),
   linkedNoteIds: z.array(z.string()).nullable().optional(),
   quadrant: TodoQuadrantInputSchema.optional(),
+  order: z.number().optional(),
   completed: z.boolean().optional(),
 });
 

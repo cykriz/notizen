@@ -95,6 +95,7 @@ export function buildTodoCreatePayload(entry: SyncQueueEntry): Record<string, un
     ...(todo.description !== undefined ? { description: todo.description } : {}),
     ...(todo.dueDate !== undefined ? { dueDate: todo.dueDate } : {}),
     ...(todo.linkedNoteIds !== undefined ? { linkedNoteIds: todo.linkedNoteIds } : {}),
+    ...(todo.order !== undefined ? { order: todo.order } : {}),
   };
 }
 

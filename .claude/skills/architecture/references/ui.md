@@ -82,6 +82,7 @@ Used from here too, but inventoried elsewhere by path class:
 | TodoBoard | `app/(app)/todos/TodoBoard.tsx` — 3-column grid |
 | TodoDialog | `app/(app)/todos/TodoDialog.tsx` — create/edit with note linking |
 | TodoColumn | `app/(app)/todos/TodoColumn.tsx` — one board column |
+| useTodoColumnDrop | `app/(app)/todos/useTodoColumnDrop.ts` — the column's drag & drop state machine (highlight ring, drop position, the write a drop implies), split out of TodoColumn |
 | TodoRules | `app/(app)/todos/TodoRules.tsx` — collapsed house rules; self-contained so it can be deleted in two steps |
 | todoColumnStyles | `app/(app)/todos/todoColumnStyles.ts` — `todoColumns` metadata + per-column token classes, split out of TodoColumn |
 | TodoCard | `app/(app)/todos/TodoCard.tsx` — individual todo card; carries the failed-sync badge, since todos have no sidebar folder to mark |

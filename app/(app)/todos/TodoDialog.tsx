@@ -12,6 +12,7 @@ import { LinkedNotesField } from './LinkedNotesField';
 import { useData } from '../dataContext';
 import { CANCEL_LABEL, CREATE_LABEL, QUADRANT } from '@/lib/constants';
 import { TODO_COLUMN, TODO_COLUMN_META, canEnterDo } from '@/lib/todoColumns';
+import { inboxRankFor } from '@/lib/todoOrder';
 import type { Todo, TodoQuadrant } from '@/lib/fsTodos';
 import type { NoteSummary } from '@/lib/types';
 
@@ -54,9 +55,12 @@ export function TodoDialog({
     const desc = description.trim() !== '' ? description.trim() : undefined;
     const linked = linkedNoteIds.length > 0 ? linkedNoteIds : undefined;
     const base = { title: title.trim(), quadrant };
+    // The edit branch writes no `order`: a todo moved to Eingang through this Select
+    // keeps its old rank and returns to where it was. Only a positioned drop and a
+    // create decide a position — see lib/todoOrder.ts.
     const action = isEdit
       ? updateTodo(todo.id, { ...base, description: desc ?? null, linkedNoteIds: linked ?? null })
-      : createTodo({ ...base, description: desc, linkedNoteIds: linked });
+      : createTodo({ ...base, description: desc, linkedNoteIds: linked, ...inboxRankFor(quadrant, todos) });
     void action
       .then(() => {
         onOpenChange(false);

@@ -32,7 +32,7 @@ entry is therefore only a finding if the new module carries such a responsibilit
 See `lib/types.ts` for full definitions (read-aloud types: `lib/ttsTypes.ts`, shares: `lib/shareTypes.ts`). Key types:
 
 - `NoteSummary` / `Note` — notes with tags, pinned, attachments
-- `Todo` — persisted quadrants `do` (→ "Erledigen") and `inbox` (→ "Eingang"); the third column "Erledigt" is derived from `completed`
+- `Todo` — persisted quadrants `do` (→ "Erledigen") and `inbox` (→ "Eingang"); the third column "Erledigt" is derived from `completed`. Optional `order` is the manual rank inside "Eingang" (fractional, so one drag is one write); a row without one ranks by `createdAt`, which is why the field needed no backfill — see `lib/todoOrder.ts`
 - `Attachment` — file metadata with `relativePath`
 - Constants live in `lib/constants.ts`; the column model (metadata, WIP limit, `columnOf`) in `lib/todoColumns.ts`
 

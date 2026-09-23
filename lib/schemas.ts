@@ -37,6 +37,10 @@ const TodoSchema = z.object({
   dueDate: z.string().optional(),
   linkedNoteIds: z.array(z.string()).optional(),
   quadrant: TodoQuadrantSchema,
+  // z.object STRIPS unknown keys: without this line the manual rank would vanish from
+  // every cached row and every adopted response. .catch keeps a malformed value from
+  // discarding the WHOLE row — the same rescue toUsableQuadrant makes one line up.
+  order: z.number().optional().catch(undefined),
   completed: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
