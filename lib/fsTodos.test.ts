@@ -166,33 +166,10 @@ describe('fsTodos', () => {
     expect((onDisk as { quadrant: string }[])[0].quadrant).toBe('inbox');
   });
 
-  test("readTodos — merges the retired 'schedule' and 'planned' columns into Eingang", async () => {
-    const mergeRoot = path.join(testRoot, 'merge');
-    await fs.mkdir(mergeRoot, { recursive: true });
-    await fs.writeFile(
-      path.join(mergeRoot, 'todos.json'),
-      JSON.stringify(
-        ['schedule', 'planned'].map((quadrant, i) => ({
-          id: `alt-${String(i)}`,
-          title: `Aus ${quadrant}`,
-          quadrant,
-          completed: false,
-          createdAt: '2026-08-01T08:00:00.000Z',
-          updatedAt: '2026-08-01T08:00:00.000Z',
-        })),
-      ),
-      'utf-8',
-    );
-
-    // Terminable work belongs in the calendar, so neither column survives — but the
-    // entries do, in the bucket the weekly ritual re-decides.
-    expect((await listTodos(mergeRoot)).map((t) => t.quadrant)).toEqual(['inbox', 'inbox']);
-  });
-
   test('readTodos — caps Erledigen at 3, newest kept, and persists the demotion', async () => {
     const overflowRoot = path.join(testRoot, 'overflow');
     await fs.mkdir(overflowRoot, { recursive: true });
-    // Five open entries in 'do' is what the old four-quadrant board could leave behind.
+    // More open entries in 'do' than the cap: concurrent writers can slip past canEnterDo.
     await fs.writeFile(
       path.join(overflowRoot, 'todos.json'),
       JSON.stringify(

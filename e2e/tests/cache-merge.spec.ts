@@ -193,7 +193,6 @@ test.describe('Cache & Merge', () => {
       row('gut-1', 'GuteZeile', 'inbox'),
       { id: 'kaputt-1', title: 'KaputteZeile' },
       row('alt-1', 'LegacyZeile', 'delegate'),
-      row('alt-2', 'GeplanteZeile', 'planned'),
     ]);
 
     // Pending CREATEs make these cache-only rows survive mergeById, which
@@ -203,7 +202,6 @@ test.describe('Cache & Merge', () => {
     await seedPendingQueue(page, [
       { entityId: 'gut-1', payload: row('gut-1', 'GuteZeile', 'inbox') },
       { entityId: 'alt-1', payload: row('alt-1', 'LegacyZeile', 'inbox') },
-      { entityId: 'alt-2', payload: row('alt-2', 'GeplanteZeile', 'inbox') },
     ]);
 
     await page.reload();
@@ -211,15 +209,13 @@ test.describe('Cache & Merge', () => {
     // The good row survives, and the legacy one is rescued rather than dropped.
     await expect(page.getByText('GuteZeile')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText('LegacyZeile')).toBeVisible();
-    await expect(page.getByText('GeplanteZeile')).toBeVisible();
     await expect(page.getByText('KaputteZeile')).toHaveCount(0);
 
-    // Both retirements are rewritten to the current value, so the rows are usable
-    // again: 'delegate' (a rename) and 'planned' (the merged-away Eingeplant column).
+    // The retired 'delegate' is rewritten to the current value, so the row is usable
+    // again rather than discarded as unknown.
     await expect(async () => {
       const cached = await readCachedTodos(page);
       expect(cached.find((t) => t.id === 'alt-1')?.quadrant).toBe('inbox');
-      expect(cached.find((t) => t.id === 'alt-2')?.quadrant).toBe('inbox');
     }).toPass({ timeout: 15_000 });
   });
 });

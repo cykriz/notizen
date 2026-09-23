@@ -138,8 +138,8 @@ export const COMMAND_RESULT_LIMIT = 50;
 
 // The two PERSISTED todo values. The board shows three columns, but "Erledigt" is
 // derived from `completed` and never stored — see lib/todoColumns.ts for the column
-// list and the WIP limit, and lib/quadrantAlias.ts for what a retired value
-// ('delegate', 'schedule', 'planned') is mapped onto.
+// list and the WIP limit, and lib/quadrantAlias.ts for what the retired value
+// 'delegate' is mapped onto.
 export const QUADRANT = {
   DO: 'do',
   // Displayed as "Eingang" (inbox). This is the persisted quadrant value.

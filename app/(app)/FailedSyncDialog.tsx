@@ -84,7 +84,7 @@ export function FailedSyncDialog({ open, onOpenChange, onEmptied }: FailedSyncDi
     (detail: FailedSyncDetail) => {
       onOpenChange(false);
       startNavigation(() => {
-        // Todos have no per-entity route (/todos is a single matrix page), which
+        // Todos have no per-entity route (/todos is a single board page), which
         // is why the row carries their details inline.
         router.push(detail.entityType === SYNC_ENTITY.NOTE ? `/notes/${detail.entityId}` : '/todos');
       });

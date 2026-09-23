@@ -792,7 +792,7 @@ test.describe('Sync Failure Handling', () => {
     await expect(dialog).toContainText('KaputteAufgabe');
     await expect(dialog).toContainText(FAILED_SYNC_ENTITY_LABEL.todo);
     // Todos live in one file and carry their quadrant inline, since "open" can
-    // only reach the matrix page.
+    // only reach the board page.
     await expect(dialog).toContainText(FAILED_SYNC_TODOS_FILE);
     await expect(dialog).toContainText(FAILED_SYNC_TODO_QUADRANT);
 

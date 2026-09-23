@@ -139,7 +139,7 @@ export async function openFailedSyncDialog(page: Page): Promise<Locator> {
   return dialog;
 }
 
-/** Delete all todos via the API and clear localStorage. Without this the matrix
+/** Delete all todos via the API and clear localStorage. Without this the board
  *  keeps rows from earlier tests, and a `.first()` locator silently targets the
  *  wrong card. */
 export async function deleteAllTodos(page: Page): Promise<void> {

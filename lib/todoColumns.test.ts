@@ -93,7 +93,7 @@ describe('enforceDoLimit', () => {
   });
 
   it('keeps the DO_LIMIT most recently updated and sends the rest to Eingang', () => {
-    // The migration rule: five entries survive the old four-quadrant board.
+    // The net for what canEnterDo cannot cover: concurrent writers overshooting the gate.
     const todos = [
       inDo('oldest', '2026-08-01T08:00:00.000Z'),
       inDo('newest', '2026-08-05T08:00:00.000Z'),

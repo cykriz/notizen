@@ -41,5 +41,5 @@ See `lib/types.ts` for full definitions (read-aloud types: `lib/ttsTypes.ts`, sh
 - Per-user root: `NOTES_ROOT/users/<username>/` (`userRootFor` in `lib/fsHelpers.ts`) — every path below is relative to it
 - Notes: `notes/YYYY-MM-DD-slug-uuid/note.md` + `attachments/`
 - Frontmatter in `note.md`: id, title, tags, pinned, createdAt, updatedAt
-- Todos: `todos.json` (single JSON array, trash included via `trashedAt`). Rows can carry retired quadrants (`delegate` from before `cd9392c`, `schedule`/`planned` from the four-quadrant board); `readTodos` normalises every quadrant via `toUsableQuadrant` and caps "Erledigen" via `enforceDoLimit`, and the next write persists both fixes, so the file self-heals — there is deliberately no migration script (`scripts/todo-migration-report.ts` only *reports*, it writes nothing)
+- Todos: `todos.json` (single JSON array, trash included via `trashedAt`). Rows can carry the retired quadrant `delegate` from before `cd9392c`; `readTodos` normalises every quadrant via `toUsableQuadrant` and caps "Erledigen" via `enforceDoLimit`, and the next write persists both fixes, so the file self-heals — there is deliberately no migration script
 - Shares: `NOTES_ROOT/.shares/shares.json` (single JSON registry, token → { username, noteId, preset, createdAt, expiresAt })

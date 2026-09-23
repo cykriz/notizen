@@ -62,7 +62,7 @@ export function readFailure(raw: unknown): SyncFailureInfo | undefined {
 
 /**
  * Extra detail rows for a failed todo. Todos have no per-entity route (/todos is
- * a single matrix page), so "open" cannot show them — the inspector must carry
+ * a single board page), so "open" cannot show them — the inspector must carry
  * quadrant/due/completed inline instead.
  */
 export function todoFields(
@@ -71,7 +71,7 @@ export function todoFields(
 ): { label: string; value: string }[] {
   const rows: { label: string; value: string }[] = [];
 
-  // Rescue first: a stranded payload can still say 'schedule'/'planned', and an
+  // Rescue first: a stranded payload can still carry a retired quadrant, and an
   // unmapped value would drop the row entirely — hiding the very change that failed.
   const quadrant = readString(payload, 'quadrant') ?? todo?.quadrant;
   const meta =

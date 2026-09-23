@@ -51,15 +51,6 @@ describe('parseTodoRows', () => {
     expect(rows[0].quadrant).toBe(QUADRANT.INBOX);
   });
 
-  test("rescues the retired 'schedule' and 'planned' rows as 'inbox'", () => {
-    // Einplanen and Eingeplant are gone. A merge, not a rename: both land in the
-    // capture bucket so the next weekly ritual re-decides them, rather than being
-    // dropped as unknown.
-    const rows = parseTodoRows([todo({ id: 's', quadrant: 'schedule' }), todo({ id: 'p', quadrant: 'planned' })]);
-
-    expect(rows.map((t) => t.quadrant)).toEqual([QUADRANT.INBOX, QUADRANT.INBOX]);
-  });
-
   test('rescues an unknown quadrant into Eingang rather than dropping the row', () => {
     // One answer to "what is an unknown quadrant", shared with fsTodosStore, so
     // the cache and the server-rendered first paint cannot disagree. Losing the
@@ -144,15 +135,14 @@ describe('parseNoteSummaryRows', () => {
 });
 
 describe('TodoQuadrantInputSchema', () => {
-  // The offline outbox can hold payloads written before 'schedule'/'planned' were
-  // retired, and syncReplay sends them verbatim. A strict enum answers with a 400
-  // and parks the change in the failed-sync inspector for good.
-  test('rescues retired values instead of rejecting the request', () => {
-    for (const retired of ['schedule', 'planned', 'delegate']) {
-      const parsed = TodoQuadrantInputSchema.safeParse(retired);
-      expect(parsed.success).toBe(true);
-      expect(parsed.data).toBe(QUADRANT.INBOX);
-    }
+  // The offline outbox can hold payloads written before 'delegate' was retired, and
+  // syncReplay sends them verbatim. A strict enum answers with a 400 and parks the
+  // change in the failed-sync inspector for good.
+  test("rescues the retired 'delegate' value instead of rejecting the request", () => {
+    const parsed = TodoQuadrantInputSchema.safeParse('delegate');
+
+    expect(parsed.success).toBe(true);
+    expect(parsed.data).toBe(QUADRANT.INBOX);
   });
 
   test('passes the two live values through untouched', () => {
@@ -168,7 +158,10 @@ describe('TodoQuadrantInputSchema', () => {
     // Deliberately narrower than toUsableQuadrant: a stored row is rescued because
     // losing it is worse than re-sorting it, but a request has an author who can be
     // told. Mapping typos onto Eingang would answer 201 and write the wrong column.
-    for (const typo of ['inbxo', 'quatsch', '']) {
+    // 'schedule' is in here on purpose: the four-quadrant board's values are no
+    // longer aliased, so a request carrying one is a typo like any other, while a
+    // stored row still reaches Eingang through toUsableQuadrant's catch-all.
+    for (const typo of ['inbxo', 'quatsch', '', 'schedule']) {
       expect(TodoQuadrantInputSchema.safeParse(typo).success).toBe(false);
     }
   });

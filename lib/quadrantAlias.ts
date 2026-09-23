@@ -6,17 +6,10 @@ import type { TodoQuadrant } from './types';
 // 200-line cap. Both entry points for todo data reach it: the client cache/response
 // parser (lib/schemas.ts) and the todos.json read layer (lib/fsTodosStore.ts).
 
-// Two retirements, both without a data migration, so old rows still carry the old
-// values:
-//   'delegate' — cd9392c renamed the persisted Eingang value to 'inbox' (a 1:1 rename).
-//   'schedule' / 'planned' — the Einplanen and Eingeplant columns are gone. This one
-//   is a MERGE, not a rename: terminable work belongs in the calendar, so both land
-//   in Eingang and get re-decided at the next weekly ritual rather than being dropped.
-const LEGACY_QUADRANT_ALIASES = new Map<string, TodoQuadrant>([
-  ['delegate', QUADRANT.INBOX],
-  ['schedule', QUADRANT.INBOX],
-  ['planned', QUADRANT.INBOX],
-]);
+// One retirement without a data migration, so old rows can still carry the old
+// value: 'delegate' — cd9392c renamed the persisted Eingang value to 'inbox'
+// (a 1:1 rename).
+const LEGACY_QUADRANT_ALIASES = new Map<string, TodoQuadrant>([['delegate', QUADRANT.INBOX]]);
 
 /**
  * Maps any stored quadrant value onto one the app can render.
@@ -41,12 +34,19 @@ export function toUsableQuadrant(value: string): TodoQuadrant {
  * The retirement rule as a zod schema for REQUEST bodies. Both todo routes
  * validate `quadrant` through it.
  *
- * The offline outbox can hold payloads written before 'schedule'/'planned' were
- * retired, and lib/syncReplay.ts sends them verbatim. A strict enum answers those
- * with a 400, which parks the change in the failed-sync inspector for good — the
- * opposite of the rescue this module promises. Enforcing it server-side rather
- * than in the client's replay covers every writer: a second device, or a tab still
- * running a service-worker-cached bundle, neither of which a client fix reaches.
+ * The offline outbox can hold payloads written before 'delegate' was retired, and
+ * lib/syncReplay.ts sends them verbatim. A strict enum answers those with a 400,
+ * which parks the change in the failed-sync inspector for good — the opposite of
+ * the rescue this module promises. Enforcing it server-side rather than in the
+ * client's replay covers every writer: a second device, or a tab still running a
+ * service-worker-cached bundle, neither of which a client fix reaches.
+ *
+ * An alias is a TRANSITIONAL entry, not a permanent one: it earns its place only
+ * while a payload carrying the old value is still plausible somewhere. The
+ * four-quadrant board's 'schedule'/'planned' were dropped from the map once every
+ * device had synced past the retirement and the inspector was empty, which is why
+ * a request carrying one now answers 400 like any other unknown value — while a
+ * stored row still reaches Eingang through toUsableQuadrant's catch-all.
  *
  * Only the ALIASES are rewritten here, deliberately NOT toUsableQuadrant's
  * catch-all: a stored row is rescued because losing it is worse than re-sorting

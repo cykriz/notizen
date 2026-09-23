@@ -104,11 +104,9 @@ export function canDrop(todos: Todo[], todoId: string, fromColumn: string, colum
  * Caps "Erledigen" at DO_LIMIT by moving the surplus back to Eingang, newest
  * `updatedAt` kept (id breaks ties so the result is stable).
  *
- * This is the MIGRATION rule, not the runtime one — canEnterDo stops a fourth
- * entry from being created in the first place. It exists for the one-time move off
- * the four-quadrant model, and as the net for the only case the UI cannot cover:
- * two devices filling the last slot at once. Hung into the server read path only
- * (lib/fsTodosStore.ts), so the fix persists on the next write.
+ * The net for the only case the UI cannot cover: canEnterDo stops a fourth entry
+ * from being created, but two devices can fill the last slot at once. Hung into the
+ * server read path only (lib/fsTodosStore.ts), so the fix persists on the next write.
  */
 export function enforceDoLimit(todos: Todo[]): Todo[] {
   const open = openInDo(todos);

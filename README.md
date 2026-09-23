@@ -329,8 +329,8 @@ Response: `Todo[]`
 ```
 
 Quadrant values: `do` (shown as "Erledigen"), `inbox` (shown as "Eingang"). "Erledigt" is a
-third *column* derived from `completed`, never a stored quadrant. Retired values (`delegate`,
-`schedule`, `planned`) are rescued to `inbox` on read and on write.
+third *column* derived from `completed`, never a stored quadrant. The retired value `delegate` is
+rescued to `inbox` on read and on write.
 
 #### Create Todo
 
