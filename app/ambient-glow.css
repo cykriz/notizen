@@ -1,0 +1,53 @@
+/* Ambient corner glow: a static radial tint from the bottom-left, plus a hidden loading
+   indicator that orbits a second colour around the same corner while a navigation is pending
+   (held for a minimum time by AmbientLoadingGlow).
+   Both are overlays rather than backgrounds, because opaque app surfaces would hide the latter.
+   Stacking: below portaled Radix layers; in-flow app elements must stay below this layer to be
+   tinted. The desktop sidebar sits above it on purpose, so only the content area glows. */
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  background: radial-gradient(circle at bottom left, var(--ambient-glow), transparent 66%);
+}
+
+@keyframes ambient-orbit {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+/* A square centred on the bottom-left corner; rotating it carries two soft blobs around the
+   corner. Radial gradients are soft by themselves, so no `filter: blur()` on this huge layer.
+   The orbit pauses as soon as loading ends, so the blobs freeze during the fade-out — accepted,
+   it keeps the idle layer static instead of spinning invisibly. */
+.ambient-loading-glow {
+  position: fixed;
+  left: -100vmax;
+  bottom: -100vmax;
+  width: 200vmax;
+  height: 200vmax;
+  z-index: 40;
+  pointer-events: none;
+  background:
+    radial-gradient(circle 45vmax at 64% 36%, var(--ambient-glow-accent), transparent),
+    radial-gradient(circle 45vmax at 36% 64%, var(--ambient-glow-accent), transparent);
+  opacity: 0;
+  transition: opacity 500ms ease;
+  animation: ambient-orbit 4s linear infinite;
+  animation-play-state: paused;
+}
+
+.ambient-loading-glow.is-active {
+  opacity: 1;
+  animation-play-state: running;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-loading-glow {
+    animation: none;
+  }
+}

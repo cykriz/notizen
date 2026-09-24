@@ -15,7 +15,7 @@ All defined as CSS variables in `app/globals.css` (`:root` for light, `.dark` fo
 
 **Sidebar:** sidebar, sidebar-foreground, sidebar-primary, sidebar-primary-foreground, sidebar-accent, sidebar-accent-foreground, sidebar-border, sidebar-ring
 
-**Other:** panel-shadow, input-dark-bg
+**Other:** panel-shadow, input-dark-bg, ambient-glow, ambient-glow-accent
 
 ## Shared CSS Classes (`app/custom-components.css`)
 
@@ -31,6 +31,17 @@ Global classes for consistent visuals. Extract a class into this file **only onc
 | `.note-outline-aside` | NoteEditor, SharedNoteView | `hidden md:flex flex-col shrink-0`, `width: clamp(14rem, 20vw, 22rem)` |
 | `.sidebar-label` | NotesSidebarFooter selection count, TagBreadcrumb current folder | `min-w-0 flex-1 truncate px-1 text-xs` — non-clickable row text; **layout only**, the colour stays at the call site (this file is unlayered, so a colour baked in here could not be overridden) |
 | `.menu-row` | NoteActionsMenu, TagBreadcrumb path menu | `w-full justify-start gap-2 font-normal h-11 md:h-9` — Button that reads as a menu entry; owns the finger-vs-mouse height so the menus cannot drift apart |
+
+### Ambient glow (`app/ambient-glow.css`)
+
+Own file because keyframes plus stacked multi-gradients do not fit inline, and `custom-components.css` is already over the line limit.
+
+| Selector | Used on | Controls |
+|---|---|---|
+| `body::after` | every page | static radial `--ambient-glow` from the bottom-left corner |
+| `.ambient-loading-glow`, `.is-active` | AmbientLoadingGlow (single consumer) | two `--ambient-glow-accent` blobs orbiting the corner while a navigation is pending (plus a minimum hold, see AmbientLoadingGlow) |
+
+Stacking: both overlays at `z-index: 40`, `pointer-events: none`; the desktop sidebar (`z-45`) sits above, portaled Radix layers (`z-50`) above that. In-flow elements below 40 get tinted.
 
 ## Theme System
 

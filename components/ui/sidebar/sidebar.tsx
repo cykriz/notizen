@@ -62,7 +62,7 @@ export function Sidebar({
 
   return (
     <div
-      className="group peer text-sidebar-foreground hidden lg:block z-20"
+      className="group peer text-sidebar-foreground hidden lg:block z-45"
       data-state={state}
       data-collapsible={state === 'collapsed' ? collapsible : ''}
       data-variant={variant}

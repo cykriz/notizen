@@ -14,6 +14,7 @@ import { DataProvider } from './DataProvider';
 import { ViewportEffects } from './ViewportEffects';
 import { NavigationLoadingProvider } from './NavigationLoadingProvider';
 import { NoteLoadingBar } from './NoteLoadingBar';
+import { AmbientLoadingGlow } from './AmbientLoadingGlow';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const authEnabled = await isAuthEnabled();
@@ -39,6 +40,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <DataProvider initialNotes={notes} initialTodos={todos}>
       <ViewportEffects />
       <NavigationLoadingProvider>
+        <AmbientLoadingGlow />
         <SidebarProvider>
           <AppSidebar authEnabled={authEnabled} />
           <CommandPaletteClient />
