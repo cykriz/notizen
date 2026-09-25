@@ -180,6 +180,7 @@ export const TRASH_LABEL = 'Papierkorb';
 export const TRASH_CLOSE_LABEL = 'Papierkorb schließen';
 export const VIEW_TAGS_LABEL = 'Nach Tags';
 export const VIEW_ALL_LABEL = 'Alle Notizen';
+export const PINNED_LABEL = 'Angepinnt';
 export const TODOS_OVERVIEW_LABEL = 'Übersicht';
 export const TRASH_EMPTY_ACTION_LABEL = 'Papierkorb leeren';
 export const TRASH_RESTORE_LABEL = 'Wiederherstellen';

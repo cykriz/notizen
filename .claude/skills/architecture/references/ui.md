@@ -16,6 +16,7 @@ Used from here too, but inventoried elsewhere by path class:
 | MarkdownEditorToolbar | `components/MarkdownEditorToolbar.tsx` — editor toolbar |
 | MarkdownPreview | `components/MarkdownPreview.tsx` — rendered markdown view |
 | NoteLinkPicker | `components/NoteLinkPicker.tsx` — reusable note search dialog |
+| NoteTagBadges | `components/NoteTagBadges.tsx` — up to two leaf-tag badges; used by NoteCommandItem and PinnedNotesOverview |
 | NoteCommandItem | `components/NoteCommandItem.tsx` — one note row in a cmdk list, shared by NoteLinkPicker and CommandPalette |
 | InternalLink | `components/InternalLink.tsx` — internal note link renderer |
 | SyncStatusIndicator | `components/SyncStatusIndicator.tsx` — offline sync status |
@@ -27,6 +28,7 @@ Used from here too, but inventoried elsewhere by path class:
 | LogoutButton | `app/(app)/LogoutButton.tsx` — logout submit button; calls `clearSwCaches` before the server action so SW pages cache is purged pre-redirect |
 | OfflineReloadButton | `app/offline/OfflineReloadButton.tsx` — client island used by `/offline` for the "Erneut versuchen" reload button |
 | NotesSidebarContent | `app/(app)/NotesSidebarContent.tsx` — Tags/"Alle" toggle and main note list (pinned moved to PinnedNotesGroup) |
+| PinnedNotesOverview | `app/(app)/notes/PinnedNotesOverview.tsx` — quick-open tile grid of pinned notes on the `/notes` empty state; shares `usePinnedNotes` with PinnedNotesGroup |
 | PinnedNotesGroup | `app/(app)/PinnedNotesGroup.tsx` — pinned-notes sidebar group, shown after SharedNotesEntry; caps at 40vh and scrolls internally |
 | TodosSidebarContent | `app/(app)/TodosSidebarContent.tsx` — todos sidebar content |
 | TagBrowser | `app/(app)/TagBrowser.tsx` — folder-style drill-down |

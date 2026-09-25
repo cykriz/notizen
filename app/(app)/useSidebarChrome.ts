@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { buildTagTree, getChildNodes, type TagNode } from '@/lib/tagTree';
 import type { NoteSummary } from '@/lib/types';
+import { usePinnedNotes } from './usePinnedNotes';
 
 interface UseSidebarChromeParams {
   // Un-augmented notes for the pinned rows; displayNotes (with the synthetic
@@ -39,7 +40,7 @@ export function useSidebarChrome({
   tagChildren: TagNode[];
   hasTagNav: boolean;
 } {
-  const pinnedNotes = useMemo(() => notes.filter((n) => n.pinned), [notes]);
+  const pinnedNotes = usePinnedNotes(notes);
   const tagChildren = useMemo(
     () => getChildNodes(buildTagTree(displayNotes), currentTagPath),
     [displayNotes, currentTagPath],

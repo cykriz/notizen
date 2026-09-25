@@ -5,7 +5,7 @@ Reference of the `architecture` skill. Loaded for changes to `page.tsx`, `layout
 ## Layout & Pages
 
 - `app/(app)/layout.tsx` — Server component, fetches notes + todos, SidebarProvider + AppSidebar + SidebarInset
-- `app/(app)/notes/page.tsx` — Empty state
+- `app/(app)/notes/page.tsx` — Empty state + pinned tiles (PinnedNotesOverview)
 - `app/(app)/notes/[id]/page.tsx` — Note editor + attachments
 - `app/(app)/todos/page.tsx` — todo board (3 columns)
 - `app/offline/page.tsx` — Offline fallback page (top-level, no auth, no sidebar — SW caches and serves this when both network and the user-requested route are unavailable)

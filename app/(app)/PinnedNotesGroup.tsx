@@ -12,6 +12,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { NoteListItem } from './NoteListItem';
+import { PINNED_LABEL } from '@/lib/constants';
 import type { NoteSummary } from '@/lib/types';
 
 interface PinnedNotesGroupProps {
@@ -33,7 +34,7 @@ export function PinnedNotesGroup({ notes, separator }: PinnedNotesGroupProps) {
     <>
       <SidebarGroup>
         <SidebarGroupLabel>
-          <Pin className="mr-1" /> Angepinnt
+          <Pin className="mr-1" /> {PINNED_LABEL}
         </SidebarGroupLabel>
         <SidebarGroupContent className="max-h-[calc(0.4*var(--app-h))] overflow-y-auto">
           <SidebarMenu>

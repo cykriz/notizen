@@ -1,10 +1,8 @@
 'use client';
 
 import { FileText, Pin } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
 import { CommandItem } from '@/components/ui/command';
-import { leafTagSegment } from '@/lib/tagTree';
+import { NoteTagBadges } from '@/components/NoteTagBadges';
 import type { NoteSummary } from '@/lib/types';
 
 interface NoteCommandItemProps {
@@ -25,11 +23,7 @@ export function NoteCommandItem({ note, onSelect }: NoteCommandItemProps) {
     <CommandItem value={note.id} onSelect={onSelect}>
       {note.pinned ? <Pin /> : <FileText />}
       <span className="truncate">{note.title}</span>
-      {note.tags.slice(0, 2).map((tag, i) => (
-        <Badge key={tag} variant="secondary" className={cn('text-xs px-1 py-0', { 'ml-auto': i === 0 })}>
-          {leafTagSegment(tag)}
-        </Badge>
-      ))}
+      <NoteTagBadges tags={note.tags} />
     </CommandItem>
   );
 }
