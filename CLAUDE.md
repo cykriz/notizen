@@ -77,7 +77,7 @@ without trace.
 - Never hardcode colors (`bg-blue-500`, `#fff`) — use semantic tokens (`bg-primary`, `text-muted-foreground`)
 - Never use `dark:` prefix — CSS variables in `app/globals.css` handle light/dark
 - `cn()` with object syntax only: `cn("base", { "bg-accent": isActive })` — never ternaries or `&&`
-- Shared visual classes go in `app/custom-components.css`, not per-component
+- Shared visual classes go in `app/custom-components.css`, not per-component (exception: see `styling` skill)
 - Use shadcn/ui from `components/ui/` — never raw HTML when a shadcn equivalent exists
 - To add a color: define in `:root` + `.dark` in `globals.css`, register in `@theme inline`
 

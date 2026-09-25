@@ -106,7 +106,8 @@ Format of a finding line:
 - Null case: exactly `FINDINGS: none`. Silence is not a statement.
 - **Every deviation is a finding.** `CHECKED:` only confirms the **coverage** and never replaces
   a finding. Whenever `checks.md` was loaded it carries `deletion inventory: <n> artifacts, <m>
-  without breakage` (`checks.md` § "2a"). Name there **only what you really surveyed** — otherwise the fast path claims
+  without breakage` (`checks.md` § "2a"), and whenever probe 2's visual-role signal ran, `visual-role
+  pairs: <n> compared, <m> diverging`. Name there **only what you really surveyed** — otherwise the fast path claims
   checks that did not run.
 - No trailer line repeating a result that is already a finding.
 - **`GATES:`** names only what goes beyond `bun run lint` + `bun run typecheck` — the main agent

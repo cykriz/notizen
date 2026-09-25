@@ -42,7 +42,16 @@ by side, never one after the other:
 - entity pairs (`notes` ↔ `todos`, `lib/offlineNotes.ts` ↔ `lib/offlineTodos.ts`)
 - verb sets (`create` / `update` / `delete`, `get` / `set`, `read` / `write`)
 - transport pairs (a direct write path ↔ its retry/replay path)
-- the branches of a component that render "the same thing in a different state"
+- **one visual role in two elements** — equality grep finds only the pair that has not diverged yet,
+  so key on the role. Signals, cheapest first: (a) complementary render conditions — branches that
+  exclude each other and together cover one state (`activeId === row.id` per row vs.
+  `activeId === null` after the list), also when CSS holds them (`md:hidden` ↔ `hidden md:flex`,
+  `data-[state=…]`, `group-*`); that is one element in two places, and every difference counts,
+  handlers and aria included; (b) a comment asserting the relation (probe 5); (c) overlapping class
+  lists in one container or list, or between a placeholder and what it stands in for (skeleton ↔
+  row, marker ↔ item), even across files; (d) a shared class constant at one site, a hardcoded subset
+  at another. Compare token by token; tokens that follow the branch condition itself (`bg-primary`
+  only when active) are intended.
 - instruction files that play the same role in two places (the two reviewer agents, a command and
   the agent it delegates to). Grep is no help on these at all: the copies are paraphrases, often in
   different languages, so only reading them side by side finds them.
@@ -78,11 +87,6 @@ that fires on every hook diff costs context and returns nothing. Two corollaries
 the original usually sits in a sibling that already shares the state (the other hook behind the same
 provider), not in the file the diff edits.
 
-Then read the **delta, not the overlap**. A copy that *drops* a guard the original carries — a timeout,
-a `try`/`catch`, a 401 branch — and a copy that *adds* a condition its borrowed predicate cannot
-survive — `e.key === 'o'` cloned into a branch that also demands `shiftKey`, where the key is `'O'` —
-are both findings. The near-copy is where the damage sits; the identical one merely rots.
-
 **4. The rule probe.** The same *decision* written twice is worse than the same code written twice:
 the copies diverge silently and nobody notices until behaviour splits. Take every threshold, status
 code, retry policy, magic constant and validation rule the diff introduces or touches, and grep the
@@ -103,7 +107,7 @@ action *and* the write layer rejects the value — and because the UI already pr
 rejection is a silent discard nobody will ever see.
 
 **5. The comment probe.** Comments of the form "same as X", "the same judgement Y makes", "mirrors Z",
-"see the note in W" are a confession that two places encode one rule. Treat every such comment in the
+"see the note in W", "matches the …", "wie …", "analog zu" are a confession that two places encode one rule. Treat every such comment in the
 diff as a finding until you have read both sides and can say why they must stay apart. A comment that
 claims a count is the same confession — "the only caller", "called from four places": re-run the grep
 before you trust it.
@@ -113,6 +117,11 @@ against the rest of the repo. Grep the **stable fragment**, not the whole litera
 usually interpolates the very constant you are hunting (`{DO_LIMIT}-Slot-Regel` against a test's
 `/3-Slot-Regel/`) or differs by one word (`…diese Seite…` against `…diese Notiz…`). An exact-match
 grep then returns nothing, and nothing reads exactly like a clean result.
+
+**Every probe: read the delta, not the overlap.** Where two sides share a role, their difference *is*
+the defect, not a risk: a dropped guard (timeout, `try`/`catch`, 401 branch), an added condition its
+borrowed predicate cannot survive (`e.key === 'o'` under `shiftKey`), a missing or extra class token.
+Report it with its effect — the behaviour that splits, or the width, radius, spacing, colour rendered.
 
 Do not report a duplication you have not verified by reading both sides in full. Do not claim a probe
 found nothing if you did not run it.
@@ -272,8 +281,13 @@ These are minimums, not ceilings. Raise them when the impact warrants it.
 - An artifact the change *adds* that is removable with no named breakage (§ 2a inventory) → **High**
 - A parameter, option, abstraction or state field with exactly one real value or caller (inlinable,
   not removable) → **Minor**
-- An override that fails to displace its base class and thereby changes the rendered layout → **High**
-- An override that fails to displace but stays without consequence, or an inert leftover class → **Minor**
+- An override that fails to displace its base class, or two elements of one visual role whose visual
+  attributes diverge (class list, `variant`/`size` props), and thereby changes the rendering → **High**.
+  You cannot render: a differing token that sets width, margin/padding, radius, border or colour counts
+  as visible. Behavioural differences between the branches take the dropped-guard floor above.
+- The same divergence without visible consequence → **Medium**
+- An override that fails to displace but stays without consequence, an inert leftover class, or one
+  visual role's identical class list in two places → **Minor**
 - A layout change secured only by `toBeVisible`/`toHaveCount` → **Medium**
 - An existing export left without callers by this diff → **Minor**
 

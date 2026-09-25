@@ -19,7 +19,7 @@ All defined as CSS variables in `app/globals.css` (`:root` for light, `.dark` fo
 
 ## Shared CSS Classes (`app/custom-components.css`)
 
-Global classes for consistent visuals. Extract a class into this file **only once it has a second consumer** — one-off custom styles stay inline at the call site. One exception: a declaration Tailwind cannot express readably inline (a `mask-image` with derived geometry, say) may come here with a single consumer, and then says so in its row. Use plain CSS values — avoid `@apply` beyond well-known Tailwind v4 utilities (Turbopack can fail on unresolved utilities).
+Global classes for consistent visuals. Extract a class into this file **only once it has a second consumer** — one-off custom styles stay inline at the call site. If any consumer merges the shared list via `cn()` with classes of the same group (one side must override the other), it becomes a TS constant in a co-located styles module instead (like `app/(app)/todos/todoColumnStyles.ts`): `twMerge` resolves the tokens of a constant, while a class from this unlayered file is opaque to it and beats every utility regardless of order. Purely additive use → this file. One exception: a declaration Tailwind cannot express readably inline (a `mask-image` with derived geometry, say) may come here with a single consumer, and then says so in its row. Use plain CSS values — avoid `@apply` beyond well-known Tailwind v4 utilities (Turbopack can fail on unresolved utilities).
 
 | Class | Used on | Controls |
 |---|---|---|
