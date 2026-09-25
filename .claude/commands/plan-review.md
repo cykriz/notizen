@@ -49,7 +49,11 @@ so it can be taken over in one piece via the copy button.
 
 ## Duplication & Simplicity (✅/⚠️/❌/n/a)
 <the probes from `.claude/plan-review-criteria.md`, verbatim, prefix set per line>
-**Simplest possible?** yes — <why> | no — <the concrete simpler alternative>
+**Baseline:** <smallest mechanism>, n new files / n new exports / n changed files — plan: <same counts>
+**Deletion inventory**
+- ✅ <artifact the plan proposes> — breaks: <what, file:line>
+- ❌ <artifact> — nothing breaks
+**Simplest possible?** yes — <why, file:line> | no — <the concrete simpler alternative>
 
 ## Gaps & Risks
 1. [high|medium|low] <problem> — Fix: <suggestion>
@@ -61,8 +65,9 @@ so it can be taken over in one piece via the copy button.
 The three checklists do **not** live here but in `.claude/plan-review-criteria.md` — maintenance and
 reconciliation with `/review` happen there. Copy the lines into the block verbatim and only replace the
 prefix placeholder with your judgement. Mark lines that don't apply as `n/a` instead of omitting them.
-The last line of "Duplication & Simplicity" is the exception: "verbatim, prefix set per line" does not
-apply to it, it is never omitted, and the finding a "no" produces goes under "Gaps & Risks".
+Baseline, deletion inventory and the simplicity line close "Duplication & Simplicity" and are the
+exception: "verbatim, prefix set per line" does not apply to them, they are never omitted, and every
+❌ and every "no" also goes under "Gaps & Risks".
 
 ## Fence rule — CORE REQUIREMENT: only ONE code block
 

@@ -1,10 +1,10 @@
 # Review Checks
 
 Single source for the duplication probes, the simplicity checks and the severity floors.
-`.claude/plan-review-criteria.md` applies §§ "Step 1" / "2a" / "2b" / "Next.js Specifics" /
-"Style & Conventions" / "Severity Floors" to plans **by reference**, so changing a rule here changes
-the plan review too — intentionally. Those six section titles are load-bearing: rename one and the
-reference breaks silently, so update it in the same edit.
+`.claude/plan-review-criteria.md` applies §§ "Step 1" / "2a" / "2b" / "Correctness & Bugs" /
+"Next.js Specifics" / "Style & Conventions" / "Severity Floors" to plans **by reference**, so changing a
+rule here changes the plan review too — intentionally. Those seven section titles are load-bearing:
+rename one and the reference breaks silently, so update it in the same edit.
 
 Duplication and unnecessary complexity are **first-class defects** here, not garnish on a correctness
 review. § "Step 1" is mandatory and runs before anything else.
@@ -86,7 +86,9 @@ are both findings. The near-copy is where the damage sits; the identical one mer
 **4. The rule probe.** The same *decision* written twice is worse than the same code written twice:
 the copies diverge silently and nobody notices until behaviour splits. Take every threshold, status
 code, retry policy, magic constant and validation rule the diff introduces or touches, and grep the
-repo for it. Two places deciding "is this retryable" must be one place.
+repo for it. Two places deciding "is this retryable" must be one place — and so must two functions
+resolving the same decision, or a helper that does not filter its own subset and forces the caller into
+another bucketing pass.
 
 Grep alone will not find the second copy, because it is rarely textually similar. So **enumerate the
 layers that enforce, normalise or repair the rule** — UI, hook, offline write layer, schema/validation,
@@ -126,6 +128,10 @@ in a standalone cleanup pass, not in a probe.
 
 For each of these, the answer is a **count or a concrete input**. "Looks fine" is not an answer.
 
+- **Deletion inventory (mandatory, first):** list every artifact the change adds — field, module, file,
+  export, constant, migration/repair/backfill step, special case, test block — and name per item what
+  concretely breaks if it goes *without replacement*. No named breakage → finding. This is removal, not
+  inlining (which keeps the logic); the bullets below ask the narrower questions.
 - **New parameter or option:** count its distinct values across every call site. One value → inline it
   and delete the parameter. Two values that are really a boolean mode → ask whether the caller should
   just call a different function.
@@ -133,16 +139,18 @@ For each of these, the answer is a **count or a concrete input**. "Looks fine" i
   exists purely to stay under the file-line cap (a legitimate reason in this repo — say so explicitly
   when that is the case).
 - **New state, ref, or prop:** can it be derived from what is already there? Derived beats stored.
-- **New `?.`, `??`, `try`/`catch`, or default value:** name the real input that reaches the fallback.
-  If none exists, it is noise — delete it. If one exists, ask whether the fallback is *silent*:
-  swallowing a bad value so the user sees nothing is a defect, not defensiveness. Say what the user
-  should see instead.
-- **New generic/config-driven code:** is it generic for a second caller that exists today, or for one
-  that might? Premature generalization is a finding.
-- **Widened types or new optional fields:** what breaks if they stay narrow/required?
-- **The change as a whole:** name what it *removes*. A change that only adds carries the burden of
-  proof — name the existing mechanism that could have carried the addition and say why it cannot.
-  Nothing deleted, nothing replaced, nothing simplified is the shape of an addition nobody needed.
+- **New `?.`, `??`, `try`/`catch`, or default value:** name the real input that reaches the fallback
+  (none → the inventory's case). If one exists, is the fallback *silent*? Swallowing a bad value so the
+  user sees nothing is a defect — say what the user should see instead.
+- **New generic/config-driven code:** generic for a second caller that exists *today*? If not, premature.
+- **Widened types or new optional/persisted fields:** what breaks if they stay narrow/required? Before a
+  new field gets a default, migration, backfill or repair path, show that no existing field already
+  carries a usable initial value (`rank = order ?? createdAt`). Without that proof the whole apparatus
+  is the finding, not its details.
+- **Special-case lists:** count the branches keyed on the same discriminator. Three or more is a
+  warning sign, not diligence — can one general rule replace them?
+- **The change as a whole:** name what it *removes*. Nothing deleted, replaced or simplified is the
+  shape of an addition nobody needed.
 
 ## 2b — Cognitive: how much must a reader hold in their head?
 
@@ -182,6 +190,8 @@ Cognitive complexity is a finding on its own, even when the code is correct, und
 - Race conditions in async code or parallel fetches
 - Errors swallowed into a state nothing can observe (an unreachable error branch is dead code *and* a
   missing affordance)
+- **Affordances that lie:** an insertion mark, ring or cursor promising a position or target the
+  handler does not write
 
 ## Next.js Specifics
 
@@ -259,11 +269,13 @@ These are minimums, not ceilings. Raise them when the impact warrants it.
 - Correctness that depends on statement order nothing enforces → **Medium**
 - Nesting past depth 3, or a function whose decision points exceed ~10 → **Minor**, raised to
   **Medium** if the function is on a hot or hard-to-test path
-- A parameter, option, abstraction or state field with exactly one real value or caller → **Minor**
+- An artifact the change *adds* that is removable with no named breakage (§ 2a inventory) → **High**
+- A parameter, option, abstraction or state field with exactly one real value or caller (inlinable,
+  not removable) → **Minor**
 - An override that fails to displace its base class and thereby changes the rendered layout → **High**
 - An override that fails to displace but stays without consequence, or an inert leftover class → **Minor**
 - A layout change secured only by `toBeVisible`/`toHaveCount` → **Medium**
-- An export left without callers by this diff → **Minor**
+- An existing export left without callers by this diff → **Minor**
 
 ## Fix Order
 
@@ -275,24 +287,14 @@ one lands.
 
 ## Deliberately not in this file
 
-Three checks from the original `/review` command are omitted here because they already reach the
-reviewer another way. Do not "restore" them — that would be the duplication this file rates highest.
+Do not "restore" these — each already reaches the reviewer another way, and a second copy is the
+duplication this file rates highest:
 
-- **Repeated literals → `lib/constants.ts`, type in `lib/types.ts`** (tail of probe 6) — **injected**
-  via `CLAUDE.md` § Code Rules.
-- **The file-line cap as a legitimate reason for a one-caller wrapper** (§ 2a) — **injected** via
-  `CLAUDE.md` § Key Rules.
-The skill *rules themselves* are the third case — they live in the `SKILL.md` the reviewer loads on a
-match, so they are not restated here. The **instruction** to check a changed file against them does
-stay, under § "Skill Compliance": without it the loaded skill would be read and never applied.
-
-One more thing is deliberately absent: **which module owns which layer**. Probe 4 names the layers
-generically (UI, hook, write layer, schema, route, filesystem, service worker); the actual inventory —
-what `lib/offlineTodos.ts` enforces versus `app/api/todos/route.ts` — lives in the `architecture`
-skill's references and reaches you through the skill routing your caller follows. Do not list it here;
-it would go stale on the first refactor.
-
-The original § "Output Format" and the layout of § "Copyable Fix Plan" are gone on purpose: they were
-report formatting for a human reader, and the reviewer now writes to an agent under the output
-contract in `.claude/agents/review-changes.md`. Their one piece of check substance — the fix ordering
-rule — survives above as § "Fix Order".
+- **Repeated literals → `lib/constants.ts`/`lib/types.ts`** and **the file-line cap as a reason for a
+  one-caller wrapper** — injected via `CLAUDE.md` § Code Rules / § Key Rules.
+- **Skill rules** — in the `SKILL.md` loaded on a match; only the instruction to apply them stays here
+  (§ "Skill Compliance").
+- **Which module owns which layer** (probe 4) — in the `architecture` skill's references; listed here it
+  would go stale on the first refactor.
+- **Report layout** — the output contract lives in `.claude/agents/review-changes.md`; its one piece of
+  check substance survives as § "Fix Order".
