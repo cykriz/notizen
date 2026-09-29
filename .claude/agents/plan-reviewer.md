@@ -27,7 +27,8 @@ Project rules and conventions are **already in your context** (`CLAUDE.md`) — 
 
 Everything else: follow § "How to run this review" at the top of `.claude/plan-review-criteria.md` — it
 defines what to read, which skills to load, and the evidence standard. It is the plan-level layer over
-`.claude/review/checks.md`, which holds the probes and severity floors themselves.
+`.claude/review/duplication-probes.md` (the probes) and `checks.md` (the other checks and the severity
+floors), which hold the rules themselves.
 
 **The prior-art probe is not optional** — it is the one probe whose misses cannot be caught later by
 `/review`, because by then the duplicate is already written. The criteria file § "Duplication &

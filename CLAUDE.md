@@ -17,7 +17,7 @@ Next.js 16 + React 19 + Bun + TypeScript (strict) + Tailwind v4 + shadcn/ui. Fil
 
 In plan mode, `ExitPlanMode` is gated by `scripts/plan-review-gate.ts` (registered in `.claude/settings.json`): it denies the call until the `plan-reviewer` subagent has reviewed the plan, and returns `scripts/plan-review-protocol.md` as the reason. A deny here is expected behaviour, not a bug — follow the protocol, then call `ExitPlanMode` again. The gate never returns `allow`, so the user's approval dialog always happens.
 
-Review criteria live **only** in `.claude/plan-review-criteria.md`, shared by the `plan-reviewer` agent and the `/plan-review` command; it applies `.claude/review/checks.md` to plans by reference rather than copying it.
+Review criteria live **only** in `.claude/plan-review-criteria.md`, shared by the `plan-reviewer` agent and the `/plan-review` command; it applies `.claude/review/checks.md` + `duplication-probes.md` to plans by reference rather than copying them.
 
 Debug: `PLAN_REVIEW_GATE_DEBUG=/path/dump.jsonl` logs each hook payload plus the decision — a gate that silently passes looks exactly like a broken one.
 
@@ -26,8 +26,8 @@ Debug: `PLAN_REVIEW_GATE_DEBUG=/path/dump.jsonl` logs each hook payload plus the
 **Trigger:** after any change to a file in this repo — tracked or untracked — and **before** finishing
 the task, run subagent `review-changes`. How to call it, and the fallback when it does not resolve,
 live in `.claude/commands/review.md`; they are not repeated here. **Never review the changes
-yourself** — the check rules live in `.claude/review/checks.md` and belong in the subagent's context,
-not this one.
+yourself** — the check rules live in `.claude/review/` (`checks.md`, `duplication-probes.md`) and
+belong in the subagent's context, not this one.
 
 **Exactly one run per task, not per file edit.** A second run only if changes appeared since the
 review that did *not* come out of it — otherwise every fix is another trigger and the chain never

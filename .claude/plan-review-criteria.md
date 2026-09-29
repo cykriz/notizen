@@ -1,8 +1,8 @@
 # Plan Review Criteria
 
-The **plan-level layer** over `.claude/review/checks.md`. That file is the single source for the
-duplication probes, the simplicity checks and the severity floors; this file says how to apply them to a
-plan instead of a diff, and adds what only a plan can be judged on. Nothing is copied from it — a rule
+The **plan-level layer** over `.claude/review/` (`checks.md`, `duplication-probes.md`). Those two files are
+the single source for the duplication probes, the simplicity checks and the severity floors; this file
+says how to apply them to a plan instead of a diff, and adds what only a plan can be judged on. Nothing is copied from them — a rule
 written twice is the defect `/review` rates highest.
 
 Two consumers:
@@ -19,8 +19,8 @@ Three parts are exempt from both rules — never a line copied verbatim, never d
 
 1. **`CLAUDE.md` is already in your context** — judge against it and do **not** read it again. If it is
    missing there, report that as `Gap:`.
-2. **Read this file in full**, plus `.claude/review/checks.md` §§ "Step 1", "2a", "2b", "Correctness &
-   Bugs", "Severity Floors", "Next.js Specifics" and "Style & Conventions". Not from memory. Of "2b" and
+2. **Read this file in full**, plus `.claude/review/duplication-probes.md` § "Step 1" and
+   `.claude/review/checks.md` §§ "2a", "2b", "Correctness & Bugs", "Severity Floors", "Next.js Specifics" and "Style & Conventions". Not from memory. Of "2b" and
    "Correctness & Bugs" apply only the one check each named below — see "Not Checkable at the Plan Level".
 3. **Skills only as needed**: find the matching `SKILL.md` the same way `.claude/agents/review-changes.md`
    § 3 describes (`Grep` over `.claude/skills/**/SKILL.md` for `^description:`), then read **only** the
@@ -67,9 +67,9 @@ Mark invariants that don't apply as `n/a` instead of omitting them.
 
 ## Duplication & Simplicity (Plan Level)
 
-Run probes 1–6 from `.claude/review/checks.md` § "Step 1" and every check from its § "2a" against what
-the plan **intends to do** rather than against a diff. Give each one a `✅/⚠️/❌/n/a` line named after the
-probe. They are **actively run** — grep, read both sides. A probe you did not run must not be reported as
+Run probes 1–6 from `.claude/review/duplication-probes.md` § "Step 1" and every check from `checks.md`
+§ "2a" against what the plan **intends to do** rather than against a diff. Give each one a `✅/⚠️/❌/n/a`
+line named after the probe. They are **actively run** — grep, read both sides. A probe you did not run must not be reported as
 "found nothing".
 
 What changes when the subject is a plan instead of a diff:

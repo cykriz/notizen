@@ -50,11 +50,11 @@ the `git status` from part 4. All paths below it absolute (`Read` requires absol
 | changed | additionally read |
 |---|---|
 | pure prose only (`README.md`, notes without rule character) | nothing — fast path, judge directly |
-| rule/config files (`.claude/**`, `CLAUDE.md`, `package.json`, `tsconfig*.json`, `next.config.ts`, `eslint.config.mjs`) | `<root>/.claude/review/checks.md`, no SKILL.md |
-| source code **or path unclear** | `<root>/.claude/review/checks.md` + matching SKILL.md |
+| rule/config files (`.claude/**`, `CLAUDE.md`, `package.json`, `tsconfig*.json`, `next.config.ts`, `eslint.config.mjs`) | `<root>/.claude/review/checks.md` + `<root>/.claude/review/duplication-probes.md`, no SKILL.md |
+| source code **or path unclear** | `<root>/.claude/review/checks.md` + `<root>/.claude/review/duplication-probes.md` + matching SKILL.md |
 
-The last branch is the default: when in doubt you load `checks.md`. Rule files (`.claude/**`) are
-deliberately not on the fast path — that is where "the same rule twice" arises, so you need the probes.
+The last branch is the default: when in doubt you load `checks.md` and `duplication-probes.md`. Rule files
+(`.claude/**`) are deliberately not on the fast path — that is where "the same rule twice" arises, so you need the probes.
 
 **Finding the matching SKILL.md:** `Grep` with `path: <root>/.claude/skills`, `glob: **/SKILL.md`,
 `pattern: ^description:`, `output_mode: content`. Then read **only** the skills whose description
