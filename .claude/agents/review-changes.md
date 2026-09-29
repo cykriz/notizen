@@ -58,7 +58,7 @@ The last branch is the default: when in doubt you load `checks.md` and `duplicat
 
 **Finding the matching SKILL.md:** `Grep` with `path: <root>/.claude/skills`, `glob: **/SKILL.md`,
 `pattern: ^description:`, `output_mode: content`. Then read **only** the skills whose description
-matches a changed file.
+matches a changed file — plus `styling` whenever a visual-role pair (probe 2) needs a fix.
 
 ⚠️ **`architecture` is split.** Its `SKILL.md` is an index: data model, filesystem layout and
 a routing table. From it load **only** the `references/*.md` of the changed path class, never all of

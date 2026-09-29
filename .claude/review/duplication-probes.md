@@ -46,7 +46,8 @@ by side, never one after the other:
   lists in one container or list, or between a placeholder and what it stands in for (skeleton ↔
   row, marker ↔ item), even across files; (d) a shared class constant at one site, a hardcoded subset
   at another. Compare token by token; tokens that follow the branch condition itself (`bg-primary`
-  only when active) are intended.
+  only when active) are intended. The fix follows the `styling` skill's rule for
+  `app/custom-components.css`, not that file by reflex.
 - instruction files that play the same role in two places (the two reviewer agents, a command and
   the agent it delegates to). Grep is no help on these at all: the copies are paraphrases, often in
   different languages, so only reading them side by side finds them.
