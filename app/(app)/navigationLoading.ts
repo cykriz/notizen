@@ -7,8 +7,25 @@ export type NavigationReportFn = (active: boolean) => void;
 export const ReportContext = createContext<NavigationReportFn | null>(null);
 export const PendingContext = createContext(false);
 
+/** One-shot trigger for the loading glow; PulseTickContext counts the pulses so far. */
+export const PulseContext = createContext<(() => void) | null>(null);
+export const PulseTickContext = createContext(0);
+
 export function useNavigationLoadingPending(): boolean {
   return useContext(PendingContext);
+}
+
+export function useLoadingPulse(): () => void {
+  const pulse = useContext(PulseContext);
+  if (!pulse) {
+    throw new Error('useLoadingPulse must be used within NavigationLoadingProvider');
+  }
+
+  return pulse;
+}
+
+export function useLoadingPulseTick(): number {
+  return useContext(PulseTickContext);
 }
 
 export function useNavigationLoadingReporter(): NavigationReportFn {

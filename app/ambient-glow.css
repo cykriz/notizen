@@ -1,6 +1,6 @@
 /* Ambient corner glow: a static radial tint from the bottom-left, plus a hidden loading
    indicator that orbits a second colour around the same corner while a navigation is pending
-   (held for a minimum time by AmbientLoadingGlow).
+   or after a pulse such as a todo change (held for a minimum time by AmbientLoadingGlow).
    Both are overlays rather than backgrounds, because opaque app surfaces would hide the latter.
    Stacking: below portaled Radix layers; in-flow app elements must stay below this layer to be
    tinted. The desktop sidebar sits above it on purpose, so only the content area glows. */

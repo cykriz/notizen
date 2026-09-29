@@ -154,17 +154,6 @@ test.describe('Todo board', () => {
     expect(body.todos.map((t) => t.title)).toContain('Fertig');
   });
 
-  test('the rules block expands and collapses', async ({ page }) => {
-    const trigger = page.getByRole('button', { name: 'Regeln' });
-    await expect(page.getByText(/3-Slot-Regel/)).toHaveCount(0);
-
-    await trigger.click();
-    await expect(page.getByText(/3-Slot-Regel/)).toBeVisible();
-
-    await trigger.click();
-    await expect(page.getByText(/3-Slot-Regel/)).toHaveCount(0);
-  });
-
   /** The manual Eingang order. The board's drag & drop is native HTML5, which Playwright
    *  cannot drive — the pointer geometry is covered by lib/todoOrder.test.ts. What is
    *  asserted here is the rest of the chain: schema, API, pull, merge and comparator. */

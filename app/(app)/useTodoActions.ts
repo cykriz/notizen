@@ -9,6 +9,7 @@ import {
   deleteTodoOffline,
   updateTodoOffline,
 } from '@/lib/offlineTodos';
+import { useLoadingPulse } from './navigationLoading';
 
 interface UseTodoActionsArgs {
   todosRef: React.RefObject<Todo[]>;
@@ -20,25 +21,31 @@ interface UseTodoActionsArgs {
 /**
  * The three todo mutations, extracted from DataProvider to keep it under the
  * 200-line cap. Each writes through the offline layer (never a server action —
- * those bypass the outbox), then arms the sync loop via syncPending.
+ * those bypass the outbox), then arms the sync loop via syncPending and pulses
+ * the ambient loading glow once.
  */
 export function useTodoActions({ todosRef, isOnlineRef, setTodos, syncPending }: UseTodoActionsArgs) {
+  const pulse = useLoadingPulse();
+
   const createTodo = useCallback(async (input: CreateTodoInput): Promise<Todo> => {
     const { todo, updatedList } = await createTodoOffline(input, todosRef.current, isOnlineRef.current);
     setTodos(updatedList);
     syncPending();
+    pulse();
     return todo;
-  }, [todosRef, isOnlineRef, setTodos, syncPending]);
+  }, [todosRef, isOnlineRef, setTodos, syncPending, pulse]);
 
   const updateTodo = useCallback(async (id: string, input: UpdateTodoInput) => {
     setTodos(await updateTodoOffline(id, input, todosRef.current, isOnlineRef.current));
     syncPending();
-  }, [todosRef, isOnlineRef, setTodos, syncPending]);
+    pulse();
+  }, [todosRef, isOnlineRef, setTodos, syncPending, pulse]);
 
   const deleteTodo = useCallback(async (id: string) => {
     setTodos(await deleteTodoOffline(id, todosRef.current, isOnlineRef.current));
     syncPending();
-  }, [todosRef, isOnlineRef, setTodos, syncPending]);
+    pulse();
+  }, [todosRef, isOnlineRef, setTodos, syncPending, pulse]);
 
   return { createTodo, updateTodo, deleteTodo };
 }

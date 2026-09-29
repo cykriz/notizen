@@ -41,6 +41,18 @@ test.describe('Smoke Tests', () => {
     await expect(page.locator('.ambient-loading-glow')).not.toHaveClass(/is-active/, { timeout: 3000 });
   });
 
+  test('loading glow pulses once after a todo change without the note loading bar', async ({ page }) => {
+    await page.goto('/todos');
+    const loader = page.locator('.ambient-loading-glow');
+    await expect(loader).not.toHaveClass(/is-active/);
+    const input = page.getByPlaceholder('Neue Aufgabe…').first();
+    await input.fill('Glow todo');
+    await input.press('Enter');
+    await expect(loader).toHaveClass(/is-active/);
+    await expect(page.getByRole('progressbar', { name: 'Notiz wird geladen…', includeHidden: true })).toHaveAttribute('aria-hidden', 'true');
+    await expect(loader).not.toHaveClass(/is-active/, { timeout: 3000 });
+  });
+
   test('desktop sidebar renders above the corner glow', async ({ page }) => {
     await page.goto('/notes');
     const glowZ = await page.evaluate(() => Number(getComputedStyle(document.body, '::after').zIndex));

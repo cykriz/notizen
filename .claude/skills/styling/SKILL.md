@@ -39,7 +39,7 @@ Own file because keyframes plus stacked multi-gradients do not fit inline, and `
 | Selector | Used on | Controls |
 |---|---|---|
 | `body::after` | every page | static radial `--ambient-glow` from the bottom-left corner |
-| `.ambient-loading-glow`, `.is-active` | AmbientLoadingGlow (single consumer) | two `--ambient-glow-accent` blobs orbiting the corner while a navigation is pending (plus a minimum hold, see AmbientLoadingGlow) |
+| `.ambient-loading-glow`, `.is-active` | AmbientLoadingGlow (single consumer) | two `--ambient-glow-accent` blobs orbiting the corner while a navigation is pending or after a loading pulse such as a todo change (plus a minimum hold, see AmbientLoadingGlow) |
 
 Stacking: both overlays at `z-index: 40`, `pointer-events: none`; the desktop sidebar (`z-45`) sits above, portaled Radix layers (`z-50`) above that. In-flow elements below 40 get tinted.
 

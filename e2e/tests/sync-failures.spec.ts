@@ -764,6 +764,8 @@ test.describe('Sync Failure Handling', () => {
   test('a failed todo is listed as Aufgabe with its details', async ({ page }) => {
     // Failed todos have no marker anywhere else in the app — no sync-fehler folder,
     // no per-todo route — so the inspector is the only place they surface.
+    // The beforeEach clears notes only; the first-checkbox click below needs an empty board.
+    await deleteAllTodos(page);
     await page.goto('/todos');
     const quickAdd = page.getByPlaceholder('Neue Aufgabe…').first();
     await quickAdd.click();

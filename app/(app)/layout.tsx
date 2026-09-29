@@ -37,9 +37,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <DataProvider initialNotes={notes} initialTodos={todos}>
-      <ViewportEffects />
-      <NavigationLoadingProvider>
+    <NavigationLoadingProvider>
+      <DataProvider initialNotes={notes} initialTodos={todos}>
+        <ViewportEffects />
         <AmbientLoadingGlow />
         <SidebarProvider>
           <AppSidebar authEnabled={authEnabled} />
@@ -54,7 +54,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <MobileBottomNav />
           </SidebarInset>
         </SidebarProvider>
-      </NavigationLoadingProvider>
-    </DataProvider>
+      </DataProvider>
+    </NavigationLoadingProvider>
   );
 }

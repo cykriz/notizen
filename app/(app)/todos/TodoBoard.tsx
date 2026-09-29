@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { TodoColumn } from './TodoColumn';
-import { TodoRules } from './TodoRules';
 import { todoColumns } from './todoColumnStyles';
 import { TodoDialog } from './TodoDialog';
 import { useFailedEntityIds } from '../useFailedEntityIds';
@@ -84,7 +83,6 @@ export function TodoBoard({ todos, notes }: TodoBoardProps) {
 
   return (
     <>
-      <TodoRules />
       <div
         className="grid grid-cols-1 md:grid-cols-3 grid-rows-[var(--row-lg)_var(--row-lg)_var(--row-sm)] md:grid-rows-1 gap-3 flex-1 min-h-0 overflow-y-auto py-2 px-3"
         style={
