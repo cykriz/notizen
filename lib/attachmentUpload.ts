@@ -1,5 +1,6 @@
 import { escapeRegex } from '@/lib/escapeRegex';
 import type { Attachment } from '@/lib/fsNotes';
+import { isImageMime } from '@/lib/mediaTypes';
 
 // Single source of truth for the in-body attachment URL shape. The "/download"
 // suffix is an invariant relied on by lib/shareContent.ts (regex form).
@@ -9,7 +10,7 @@ export function attachmentDownloadPath(noteId: string, attId: string): string {
 
 export function buildMarkdownLink(att: Attachment, noteId: string): string {
   const url = attachmentDownloadPath(noteId, att.id);
-  if (att.mimeType.startsWith('image/')) {
+  if (isImageMime(att.mimeType)) {
     return `![${att.originalName}](${url})`;
   }
 

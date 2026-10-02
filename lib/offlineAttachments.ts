@@ -5,8 +5,10 @@ import type { Attachment, NoteSummary } from '@/lib/types';
 // enter the sync queue (SYNC_ENTITY knows only NOTE and TODO) and POST/DELETE
 // leave note.md — and therefore updatedAt — untouched, so nothing else writes
 // the new count back into the sidebar list. This file does, optimistically:
-// the server recomputes attachmentCount from a readdir on every read, so its
-// value wins again on the next save (adoptServerNote) or page load.
+// the server recomputes attachmentCount on every read (countVisibleAttachments,
+// lib/fsAttachments.ts), so its value wins again on the next save
+// (adoptServerNote) or page load. Removing an image line from the body is not an
+// attachment mutation, so offline it leaves the badge stale until that save.
 //
 // Split in two on purpose, against the offlineNotes form (list in, list out,
 // cache write inside): the pure half has to run as a setNotes(prev => …)

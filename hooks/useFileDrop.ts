@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect, useMemo, type RefObject } fro
 import { EditorView } from '@codemirror/view';
 import type { Attachment } from '@/lib/fsNotes';
 import { appendLinks, uploadFiles, type UploadProgress } from '@/lib/attachmentUpload';
+import { isImageMime } from '@/lib/mediaTypes';
 
 function insertLinks(view: EditorView, links: string[]) {
   if (links.length === 0) {
@@ -51,7 +52,7 @@ export function useFileDrop({ noteId, viewRef, onFileUploaded, wrapperRef, value
       EditorView.domEventHandlers({
         paste(event, view) {
           const imageFiles = Array.from(event.clipboardData?.items ?? [])
-            .filter((i) => i.type.startsWith('image/'))
+            .filter((i) => isImageMime(i.type))
             .map((i) => i.getAsFile())
             .filter((f): f is File => f !== null);
           if (imageFiles.length === 0 || noteIdRef.current === undefined) {

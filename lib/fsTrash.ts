@@ -31,6 +31,9 @@ async function pathExists(p: string): Promise<boolean> {
   }
 }
 
+// Raw file count, unlike the active notes' countVisibleAttachments
+// (lib/fsAttachments.ts): no UI reads a trashed note's attachmentCount, and a
+// restored note is recounted by listNotes.
 async function countTrashedAttachments(slug: string, root: string): Promise<number> {
   try {
     return (await fs.readdir(path.join(trashedNoteDir(slug, root), 'attachments'))).length;

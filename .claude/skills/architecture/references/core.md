@@ -17,7 +17,8 @@ Curated, not complete — see `SKILL.md`. Components/hooks: `references/ui.md`.
 - `worker/swPrecache.ts` — `ensurePrecached()`: which of `SW_PRECACHE_PATHS` / build assets are missing, refill only those, report what's left. One shared in-flight run; the slot is released on settle so later calls re-check
 - `worker/offlineFallback.ts` — last-ditch SW responses (`offlineHtmlResponse`, `offlineDataResponse`) when even `/offline` isn't cached
 - `lib/fsNotes.ts` — CRUD for notes (listNotes, getNote, createNote, updateNote, deleteNote); re-exports attachment helpers
-- `lib/fsAttachments.ts` — attachment CRUD (listAttachments, saveAttachment, deleteAttachment, getAttachmentFilePath)
+- `lib/fsAttachments.ts` — attachment CRUD (listAttachments, listAttachmentsBySlug, saveAttachment, deleteAttachment, getAttachmentFilePath) plus `countVisibleAttachments`, the source of `attachmentCount`: non-image files plus images still linked in the body — a never-linked image no longer counts
+- `lib/fsImageCleanup.ts` — `deleteRemovedImages`, called by `updateNote`: deletes image files whose link the save removed from the body (only links present before the save; kept while another note still links the URL)
 - `lib/fsTodos.ts` — CRUD for todos (listTodos, getTodo, createTodo, updateTodo, deleteTodo)
 - `lib/fsTodosStore.ts` — the `todos.json` read/write layer under `fsTodos`; normalises quadrants **and** caps "Erledigen" at `DO_LIMIT` on read, so the fix is persisted by the next write
 - `lib/quadrantAlias.ts` — `toUsableQuadrant`: the single rule for what a stored quadrant means. The retired value `delegate` (pre-`cd9392c`) is rewritten, anything else unrecognised falls back to Eingang rather than being dropped. Applied at BOTH entry points (`fsTodosStore` for `todos.json`, `schemas` for caches and responses), which is why per-quadrant records can be indexed directly

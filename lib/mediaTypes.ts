@@ -26,3 +26,12 @@ export function mediaKindForFilename(filename: string): MediaKind | null {
 
   return null;
 }
+
+/**
+ * Images render inline in the note body; everything else is listed under the
+ * editor. One predicate for both sides, so the sidebar count and the list
+ * cannot drift apart.
+ */
+export function isImageMime(mimeType: string): boolean {
+  return mimeType.startsWith('image/');
+}

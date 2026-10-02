@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState, type RefObject } from 'react';
 
 import { appendLinks, removeAttachmentLink } from '@/lib/attachmentUpload';
 import type { Attachment } from '@/lib/fsNotes';
+import { isImageMime } from '@/lib/mediaTypes';
 import type { AttachmentChange } from '@/lib/offlineAttachments';
 
 interface UseNoteAttachmentsOptions {
@@ -27,7 +28,7 @@ export function useNoteAttachments({
   const [attachments, setAttachments] = useState<Attachment[]>(initialAttachments);
 
   const nonImageAttachments = useMemo(
-    () => attachments.filter((a) => !a.mimeType.startsWith('image/')),
+    () => attachments.filter((a) => !isImageMime(a.mimeType)),
     [attachments],
   );
 

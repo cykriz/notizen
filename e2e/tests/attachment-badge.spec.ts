@@ -45,7 +45,7 @@ test.describe('Attachment badge', () => {
     });
     expect(uploadRes.ok()).toBe(true);
 
-    // The server recounts the attachments dir on every read, so this also proves
+    // The server recounts the attachments on every read, so this also proves
     // the baseline the optimistic delta has to move away from.
     await page.reload();
     await expect(badgeFor(page, NOTE_TITLE)).toHaveText('1', { timeout: 15_000 });

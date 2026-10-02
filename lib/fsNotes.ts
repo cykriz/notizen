@@ -2,7 +2,8 @@ import fs from 'fs/promises';
 import { v4 as uuidv4 } from 'uuid';
 import matter from 'gray-matter';
 import type { Note, NoteSummary } from './types';
-import { listAttachments } from './fsAttachments';
+import { countVisibleAttachments, listAttachmentsBySlug } from './fsAttachments';
+import { deleteRemovedImages } from './fsImageCleanup';
 import { byUpdatedAtDesc } from './utils';
 import {
   NotFoundError,
@@ -16,7 +17,6 @@ import {
   readNoteFrontmatter,
   parseTags,
   parsePinned,
-  countAttachments,
   findSlugByNoteId,
   withNoteLock,
 } from './fsHelpers';
@@ -43,14 +43,15 @@ export async function listNotes(root: string): Promise<NoteSummary[]> {
       continue;
     }
 
-    const attCount = await countAttachments(slug, root);
+    const id = String(parsed.data.id);
+    const attachments = await listAttachmentsBySlug(slug, root);
     summaries.push({
-      id: String(parsed.data.id),
+      id,
       slug,
       title: String(parsed.data.title),
       createdAt: String(parsed.data.createdAt),
       updatedAt: String(parsed.data.updatedAt),
-      attachmentCount: attCount,
+      attachmentCount: countVisibleAttachments(attachments, parsed.content, id),
       tags: parseTags(parsed.data.tags),
       pinned: parsePinned(parsed.data.pinned),
     });
@@ -71,17 +72,18 @@ export async function getNote(id: string, root: string): Promise<Note | null> {
     return null;
   }
 
-  const attachments = await listAttachments(id, root);
+  const attachments = await listAttachmentsBySlug(slug, root);
+  const content = parsed.content.trim();
   return {
     id: String(parsed.data.id),
     slug,
     title: String(parsed.data.title),
     createdAt: String(parsed.data.createdAt),
     updatedAt: String(parsed.data.updatedAt),
-    attachmentCount: attachments.length,
+    attachmentCount: countVisibleAttachments(attachments, content, id),
     tags: parseTags(parsed.data.tags),
     pinned: parsePinned(parsed.data.pinned),
-    content: parsed.content.trim(),
+    content,
     attachments,
   };
 }
@@ -169,14 +171,14 @@ export async function updateNote(
 
     await fs.writeFile(noteMdPath(currentSlug, root), frontmatter, 'utf-8');
 
-    const attachments = await listAttachments(id, root);
+    const attachments = await deleteRemovedImages(id, currentSlug, existing.content, newContent, root);
     return {
       id: existing.id,
       slug: currentSlug,
       title: newTitle,
       createdAt: existing.createdAt,
       updatedAt: now,
-      attachmentCount: attachments.length,
+      attachmentCount: countVisibleAttachments(attachments, newContent, id),
       tags: newTags,
       pinned: newPinned,
       content: newContent,

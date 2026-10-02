@@ -147,15 +147,6 @@ export async function readNoteFrontmatter(
   return await readFrontmatterFile(noteMdPath(slug, root));
 }
 
-export async function countAttachments(slug: string, root: string): Promise<number> {
-  try {
-    const entries = await fs.readdir(attachmentsDir(slug, root));
-    return entries.length;
-  } catch {
-    return 0;
-  }
-}
-
 // Per-note lock keyed by note id.
 export const withNoteLock = createKeyedLock();
 

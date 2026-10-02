@@ -2,6 +2,8 @@ import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import type { Attachment } from './types';
+import { attachmentDownloadPath } from './attachmentUpload';
+import { isImageMime } from './mediaTypes';
 import {
   NotFoundError,
   attachmentsDir,
@@ -16,6 +18,12 @@ export async function listAttachments(noteId: string, root: string): Promise<Att
     return [];
   }
 
+  return await listAttachmentsBySlug(slug, root);
+}
+
+// Slug-based half of listAttachments, for listNotes, which already holds the
+// slug and would otherwise resolve it again per note.
+export async function listAttachmentsBySlug(slug: string, root: string): Promise<Attachment[]> {
   const attDir = attachmentsDir(slug, root);
   try {
     const files = await fs.readdir(attDir);
@@ -41,6 +49,22 @@ export async function listAttachments(noteId: string, root: string): Promise<Att
   } catch {
     return [];
   }
+}
+
+/**
+ * The sidebar count: what the note visibly has. Non-image files are listed
+ * under the editor; an image shows only while its link is in the body, so an
+ * image that was never linked (or predates deleteRemovedImages) no longer
+ * counts. Any link form counts, since the download URL is the unique anchor.
+ */
+export function countVisibleAttachments(
+  attachments: Attachment[],
+  content: string,
+  noteId: string,
+): number {
+  return attachments.filter(
+    (a) => !isImageMime(a.mimeType) || content.includes(attachmentDownloadPath(noteId, a.id)),
+  ).length;
 }
 
 export async function saveAttachment(
