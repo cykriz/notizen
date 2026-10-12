@@ -20,10 +20,10 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/icon-light-192.png', type: 'image/png', sizes: '192x192', media: '(prefers-color-scheme: light)' },
-      { url: '/icon-dark-192.png', type: 'image/png', sizes: '192x192', media: '(prefers-color-scheme: dark)' },
+      { url: '/icons/icon-light-192.png', type: 'image/png', sizes: '192x192', media: '(prefers-color-scheme: light)' },
+      { url: '/icons/icon-dark-192.png', type: 'image/png', sizes: '192x192', media: '(prefers-color-scheme: dark)' },
     ],
-    apple: '/apple-touch-icon.png',
+    apple: '/icons/apple-touch-icon.png',
   },
   other: {
     'mobile-web-app-capable': 'yes',

@@ -8,6 +8,7 @@ description: Auth system, proxy (middleware) layer, session cookies, user manage
 Next.js 16 renamed middleware to proxy. The file exports `proxy(request)` and a `config` with matcher. No route segment configs allowed (`export const runtime` etc.) — proxy always runs on Node.js.
 
 - **Public paths** (bypass auth): `/login`, `/setup`, `/_next/`, `/serwist/`, `/manifest.webmanifest`, `/icons/`, `/api/health`, `/offline`, `/favicon.ico`, `/share/`
+- Static files needed before login (PWA/touch icons — iOS fetches them on "Add to Home Screen" without a session) must live in `public/icons/`; anything else in the `public/` root (except `/manifest.webmanifest`, listed by name) is behind auth. Guarded by `e2e/tests/pwa-icons.spec.ts`
 - Responses under `/share/` additionally get `Cache-Control: private, max-age=0, must-revalidate` so revocation/expiry take effect immediately
 - **No users configured** → redirect to `/setup` (API routes get 401)
 - **No/invalid session** → redirect to `/login` (API routes get 401)

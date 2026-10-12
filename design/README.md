@@ -5,7 +5,7 @@ the runtime image only receives `public/`, so these files exist for whoever want
 to regenerate the assets, not for the app.
 
 - `icons.icon/` — Apple Icon Composer source for the PWA icons. The rendered
-  output lives in `public/` as `icon-{light,dark}-{192,512,1024}.png`,
+  output lives in `public/icons/` as `icon-{light,dark}-{192,512,1024}.png`,
   `apple-touch-icon.png`, and is referenced from `public/manifest.webmanifest`.
 
 Not in this repo: the LibreOffice Draw source of the splash screen. It is ignored
