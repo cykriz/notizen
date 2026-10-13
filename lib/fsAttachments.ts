@@ -1,8 +1,9 @@
 import fs from 'fs/promises';
+import type { Dirent } from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import type { Attachment } from './types';
-import { attachmentDownloadPath } from './attachmentUpload';
+import { ATT_ID_PATTERN, attachmentDownloadPath } from './attachmentUpload';
 import { isImageMime } from './mediaTypes';
 import {
   NotFoundError,
@@ -11,6 +12,23 @@ import {
   findSlugByNoteId,
   guessMimeType,
 } from './fsHelpers';
+
+const ATT_ID_RE = new RegExp(`^${ATT_ID_PATTERN}$`);
+const STORED_NAME_RE = new RegExp(`^${ATT_ID_PATTERN}_.+`);
+
+/**
+ * Whether a dirent in an attachments dir is one saveAttachment wrote
+ * (`<attId>_<originalName>`). Everything else, such as Synology's `@eaDir`,
+ * `.DS_Store` or AppleDouble `._…` files, belongs to the host and is skipped.
+ */
+export function isStoredAttachment(entry: Dirent): boolean {
+  return entry.isFile() && STORED_NAME_RE.test(entry.name);
+}
+
+export async function readStoredAttachments(attDir: string): Promise<string[]> {
+  const entries = await fs.readdir(attDir, { withFileTypes: true });
+  return entries.filter(isStoredAttachment).map((e) => e.name);
+}
 
 export async function listAttachments(noteId: string, root: string): Promise<Attachment[]> {
   const slug = await findSlugByNoteId(noteId, root);
@@ -26,15 +44,15 @@ export async function listAttachments(noteId: string, root: string): Promise<Att
 export async function listAttachmentsBySlug(slug: string, root: string): Promise<Attachment[]> {
   const attDir = attachmentsDir(slug, root);
   try {
-    const files = await fs.readdir(attDir);
+    const files = await readStoredAttachments(attDir);
     const attachments: Attachment[] = [];
 
     for (const file of files) {
       const filePath = path.join(attDir, file);
       const stat = await fs.stat(filePath);
       const sep = file.indexOf('_');
-      const attId = sep !== -1 ? file.slice(0, sep) : file;
-      const originalName = sep !== -1 ? file.slice(sep + 1) : file;
+      const attId = file.slice(0, sep);
+      const originalName = file.slice(sep + 1);
 
       attachments.push({
         id: attId,
@@ -94,33 +112,47 @@ export async function saveAttachment(
   };
 }
 
-export async function getAttachmentFilePath(
+// Shared lookup for download and delete, so both apply listAttachments' rule.
+async function findStoredAttachment(
   noteId: string,
   attId: string,
   root: string,
-): Promise<{ filePath: string; fileName: string; mimeType: string }> {
+): Promise<{ attDir: string; name: string }> {
   const slug = await findSlugByNoteId(noteId, root);
   if (slug === null) {
     throw new NotFoundError(`Note not found: ${noteId}`);
   }
 
+  const notFound = new NotFoundError(`Attachment not found: ${attId}`);
+  if (!ATT_ID_RE.test(attId)) {
+    throw notFound;
+  }
+
   const attDir = attachmentsDir(slug, root);
   let files: string[];
   try {
-    files = await fs.readdir(attDir);
+    files = await readStoredAttachments(attDir);
   } catch {
-    throw new NotFoundError(`Attachment not found: ${attId}`);
+    throw notFound;
   }
-  const target = files.find((f) => f.startsWith(`${attId}_`));
-  if (target === undefined) {
-    throw new NotFoundError(`Attachment not found: ${attId}`);
+  const name = files.find((f) => f.startsWith(`${attId}_`));
+  if (name === undefined) {
+    throw notFound;
   }
 
-  const sep = target.indexOf('_');
-  const originalName = sep !== -1 ? target.slice(sep + 1) : target;
+  return { attDir, name };
+}
+
+export async function getAttachmentFilePath(
+  noteId: string,
+  attId: string,
+  root: string,
+): Promise<{ filePath: string; fileName: string; mimeType: string }> {
+  const { attDir, name } = await findStoredAttachment(noteId, attId, root);
+  const originalName = name.slice(name.indexOf('_') + 1);
 
   return {
-    filePath: path.join(attDir, target),
+    filePath: path.join(attDir, name),
     fileName: originalName,
     mimeType: guessMimeType(originalName),
   };
@@ -131,22 +163,6 @@ export async function deleteAttachment(
   attId: string,
   root: string,
 ): Promise<void> {
-  const slug = await findSlugByNoteId(noteId, root);
-  if (slug === null) {
-    throw new NotFoundError(`Note not found: ${noteId}`);
-  }
-
-  const attDir = attachmentsDir(slug, root);
-  let files: string[];
-  try {
-    files = await fs.readdir(attDir);
-  } catch {
-    throw new NotFoundError(`Attachment not found: ${attId}`);
-  }
-  const target = files.find((f) => f.startsWith(`${attId}_`));
-  if (target === undefined) {
-    throw new NotFoundError(`Attachment not found: ${attId}`);
-  }
-
-  await fs.rm(path.join(attDir, target));
+  const { attDir, name } = await findStoredAttachment(noteId, attId, root);
+  await fs.rm(path.join(attDir, name));
 }

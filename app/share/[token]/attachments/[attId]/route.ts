@@ -8,8 +8,9 @@ import { getShare } from '@/lib/fsShares';
 import { userRootFor } from '@/lib/fsHelpers';
 import { INLINE_SAFE_MIMES, SHARE_CACHE_CONTROL } from '@/lib/constants';
 import { contentDisposition } from '@/lib/contentDisposition';
+import { ATT_ID_PATTERN } from '@/lib/attachmentUpload';
 
-const AttIdSchema = z.string().regex(/^[a-f0-9]{8}$/);
+const AttIdSchema = z.string().regex(new RegExp(`^${ATT_ID_PATTERN}$`));
 
 interface RouteParams {
   params: Promise<{ token: string; attId: string }>;

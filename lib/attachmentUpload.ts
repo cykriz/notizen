@@ -2,6 +2,10 @@ import { escapeRegex } from '@/lib/escapeRegex';
 import type { Attachment } from '@/lib/fsNotes';
 import { isImageMime } from '@/lib/mediaTypes';
 
+// Attachment id shape: the first uuid segment saveAttachment writes
+// (lib/fsAttachments.ts). Regex source, so callers anchor it as they need.
+export const ATT_ID_PATTERN = '[a-f0-9]{8}';
+
 // Single source of truth for the in-body attachment URL shape. The "/download"
 // suffix is an invariant relied on by lib/shareContent.ts (regex form).
 export function attachmentDownloadPath(noteId: string, attId: string): string {

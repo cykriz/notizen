@@ -4,6 +4,7 @@ import path from 'path';
 import matter from 'gray-matter';
 import type { NoteSummary, TrashedNote } from './types';
 import { DEFAULT_NOTE_TITLE } from './constants';
+import { readStoredAttachments } from './fsAttachments';
 import {
   NotFoundError,
   notesDir,
@@ -31,12 +32,12 @@ async function pathExists(p: string): Promise<boolean> {
   }
 }
 
-// Raw file count, unlike the active notes' countVisibleAttachments
-// (lib/fsAttachments.ts): no UI reads a trashed note's attachmentCount, and a
+// Stored-attachment count, unlike the active notes' countVisibleAttachments
+// (lib/fsAttachments.ts) not filtered by body links: no UI reads a trashed note's attachmentCount, and a
 // restored note is recounted by listNotes.
 async function countTrashedAttachments(slug: string, root: string): Promise<number> {
   try {
-    return (await fs.readdir(path.join(trashedNoteDir(slug, root), 'attachments'))).length;
+    return (await readStoredAttachments(path.join(trashedNoteDir(slug, root), 'attachments'))).length;
   } catch {
     return 0;
   }
