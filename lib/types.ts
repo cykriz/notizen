@@ -1,5 +1,5 @@
 // INVARIANT: no DOM globals in this file. It is reachable from worker/ — via
-// @/lib/constants (sw.ts, swWarm.ts, swStrategies.ts) and directly from
+// @/lib/constants (sw.ts, swWarm.ts, swStrategies.ts, swNavigation.ts) and directly from
 // worker/swPrecache.ts — and worker/tsconfig.json has lib: ["webworker",
 // "esnext"] on purpose, so the service worker never gets window/document types.
 // A DOM reference here fails `bun run typecheck` (the worker project), which is

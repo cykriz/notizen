@@ -167,6 +167,44 @@ test.describe('Service worker precache', () => {
     expect(unknownNote?.status()).toBe(200);
   });
 
+  test('a hanging navigation is answered from the cache instead of waiting for the network', async ({
+    page,
+  }) => {
+    // A very weak link: the request never fails, it just does not answer. Held
+    // far longer than the SW timeout, but released afterwards so teardown never
+    // waits on a dangling route.
+    const HOLD_MS = 20_000;
+    await page.context().route(
+      (url) => url.pathname === NOTES_PATH,
+      async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, HOLD_MS));
+        await route.continue().catch(() => undefined);
+      },
+    );
+
+    const cachedDate = (): Promise<string | null> =>
+      page.evaluate(async (path) => (await caches.match(path))?.headers.get('date') ?? null, NOTES_PATH);
+
+    try {
+      const before = await cachedDate();
+      const started = Date.now();
+      const response = await page.goto(NOTES_PATH);
+      const elapsed = Date.now() - started;
+
+      // Discriminator: without the timeout the SW sits on the held fetch and the
+      // navigation only completes after HOLD_MS.
+      expect(elapsed).toBeLessThan(HOLD_MS / 2);
+      expect(response?.status()).toBe(200);
+      expect(response?.fromServiceWorker()).toBe(true);
+
+      // The held fetch keeps running after the cached answer and, once released,
+      // still refreshes the pages cache.
+      await expect.poll(cachedDate, { timeout: HOLD_MS + 15_000 }).not.toBe(before);
+    } finally {
+      await page.context().unrouteAll({ behavior: 'ignoreErrors' });
+    }
+  });
+
   test('after signing out /offline stays cached, the user pages do not', async ({ page }) => {
     await page.getByRole('button', { name: 'Abmelden' }).click();
     await page.waitForURL(/\/login/, { timeout: 15_000 });

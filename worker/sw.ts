@@ -13,9 +13,9 @@ import {
   MISC_CACHE_MAX,
   cacheFirst,
   networkFirst,
-  networkFirstWithFallback,
   staleWhileRevalidate,
 } from './swStrategies';
+import { networkFirstWithFallback } from './swNavigation';
 import { PROTECTED_PAGE_PATHS, STATIC_ASSET_PREFIX, ensurePrecached } from './swPrecache';
 import { cacheNavigationHtml } from './swWarm';
 
@@ -154,7 +154,11 @@ self.addEventListener('fetch', (event) => {
   const isRscRequest = request.headers.get('RSC') === '1' || url.searchParams.has('_rsc');
 
   if (request.mode === 'navigate') {
-    event.respondWith(networkFirstWithFallback(request, CACHE.pages, PROTECTED_PAGE_PATHS, OFFLINE_SHELL_PATH));
+    event.respondWith(
+      networkFirstWithFallback(request, CACHE.pages, PROTECTED_PAGE_PATHS, OFFLINE_SHELL_PATH, (promise) => {
+        event.waitUntil(promise);
+      }),
+    );
   } else if (url.pathname.startsWith(STATIC_ASSET_PREFIX)) {
     event.respondWith(cacheFirst(request, CACHE.static));
   } else if (url.pathname.startsWith('/api/')) {

@@ -1,6 +1,4 @@
-import { OFFLINE_PATH } from '@/lib/constants';
-import { NOTES_PATH, NOTES_PATH_PREFIX } from '@/lib/pathConstants';
-import { offlineDataResponse, offlineHtmlResponse } from './offlineFallback';
+import { offlineDataResponse } from './offlineFallback';
 
 // Explicit type annotation (not `as const`): the `pages`/`static` names embed
 // the build ID via a template literal, which can't be const-asserted in this
@@ -63,61 +61,6 @@ export async function trimCache(
     : keys;
   for (const key of evictable.slice(0, keys.length - maxEntries)) {
     await cache.delete(key);
-  }
-}
-
-/** Navigation: network-first, fall back to cache, then offline page. */
-export async function networkFirstWithFallback(
-  request: Request,
-  cacheName: string,
-  protectedPathnames: ReadonlySet<string>,
-  notesShellPath: string,
-): Promise<Response> {
-  try {
-    const response = await fetch(request);
-    if (shouldCacheNavigation(response)) {
-      const cache = await caches.open(cacheName);
-      void cache
-        .put(request, response.clone())
-        .then(() => trimCache(cacheName, PAGES_CACHE_MAX, protectedPathnames))
-        .catch(() => undefined);
-    }
-
-    return response;
-  } catch {
-    // ignoreVary: the warmed entry (cache.put with a string URL) carries no
-    // Accept header, while a real navigation sends `Accept: text/html,...`.
-    // If Next emits `Vary: Accept` on the document, a vary-sensitive match
-    // would miss and fall through to /offline, defeating the warm cache.
-    const cached = await caches.match(request, { ignoreVary: true });
-    if (cached) {
-      return cached;
-    }
-
-    const pathname = new URL(request.url).pathname;
-    if (pathname === '/') {
-      const home = await caches.match(NOTES_PATH);
-      if (home) {
-        return home;
-      }
-    }
-
-    // Offline navigation to a note whose own HTML was never cached (e.g. a note
-    // created offline): serve the generic note-detail shell so the SPA boots
-    // and renders the note from localStorage, instead of the dead-end /offline.
-    if (pathname.startsWith(NOTES_PATH_PREFIX)) {
-      const shell = await caches.match(notesShellPath);
-      if (shell) {
-        return shell;
-      }
-    }
-
-    const fallback = await caches.match(OFFLINE_PATH);
-    if (fallback) {
-      return fallback;
-    }
-
-    return offlineHtmlResponse();
   }
 }
 
