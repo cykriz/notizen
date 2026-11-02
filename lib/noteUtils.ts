@@ -12,9 +12,10 @@ export function getNoteTagPath(notes: NoteSummary[], pathname: string): string {
   }
 
   const note = notes.find((n) => n.id === id);
-  if (!note || note.tags.length === 0) {
-    return '';
-  }
+  return note ? noteTagPath(note) : '';
+}
 
-  return note.tags[0];
+/** The folder a note lives in by default: its first tag, or root when it has none. */
+export function noteTagPath(note: NoteSummary): string {
+  return note.tags.length > 0 ? note.tags[0] : '';
 }

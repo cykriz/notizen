@@ -47,7 +47,7 @@ export function AppSidebar({ authEnabled }: AppSidebarProps) {
   const failedNoteIds = useFailedEntityIds(SYNC_ENTITY.NOTE);
   const displayNotes = useMemo(() => withFailedSyncTag(notes, failedNoteIds), [notes, failedNoteIds]);
 
-  const { currentTagPath, setCurrentTagPath, noteId } = useTagStateSync({ notes, pathname });
+  const { currentTagPath, setCurrentTagPath, noteId } = useTagStateSync({ notes, failedNoteIds, pathname });
   const view = useSyncExternalStore(viewStore.subscribe, viewStore.getSnapshot, viewStore.getServerSnapshot);
   const { pending, createNoteWithTags, createTagFolder } = useCreateNote();
   const [folderOpen, setFolderOpen] = useState(false);

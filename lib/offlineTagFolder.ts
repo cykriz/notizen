@@ -1,10 +1,9 @@
 import { deleteNoteOffline, updateNoteOffline } from '@/lib/offlineNotes';
-import { getNotesUnderPath } from '@/lib/tagTree';
+import { getNotesUnderPath, isTagOnOrUnder } from '@/lib/tagTree';
 import type { NoteSummary } from '@/lib/types';
 
 export function stripFolderTags(tags: string[], path: string): string[] {
-  const prefix = `${path}/`;
-  return tags.filter((t) => t !== path && !t.startsWith(prefix));
+  return tags.filter((t) => !isTagOnOrUnder(t, path));
 }
 
 export async function deleteTagFolderOffline(

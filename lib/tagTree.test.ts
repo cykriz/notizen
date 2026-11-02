@@ -9,6 +9,7 @@ import {
   getNotesAtPath,
   getNotesUnderPath,
   isCreatableTagPath,
+  isTagOnOrUnder,
   leafTagSegment,
   listAllTags,
   moveNoteToFolder,
@@ -55,6 +56,13 @@ describe('tagTree', () => {
 
   test('getNotesUnderPath — includes descendants', () => {
     expect(getNotesUnderPath(notes, 'dev')).toHaveLength(2);
+  });
+
+  test('isTagOnOrUnder — matches the folder and its descendants, not a sibling sharing a prefix', () => {
+    expect(isTagOnOrUnder('dev', 'dev')).toBe(true);
+    expect(isTagOnOrUnder('dev/ts', 'dev')).toBe(true);
+    expect(isTagOnOrUnder('devops', 'dev')).toBe(false);
+    expect(isTagOnOrUnder('dev', 'dev/ts')).toBe(false);
   });
 
   test('normalizeTagPath — lowercases, trims, collapses slashes', () => {

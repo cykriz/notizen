@@ -51,8 +51,8 @@ export function useCreateNote() {
    *
    * Jump first, create second: `navigateTo` sets the sidebar path even while the folder is
    * still absent from the tree (the force-jump in useTagStateSync), and once the optimistic
-   * note lands the folder exists. The note-open sync that follows re-targets to
-   * `note.tags[0]` — the same path — so the two never fight over it.
+   * note lands the folder exists. The note-open sync that follows keeps that path,
+   * since the new note is listed there — so the two never fight over it.
    *
    * Shared by the sidebar's "Neuer Ordner" and the palette's create row, and deliberately a
    * second return value rather than its own hook: the sidebar needs BOTH creates and has to

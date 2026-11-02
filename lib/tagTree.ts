@@ -134,12 +134,15 @@ export function moveNoteToFolder(tags: string[], from: string, target: string): 
   return replaceFolderTag(tags, from, [target]);
 }
 
-export function getNotesAtPath(notes: NoteSummary[], path: string): NoteSummary[] {
-  if (path === '') {
-    return notes.filter((n) => n.tags.length === 0);
-  }
+// True when `tag` is the folder `path` itself or lies anywhere below it.
+export const isTagOnOrUnder = (tag: string, path: string): boolean => tag === path || tag.startsWith(`${path}/`);
 
-  return notes.filter((n) => n.tags.includes(path));
+// True when the sidebar lists the note inside folder `path` — root holds only untagged notes.
+export const isNoteAtPath = (note: NoteSummary, path: string): boolean =>
+  path === '' ? note.tags.length === 0 : note.tags.includes(path);
+
+export function getNotesAtPath(notes: NoteSummary[], path: string): NoteSummary[] {
+  return notes.filter((n) => isNoteAtPath(n, path));
 }
 
 export function getNotesUnderPath(notes: NoteSummary[], path: string): NoteSummary[] {
@@ -147,8 +150,7 @@ export function getNotesUnderPath(notes: NoteSummary[], path: string): NoteSumma
     return notes;
   }
 
-  const prefix = `${path}/`;
-  return notes.filter((n) => n.tags.some((t) => t === path || t.startsWith(prefix)));
+  return notes.filter((n) => n.tags.some((t) => isTagOnOrUnder(t, path)));
 }
 
 export function listAllTags(notes: NoteSummary[]): string[] {
