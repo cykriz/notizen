@@ -7,17 +7,22 @@ Built with Next.js, shadcn/ui, and Bun. Designed for deployment on Synology NAS 
 ## Features
 
 - Markdown editing with live preview
+- Heading outline next to the editor and on shared notes
 - Note linking — `[[` trigger or Cmd+L to insert links between notes
 - List continuation — Enter continues `- ` / `1.` lists, Tab indents by 4 spaces, Shift+Tab dedents
 - File attachments (drag & drop or paste images)
 - Hierarchical tags (slash-separated, e.g. `dev/python/fastapi`) with folder-style tag browser
-- Note pinning for quick access
+- Note pinning — pinned notes show as quick-open tiles on the notes overview
 - Three-column personal kanban: "Eingang" (capture), "Erledigen" (hard limit of 3), "Erledigt"
-- Drag & drop todos between columns
+- Drag & drop todos between columns, and manual ordering inside "Eingang"
 - Quick-add input in each column
-- Command palette (Cmd+P) — search notes by title or tag, jump to tasks; type `@` to search tags and jump to a folder in the sidebar
+- Command palette (Cmd+P) — search notes by title or tag, jump to tasks; type `@` to search tags and jump to a folder in the sidebar; create a note or a missing tag straight from the query
+- Global keyboard shortcuts (palette, new item, sidebar, view switch, preview) — the full list lives in `lib/globalShortcuts.ts`
+- Trash — deleted notes and todos can be restored; items older than a configurable retention period (default 30 days) are purged the next time the trash is opened
+- Share links — publish a read-only view of a note via a link that expires after a day, a week, a month, or never
+- Offline sync — changes made offline are replayed when the connection returns; failed syncs can be inspected
 - Installable as PWA — add to home screen on iOS/Android
-- Light/dark theme
+- Light/dark theme following the system setting
 - Neural read-aloud — natural in-browser speech (Piper/VITS), with a Web Speech API fallback
 - Responsive design
 - Multi-user authentication (scrypt + HMAC session cookies)
@@ -33,7 +38,12 @@ The one exception is **neural read-aloud**. On first use it downloads a Piper vo
 model from HuggingFace and the ONNX/phonemizer WebAssembly from public CDNs
 (cdnjs, jsDelivr). The voice is then cached in OPFS and works offline afterwards.
 Without network access on first use, read-aloud falls back to the browser's built-in
-Web Speech API. Nothing else in the app needs the network at runtime.
+Web Speech API.
+
+A few features talk to your own server and are therefore online-only: the **trash**
+(including the retention setting) and **share links**, both creating them and viewing a
+shared note. The service worker deliberately never caches these routes, so they cannot
+show stale data. Nothing else in the app needs the network at runtime.
 
 ## Quick Start (Development)
 
@@ -149,6 +159,8 @@ docker exec -it notizen bun run user add myuser
 ```
 
 Notes are plain files in `/volume1/docker/<app>/data/`. Back up with Hyper Backup or any file sync tool.
+Back up the **whole** directory, including the dot-folders (`.auth`, `.shares`, and each user's
+`.trash`) — some sync tools skip hidden entries by default.
 
 ## File Structure
 
@@ -157,9 +169,14 @@ Notes are plain files in `/volume1/docker/<app>/data/`. Back up with Hyper Backu
 ├── .auth/
 │   ├── users.json                      # User accounts (scrypt hashes)
 │   └── secret.key                      # HMAC signing key (auto-generated)
+├── .shares/
+│   └── shares.json                     # Share-link registry (token → note, expiry)
 └── users/
     └── <username>/
-        ├── todos.json                  # kanban tasks
+        ├── todos.json                  # kanban tasks (trashed todos stay here, flagged by trashedAt)
+        ├── settings.json               # per-user settings (trash retention)
+        ├── .trash/
+        │   └── notes/                  # trashed note directories, same layout as notes/
         └── notes/
             └── 2026-02-20-my-note-a1b2c3/  # {date}-{slug}-{uuid}
                 ├── note.md                  # Frontmatter + Markdown content
@@ -252,7 +269,7 @@ All fields optional. Response: `Note`
 DELETE /api/notes/:id
 ```
 
-Response: `{ "success": true }`
+Moves the note to the trash (see [Trash](#trash)). Response: `{ "success": true }`
 
 ### List Attachments
 
@@ -322,11 +339,16 @@ Response: `Todo[]`
     "dueDate": "2026-03-01",
     "quadrant": "do",
     "completed": false,
+    "linkedNoteIds": ["uuid"],
+    "order": 1.5,
     "createdAt": "2026-02-20T10:30:00.000Z",
     "updatedAt": "2026-02-20T10:30:00.000Z"
   }
 ]
 ```
+
+`linkedNoteIds` and `order` are optional. `order` ranks todos inside "Eingang"; a todo without
+it ranks by `createdAt`. Trashed todos are not part of this list.
 
 Quadrant values: `do` (shown as "Erledigen"), `inbox` (shown as "Eingang"). "Erledigt" is a
 third *column* derived from `completed`, never a stored quadrant. The retired value `delegate` is
@@ -360,11 +382,53 @@ All fields optional. Response: `Todo`
 DELETE /api/todos/:id
 ```
 
-Response: `{ "success": true }`
+Moves the todo to the trash. Response: `{ "success": true }`
+
+### Trash
+
+Online-only; the service worker never caches these routes. `:type` is `note` or `todo`.
+
+```
+GET    /api/trash                       # { retentionDays, notes, todos } — also purges expired items
+POST   /api/trash/:type/:id/restore     # restore one item
+DELETE /api/trash/:type/:id             # delete one item permanently
+DELETE /api/trash/:type                 # empty the trash for one type
+```
+
+Trashed items carry a `trashedAt` timestamp. Responses: `{ "success": true }` unless noted.
+
+### User Settings
+
+```
+GET /api/user/settings                  # { "retentionDays": 30 }
+PUT /api/user/settings                  # { "retentionDays": 7 } — must be 1–365, otherwise 400
+```
+
+`PUT` purges items that fall outside the new retention and reports how many were purged as
+`purged: { notes, todos }` (counts).
+
+### Health
+
+```
+POST /api/health                        # { "app": "notizen" }
+```
+
+Public; used by the client to check whether the server is reachable.
+
+### Share Links
+
+Share links are created and revoked through server actions (`app/(app)/shareActions.ts`), not
+through the REST API. The public read-only pages need no session:
+
+```
+GET /share/:token                       # shared note view
+GET /share/:token/attachments/:attId    # attachment of a shared note
+```
 
 ### Authentication
 
-All API routes require a valid session cookie. Unauthenticated requests return `401`.
+All API routes require a valid session cookie, except `POST /api/health`. Unauthenticated
+requests return `401`.
 
 ### Error Responses
 
@@ -379,6 +443,7 @@ All errors return:
 | 400    | Validation error |
 | 401    | Unauthorized     |
 | 404    | Not found        |
+| 409    | Conflict — the `X-Expected-UpdatedAt` header no longer matches the stored version |
 | 500    | Internal error   |
 
 ## Tech Stack

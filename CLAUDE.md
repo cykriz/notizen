@@ -48,7 +48,7 @@ without trace.
 
 ## Code Rules
 
-- Extract repeated string literals (modes, statuses, quadrants) into `lib/constants.ts` with types in `lib/types.ts` — never scatter raw literals across files
+- Extract repeated string literals (modes, statuses, quadrants) into `lib/constants.ts` with types in `lib/types.ts` — never scatter raw literals across files. `lib/constants.ts` is at its line cap, so new feature-scoped constants go into a `lib/<feature>Constants.ts` module (e.g. `lib/tagConstants.ts`)
 
 ## Key Rules
 
@@ -93,7 +93,14 @@ unist-util-visit @types/mdast
 @diffusionstudio/vits-web
 @types/bun
 @playwright/test
+next react react-dom
+typescript @types/node @types/react @types/react-dom @types/uuid
+tailwindcss @tailwindcss/postcss
+eslint eslint-config-next @stylistic/eslint-plugin
+shadcn esbuild-wasm
 ```
+
+- `esbuild-wasm` is required by Serwist's `createSerwistRoute` (`app/serwist/[...path]/route.ts`), which bundles `worker/sw.ts` with esbuild.
 
 - `@diffusionstudio/vits-web` powers **natural neural read-aloud** (Piper/VITS in-browser via its transitive `onnxruntime-web`). Runs in a **Web Worker** (`lib/neuralTts.worker.ts`, driven by `lib/neuralTtsClient.ts`) so the heavy WASM synthesis never blocks the UI thread; `lib/neuralPlayer.ts` chunks the text (`NEURAL_CHUNK_MAX` — whole-note synthesis overruns the model's memory) and pre-synthesizes the next chunk during playback for gapless audio. Voice models download from HuggingFace on first use and cache in OPFS (offline after that); the ONNX/phonemizer WASM load from CDNs (cdnjs/jsdelivr), so neural TTS needs network on first use and falls back to the Web Speech API (`hooks/useSpeech.ts`) when unavailable/offline.
 - Its emscripten glue references Node built-ins (`fs`/`path`/`crypto`) in dead Node-only branches. `next.config.ts` `turbopack.resolveAlias` stubs these to `lib/emptyModule.ts` **for the browser bundle only** (`{ browser: … }`), leaving server-side `fs`/`path`/`crypto` untouched — without this the client build fails to resolve `fs`.

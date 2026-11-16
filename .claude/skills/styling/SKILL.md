@@ -25,6 +25,7 @@ Global classes for consistent visuals. Extract a class into this file **only onc
 |---|---|---|
 | `.card-base` | Card | `rounded-xl shadow-sm` — shared panel look (no border). MobileBottomNav dropped it: a mask clips a box-shadow away, so its tab surfaces set their radius directly |
 | `.nav-cutout-left`, `.nav-cutout-right` | MobileBottomNav tabs | `mask-image` arc that cuts the search circle's clearance out of a tab's inner edge. Single consumer, per the exception above: a concave edge is impossible with border-radius, and the geometry needs the comment next to it — inline it would be a 100-character arbitrary property twice. Radius deliberately stays at the call site (unlayered file) |
+| `.bottom-nav` | MobileBottomNav | CSS variables for the search-circle geometry (`--nav-search`, `--nav-search-overlap`, `--nav-search-clearance`) that `.nav-cutout-*` read |
 | `.sidebar-inner` | Desktop sidebar, mobile SheetContent | `flex h-full w-full flex-col p-2 gap-2` |
 | `.sidebar-panel` | Desktop sidebar, mobile SheetContent | `border-0 gap-2` |
 | `.note-section-padding` | Note section elements | `px-4 py-2` |

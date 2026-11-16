@@ -34,7 +34,7 @@ See `lib/types.ts` for full definitions (read-aloud types: `lib/ttsTypes.ts`, sh
 - `NoteSummary` / `Note` — notes with tags, pinned, attachments
 - `Todo` — persisted quadrants `do` (→ "Erledigen") and `inbox` (→ "Eingang"); the third column "Erledigt" is derived from `completed`. Optional `order` is the manual rank inside "Eingang" (fractional, so one drag is one write); a row without one ranks by `createdAt`, which is why the field needed no backfill — see `lib/todoOrder.ts`
 - `Attachment` — file metadata with `relativePath`
-- Constants live in `lib/constants.ts`; the column model (metadata, WIP limit, `columnOf`) in `lib/todoColumns.ts`
+- Constants: rule in `CLAUDE.md` § Code Rules, the split into `lib/*Constants.ts` explained in `references/core.md`; the column model (metadata, WIP limit, `columnOf`) in `lib/todoColumns.ts`
 
 ## Filesystem Layout
 
@@ -42,4 +42,6 @@ See `lib/types.ts` for full definitions (read-aloud types: `lib/ttsTypes.ts`, sh
 - Notes: `notes/YYYY-MM-DD-slug-uuid/note.md` + `attachments/`
 - Frontmatter in `note.md`: id, title, tags, pinned, createdAt, updatedAt
 - Todos: `todos.json` (single JSON array, trash included via `trashedAt`). Rows can carry the retired quadrant `delegate` from before `cd9392c`; `readTodos` normalises every quadrant via `toUsableQuadrant` and caps "Erledigen" via `enforceDoLimit`, and the next write persists both fixes, so the file self-heals — there is deliberately no migration script
+- Trash: `.trash/notes/` holds trashed note directories (same layout as `notes/`). Purged after `retentionDays`
+- Settings: `settings.json` (`UserSettings`, currently only `retentionDays`; read and clamped by `lib/fsUserSettings.ts`)
 - Shares: `NOTES_ROOT/.shares/shares.json` (single JSON registry, token → { username, noteId, preset, createdAt, expiresAt })

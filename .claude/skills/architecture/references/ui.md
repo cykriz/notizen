@@ -22,16 +22,18 @@ Used from here too, but inventoried elsewhere by path class:
 | SyncStatusIndicator | `components/SyncStatusIndicator.tsx` — offline sync status |
 | AttachmentList | `components/AttachmentList.tsx` — display note attachments |
 | NoteOutline | `components/NoteOutline.tsx` — heading-based outline, shared by editor and share view |
-| ThemeToggle | `components/ThemeToggle.tsx` — dark/light theme switch |
 | AppSidebar | `app/(app)/AppSidebar.tsx` — sidebar shell, double-click-to-create, swipe-back |
 | AppSidebarHeader | `app/(app)/AppSidebarHeader.tsx` — tabs (Notizen/Aufgaben), sync indicator, LogoutButton |
 | LogoutButton | `app/(app)/LogoutButton.tsx` — logout submit button; calls `clearSwCaches` before the server action so SW pages cache is purged pre-redirect |
 | OfflineReloadButton | `app/offline/OfflineReloadButton.tsx` — client island used by `/offline` for the "Erneut versuchen" reload button |
-| NotesSidebarContent | `app/(app)/NotesSidebarContent.tsx` — Tags/"Alle" toggle and main note list (pinned moved to PinnedNotesGroup) |
+| NotesSidebarContent | `app/(app)/NotesSidebarContent.tsx` — Tags/"Alle"/trash view switch (`VIEWS` in `viewStore.ts`) and main note list (pinned moved to PinnedNotesGroup) |
+| TrashView | `app/(app)/TrashView.tsx` — trash view in the notes sidebar: restore, delete permanently, empty; online-only (shows `TRASH_ONLINE_ONLY_MESSAGE` offline) |
+| RetentionSelector | `app/(app)/RetentionSelector.tsx` — the trash's auto-purge retention picker; TrashView persists the choice via `/api/user/settings` |
+| useTrashData | `app/(app)/useTrashData.ts` — loads `/api/trash` (which also purges expired items) for TrashView |
 | PinnedNotesOverview | `app/(app)/notes/PinnedNotesOverview.tsx` — quick-open tile grid of pinned notes on the `/notes` empty state; shares `usePinnedNotes` with PinnedNotesGroup |
 | PinnedNotesGroup | `app/(app)/PinnedNotesGroup.tsx` — pinned-notes sidebar group, shown after SharedNotesEntry; caps at 40vh and scrolls internally |
 | TodosSidebarContent | `app/(app)/TodosSidebarContent.tsx` — todos sidebar content |
-| TagBrowser | `app/(app)/TagBrowser.tsx` — folder-style drill-down |
+| TagNoteList | `app/(app)/TagBrowser.tsx` — the notes at the current tag level; the drill-down itself lives in TagNavigation |
 | TagNavigation | `app/(app)/TagNavigation.tsx` — tag drill-down list, drag-to-move onto folders; renders TagBreadcrumb. Its ringed panel IS the boundary to whatever sits above, so the preceding block (PinnedNotesGroup, else SharedNotesEntry) drops its `separator` — decided in `useSidebarChrome`, which therefore also derives this panel's `childNodes` |
 | TagBreadcrumb | `app/(app)/TagBreadcrumb.tsx` — the current folder's name plus its action. A 16rem sidebar cannot hold the path and a readable folder name at once, so the row shows only the leaf (full width, `title` carries the whole path) and the back button carries the path: with two or more targets (`ChevronsLeft`) it opens a Popover listing root + every ancestor for a direct jump, one level below root (`ChevronLeft`, root the only target) it jumps there itself instead of showing a one-row menu; rows are `h-11` below `md` for touch |
 | TagFolderIcon | `app/(app)/TagFolderIcon.tsx` — the icon of a tag-navigation row, shared by TagNavigation and CommandPalette's tag mode. Same icon for every row regardless of sub-tags; rationale in the file's header comment |

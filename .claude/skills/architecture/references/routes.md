@@ -30,7 +30,7 @@ app/share/[token]/attachments/[attId]/route.ts          → GET (read-only attac
 
 A valid share token grants read access to the shared note AND every attachment of that note (not only attIds referenced in the markdown body). attIds are 8 hex chars and only resolvable in the context of the share's note — the 256-bit token is the real gate.
 
-- NextRequest/NextResponse, Zod validation on every endpoint
+- NextRequest/NextResponse, Zod validation on every route that takes a JSON body
 - Error shape: `{ error: string }`
 
 ## Server Actions
