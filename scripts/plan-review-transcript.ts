@@ -9,6 +9,9 @@
 import { z } from 'zod';
 
 const PLAN_MODE_ATTACHMENT = 'plan_mode';
+const USER_LINE = 'user';
+const ASSISTANT_LINE = 'assistant';
+const HUMAN_ORIGIN = 'human';
 
 const contentPartSchema = z.object({
   type: z.string().optional().catch(undefined),
@@ -23,6 +26,11 @@ const contentPartSchema = z.object({
 
 const transcriptLineSchema = z.object({
   type: z.string().optional().catch(undefined),
+  isMeta: z.boolean().optional().catch(undefined),
+  origin: z
+    .object({ kind: z.string().optional().catch(undefined) })
+    .optional()
+    .catch(undefined),
   timestamp: z.string().optional().catch(undefined),
   attachment: z
     .object({
@@ -64,8 +72,20 @@ export function parseTranscript(text: string): TranscriptLine[] {
   return lines;
 }
 
-/** Skip individual parts instead of losing the whole line. */
+/**
+ * Content parts of a conversation line; individual broken parts are skipped instead of losing the line.
+ *
+ * Only `user` and `assistant` lines are conversation. Other line types (e.g. `api-request-blob`) replay
+ * earlier messages without a timestamp: reading those copies moved the anchor onto an old `ExitPlanMode`
+ * result, the round start became `null`, and every `ExitPlanMode` was denied for the rest of the session.
+ * A missing/invalid `type` still passes (see the `.catch(undefined)` note at the top): dropping such a line
+ * could hide the reviewer start and deny forever.
+ */
 export function contentParts(line: TranscriptLine): ContentPart[] {
+  if (line.type !== undefined && line.type !== USER_LINE && line.type !== ASSISTANT_LINE) {
+    return [];
+  }
+
   const content = line.message?.content;
 
   if (content === undefined) {
@@ -111,9 +131,26 @@ export function findPlanFilePath(lines: TranscriptLine[]): string | null {
   return null;
 }
 
-/** A real user turn — unlike the `tool_result` lines, which also carry `type: "user"`. */
+/**
+ * A real user turn. Several harness-written lines also carry `type: "user"` and must not start a round:
+ * - `tool_result` lines;
+ * - `isMeta` lines (injected system reminders);
+ * - lines whose `origin.kind` is not `human` — above all `task-notification`, written when a background
+ *   subagent finishes. Counting it moved the anchor past a background `plan-reviewer` start, so the review
+ *   never counted for its round and `ExitPlanMode` stayed denied.
+ *
+ * A missing `origin` still counts as a user turn: older transcripts don't write it, and over-gating is the
+ * safe direction there. An unknown future `origin.kind` does not count: the anchor then stays earlier, which
+ * errs toward letting the plan through (fail-open), never toward a deadlock.
+ */
 export function isUserTurn(line: TranscriptLine): boolean {
-  if (line.type !== 'user') {
+  if (line.type !== USER_LINE || line.isMeta === true) {
+    return false;
+  }
+
+  const originKind = line.origin?.kind;
+
+  if (originKind !== undefined && originKind !== HUMAN_ORIGIN) {
     return false;
   }
 

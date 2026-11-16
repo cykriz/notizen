@@ -31,8 +31,8 @@ function planMode(planFilePath = PLAN): string {
   });
 }
 
-function userTurn(text = 'build me this'): string {
-  return JSON.stringify({ type: 'user', message: { content: [{ type: 'text', text }] } });
+function userTurn(text = 'build me this', origin?: unknown): string {
+  return JSON.stringify({ type: 'user', origin, message: { content: [{ type: 'text', text }] } });
 }
 
 function agentCall(subagentType: string, timestamp?: string): string {
@@ -59,6 +59,29 @@ function toolResult(toolUseId: string, content = 'ok'): string {
   });
 }
 
+/** System reminder injected by the harness: `type: "user"`, but not written by the user. */
+function metaReminder(): string {
+  return JSON.stringify({
+    type: 'user',
+    isMeta: true,
+    message: { content: [{ type: 'text', text: '<system-reminder>…</system-reminder>' }] },
+  });
+}
+
+/** Written when a background subagent finishes: `type: "user"` with a non-human origin. */
+function taskNotification(): string {
+  return JSON.stringify({
+    type: 'user',
+    origin: { kind: 'task-notification' },
+    message: { content: [{ type: 'text', text: '<task-notification>…</task-notification>' }] },
+  });
+}
+
+/** Replays earlier messages without a timestamp — must not be read as part of the conversation. */
+function requestBlob(...parts: unknown[]): string {
+  return JSON.stringify({ type: 'api-request-blob', message: { content: parts } });
+}
+
 function transcript(...lines: string[]): TranscriptLine[] {
   return parseTranscript(lines.join('\n'));
 }
@@ -81,6 +104,8 @@ describe('parseTranscript', () => {
       type: null,
       timestamp: null,
       attachment: null,
+      isMeta: null,
+      origin: null,
       message: { content: [{ type: 'tool_use', name: 'Agent', input: { subagent_type: 'plan-reviewer' } }] },
     });
     const lines = parseTranscript(raw);
@@ -121,12 +146,67 @@ describe('findPlanFilePath', () => {
 });
 
 describe('isUserTurn', () => {
-  test('recognises a real user turn', () => {
+  test('recognises a real user turn (no origin, as in older transcripts)', () => {
     expect(isUserTurn(transcript(userTurn())[0])).toBe(true);
   });
 
   test('does not count a tool_result line as a user turn', () => {
     expect(isUserTurn(transcript(toolResult('toolu_1'))[0])).toBe(false);
+  });
+
+  test('does not count a task notification as a user turn', () => {
+    expect(isUserTurn(transcript(taskNotification())[0])).toBe(false);
+  });
+
+  test('does not count an isMeta line as a user turn', () => {
+    expect(isUserTurn(transcript(metaReminder())[0])).toBe(false);
+  });
+
+  test('counts a line with a human origin as a user turn', () => {
+    expect(isUserTurn(transcript(userTurn('go', { kind: 'human' }))[0])).toBe(true);
+  });
+
+  test('an invalid origin kind does not drop the user turn', () => {
+    expect(isUserTurn(transcript(userTurn('go', { kind: 42 }))[0])).toBe(true);
+  });
+});
+
+describe('harness-written lines', () => {
+  test('a background reviewer stays in its round despite reminder and task notification', () => {
+    const body = [userTurn(), agentCall('plan-reviewer'), metaReminder(), taskNotification()];
+    const lines = transcript(...body);
+
+    expect(findAnchorIndex(lines)).toBe(0);
+    expect(roundReviewState(lines).reviewedThisRound).toBe(true);
+    expect(decide({}, transcript(planMode(), ...body), NEEDS_REVIEW).kind).toBe('skip');
+  });
+
+  test('a replayed ExitPlanMode result in a request blob does not move the anchor', () => {
+    const ts = '2026-11-12T10:00:00.000Z';
+    const timedResult = JSON.stringify({
+      type: 'user',
+      timestamp: ts,
+      message: { content: [{ type: 'tool_result', tool_use_id: 'toolu_exit', content: 'rejected' }] },
+    });
+    const lines = transcript(
+      userTurn(),
+      exitPlanModeCall('toolu_exit'),
+      timedResult,
+      agentCall('plan-reviewer'),
+      requestBlob({ type: 'tool_result', tool_use_id: 'toolu_exit', content: 'rejected' }),
+    );
+
+    expect(findAnchorIndex(lines)).toBe(2);
+    expect(roundReviewState(lines)).toMatchObject({ reviewedThisRound: true, roundStartTs: ts });
+  });
+
+  test('a reviewer start replayed in a request blob does not count', () => {
+    const lines = transcript(
+      userTurn(),
+      requestBlob({ type: 'tool_use', name: 'Agent', input: { subagent_type: 'plan-reviewer' } }),
+    );
+
+    expect(roundReviewState(lines).everReviewed).toBe(false);
   });
 });
 
